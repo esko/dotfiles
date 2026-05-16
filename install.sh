@@ -49,13 +49,13 @@ fi
 # 3. Stow Packages
 echo "=> Stowing configuration packages..."
 cd "$HOME/dotfiles"
-stow -t ~ fish
-stow -t ~ "$STOW_OS"
-stow -t ~ ssh
+stow --restow -t ~ fish
+stow --restow -t ~ "$STOW_OS"
+stow --restow -t ~ ssh
 
 # Safely stow git and zellij if directories exist
-if [ -d "git" ]; then stow -t ~ git; fi
-if [ -d "zellij" ]; then stow -t ~ zellij; fi
+if [ -d "git" ]; then stow --restow -t ~ git; fi
+if [ -d "zellij" ]; then stow --restow -t ~ zellij; fi
 
 # 4. Set Default Shell
 echo "=> Setting Fish as the default shell..."
@@ -64,7 +64,13 @@ if ! grep -q "$FISH_PATH" /etc/shells; then
     echo "$FISH_PATH" | sudo tee -a /etc/shells
 fi
 
-if [ "$SHELL" != "$FISH_PATH" ]; then
+if [ "$OS" = "Darwin" ]; then
+    CURRENT_SHELL="$(dscl . -read /Users/$USER UserShell | awk '{print $2}')"
+else
+    CURRENT_SHELL="$(getent passwd $USER | awk -F: '{print $7}')"
+fi
+
+if [ "$CURRENT_SHELL" != "$FISH_PATH" ]; then
     echo "=> Changing shell to $FISH_PATH. You may be prompted for your password."
     sudo chsh -s "$FISH_PATH" "$USER"
 else
