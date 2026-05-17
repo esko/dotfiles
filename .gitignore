@@ -1,0 +1,6 @@
+# btop logs
+utilities/.config/btop/btop.log
+
+# micro editor backups and history
+utilities/.config/micro/backups/
+utilities/.config/micro/buffers/
