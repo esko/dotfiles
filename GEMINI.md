@@ -10,7 +10,7 @@
 * `fish/`: The universal package stowed on all machines.
 * `fish-linux/`: Stowed only on Linux (`conf.d/99-linux.fish` for apt/systemd abbreviations).
 * `fish-macos/`: Stowed only on Mac (`conf.d/99-macos.fish` for Homebrew paths/abbreviations).
-* `git/`: Global `.gitconfig` (configured to use `delta` pager).
+* `git/`: Global `.gitconfig` (configured to use `hunk` pager).
 * `posh/`: Oh My Posh theme (`.mytheme.omp.json`).
 * `ssh/`: `.ssh/config` for aliases, strictly ignoring keys (`id_*`) via `.gitignore`.
 * `zellij/`: Multiplexer config (`.config/zellij/config.kdl`).

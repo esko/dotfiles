@@ -13,12 +13,10 @@ brew "ripgrep"
 brew "micro"
 
 # Workflow enhancements
+brew "fnm"
 brew "fzf"
 brew "zoxide"
 brew "lazygit"
-
-# Git pager
-brew "git-delta"
 
 # Prompt and Multiplexer
 brew "zellij"
