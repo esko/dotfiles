@@ -68,7 +68,7 @@ if command -v fnm >/dev/null 2>&1; then
     eval "$(fnm env --shell bash)"
     echo "=> Installing Node.js (LTS) via fnm..."
     fnm install --lts
-    fnm use lts
+    fnm use lts/latest
 else
     echo "=> fnm installation failed or not found."
 fi
