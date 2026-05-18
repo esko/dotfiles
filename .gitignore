@@ -1,5 +1,5 @@
-# btop logs
-utilities/.config/btop/btop.log
+*.log
+fish_variables
 
 # micro editor backups and history
 utilities/.config/micro/backups/
