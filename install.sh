@@ -2,6 +2,8 @@
 
 set -e
 
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "========================================"
 echo "  Dotfiles Automated Installation       "
 echo "========================================"
@@ -10,6 +12,10 @@ echo "========================================"
 OS="$(uname -s)"
 if [ "$OS" = "Linux" ]; then
     echo "=> Linux detected. Setting up repositories and installing packages..."
+
+    # Tools used while adding third-party repositories on a fresh system.
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl gnupg wget
     
     # Create keyrings directory
     sudo mkdir -p -m 755 /etc/apt/keyrings
@@ -45,7 +51,7 @@ if [ "$OS" = "Linux" ]; then
     # 5. Sublime Text
     if [ ! -f /etc/apt/sources.list.d/sublime-text.sources ]; then
         echo "=> Adding Sublime Text repository..."
-        wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
+        curl -fsSL https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
         echo "Types: deb
 URIs: https://download.sublimetext.com/
 Suites: apt/stable/
@@ -67,7 +73,7 @@ Signed-By: /usr/share/keyrings/anysphere.gpg" | sudo tee /etc/apt/sources.list.d
     # 7. VS Code
     if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
         echo "=> Adding VS Code repository..."
-        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/packages.microsoft.gpg > /dev/null
+        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/packages.microsoft.gpg > /dev/null
         echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
     fi
 
@@ -94,7 +100,7 @@ elif [ "$OS" = "Darwin" ]; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
     echo "=> Running Homebrew bundle..."
-    brew bundle --file="$HOME/dotfiles/Brewfile"
+    brew bundle --file="$DOTFILES_DIR/Brewfile"
     
     STOW_OS="fish-macos"
 else
@@ -148,15 +154,15 @@ fi
 # 5. Decrypt SSH Keys
 echo "=> Checking SSH keys..."
 if [ ! -f "$HOME/.ssh/id_rsa" ]; then
-    if [ -f "$HOME/dotfiles/ssh/.ssh/id_rsa.age" ]; then
+    if [ -f "$DOTFILES_DIR/ssh/.ssh/id_rsa.age" ]; then
         mkdir -p "$HOME/.ssh"
         chmod 700 "$HOME/.ssh"
         echo "=> Encrypted SSH key found. Please enter your passphrase to decrypt:"
-        age -d -o "$HOME/.ssh/id_rsa" "$HOME/dotfiles/ssh/.ssh/id_rsa.age"
+        age -d -o "$HOME/.ssh/id_rsa" "$DOTFILES_DIR/ssh/.ssh/id_rsa.age"
         chmod 600 "$HOME/.ssh/id_rsa"
         echo "=> SSH key successfully decrypted."
     else
-        echo "=> No encrypted SSH key found at ~/dotfiles/ssh/.ssh/id_rsa.age. Skipping."
+        echo "=> No encrypted SSH key found at $DOTFILES_DIR/ssh/.ssh/id_rsa.age. Skipping."
     fi
 else
     echo "=> SSH key already exists at ~/.ssh/id_rsa. Skipping decryption."
@@ -164,16 +170,19 @@ fi
 
 # 6. Stow Packages
 echo "=> Stowing configuration packages..."
-cd "$HOME/dotfiles"
-stow --restow -t ~ fish
-stow --restow -t ~ "$STOW_OS"
-stow --restow -t ~ ssh
+cd "$DOTFILES_DIR"
 
-# Safely stow packages if directories exist
-for pkg in git zellij zed tabby cursor vscode gh sublime-text utilities; do
+stow_package() {
+    local pkg="$1"
     if [ -d "$pkg" ]; then
-        stow --restow -t ~ "$pkg"
+        stow --restow -t "$HOME" "$pkg"
+    else
+        echo "=> Stow package '$pkg' not found. Skipping."
     fi
+}
+
+for pkg in bash fish "$STOW_OS" ssh git zellij zed tabby cursor vscode gh sublime-text utilities; do
+    stow_package "$pkg"
 done
 
 # 7. Set Default Shell
@@ -184,9 +193,9 @@ if ! grep -q "$FISH_PATH" /etc/shells; then
 fi
 
 if [ "$OS" = "Darwin" ]; then
-    CURRENT_SHELL="$(dscl . -read /Users/$USER UserShell | awk '{print $2}')"
+    CURRENT_SHELL="$(dscl . -read /Users/"$USER" UserShell | awk '{print $2}')"
 else
-    CURRENT_SHELL="$(getent passwd $USER | awk -F: '{print $7}')"
+    CURRENT_SHELL="$(getent passwd "$USER" | awk -F: '{print $7}')"
 fi
 
 if [ "$CURRENT_SHELL" != "$FISH_PATH" ]; then
