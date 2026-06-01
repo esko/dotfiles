@@ -15,47 +15,61 @@ if [ "$OS" = "Linux" ]; then
     sudo mkdir -p -m 755 /etc/apt/keyrings
     
     # 1. Fish 4.x
-    echo "=> Adding Fish 4.x repository..."
-    curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg > /dev/null
-    echo "deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /" | sudo tee /etc/apt/sources.list.d/shells:fish:release:4.list > /dev/null
+    if [ ! -f /etc/apt/sources.list.d/shells:fish:release:4.list ]; then
+        echo "=> Adding Fish 4.x repository..."
+        curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg > /dev/null
+        echo "deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /" | sudo tee /etc/apt/sources.list.d/shells:fish:release:4.list > /dev/null
+    fi
 
     # 2. GitHub CLI
-    echo "=> Adding GitHub CLI repository..."
-    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
+        echo "=> Adding GitHub CLI repository..."
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    fi
     
     # 3. Zed Editor (Julian Fairfax repository)
-    echo "=> Adding Zed repository..."
-    curl -fsSL https://julianfairfax.codeberg.page/package-repo/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/julians-package-repo.gpg > /dev/null
-    echo "deb [ signed-by=/usr/share/keyrings/julians-package-repo.gpg ] https://julianfairfax.codeberg.page/package-repo/debs packages main" | sudo tee /etc/apt/sources.list.d/julians-package-repo.list > /dev/null
+    if [ ! -f /etc/apt/sources.list.d/julians-package-repo.list ]; then
+        echo "=> Adding Zed repository..."
+        curl -fsSL https://julianfairfax.codeberg.page/package-repo/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/julians-package-repo.gpg > /dev/null
+        echo "deb [ signed-by=/usr/share/keyrings/julians-package-repo.gpg ] https://julianfairfax.codeberg.page/package-repo/debs packages main" | sudo tee /etc/apt/sources.list.d/julians-package-repo.list > /dev/null
+    fi
 
     # 4. Tabby Terminal
-    echo "=> Adding Tabby Terminal repository..."
-    curl -fsSL https://packagecloud.io/eugeny/tabby/gpgkey | gpg --dearmor | sudo tee /etc/apt/keyrings/eugeny_tabby-archive-keyring.gpg > /dev/null
-    echo "deb [signed-by=/etc/apt/keyrings/eugeny_tabby-archive-keyring.gpg] https://packagecloud.io/eugeny/tabby/debian/ bookworm main" | sudo tee /etc/apt/sources.list.d/eugeny_tabby.list > /dev/null
+    if [ ! -f /etc/apt/sources.list.d/eugeny_tabby.list ]; then
+        echo "=> Adding Tabby Terminal repository..."
+        curl -fsSL https://packagecloud.io/eugeny/tabby/gpgkey | gpg --dearmor | sudo tee /etc/apt/keyrings/eugeny_tabby-archive-keyring.gpg > /dev/null
+        echo "deb [signed-by=/etc/apt/keyrings/eugeny_tabby-archive-keyring.gpg] https://packagecloud.io/eugeny/tabby/debian/ bookworm main" | sudo tee /etc/apt/sources.list.d/eugeny_tabby.list > /dev/null
+    fi
 
     # 5. Sublime Text
-    echo "=> Adding Sublime Text repository..."
-    wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
-    echo "Types: deb
+    if [ ! -f /etc/apt/sources.list.d/sublime-text.sources ]; then
+        echo "=> Adding Sublime Text repository..."
+        wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
+        echo "Types: deb
 URIs: https://download.sublimetext.com/
 Suites: apt/stable/
 Signed-By: /etc/apt/keyrings/sublimehq-pub.asc" | sudo tee /etc/apt/sources.list.d/sublime-text.sources > /dev/null
+    fi
 
     # 6. Cursor Editor
-    echo "=> Adding Cursor repository..."
-    curl -fsSL https://downloads.cursor.com/aptrepo/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/anysphere.gpg > /dev/null
-    echo "Types: deb
+    if [ ! -f /etc/apt/sources.list.d/cursor.sources ]; then
+        echo "=> Adding Cursor repository..."
+        curl -fsSL https://downloads.cursor.com/aptrepo/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/anysphere.gpg > /dev/null
+        echo "Types: deb
 URIs: https://downloads.cursor.com/aptrepo
 Suites: stable
 Components: main
 Architectures: amd64,arm64
 Signed-By: /usr/share/keyrings/anysphere.gpg" | sudo tee /etc/apt/sources.list.d/cursor.sources > /dev/null
+    fi
 
     # 7. VS Code
-    echo "=> Adding VS Code repository..."
-    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/packages.microsoft.gpg > /dev/null
-    echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+    if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
+        echo "=> Adding VS Code repository..."
+        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/packages.microsoft.gpg > /dev/null
+        echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+    fi
 
     # Update and Install
     echo "=> Updating package lists and installing software..."
