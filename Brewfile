@@ -20,3 +20,14 @@ brew "lazygit"
 
 # Prompt and Multiplexer
 brew "zellij"
+
+# GitHub CLI
+brew "gh"
+
+# GUI Applications (Casks)
+cask "zed"
+cask "tabby"
+cask "sublime-text"
+cask "cursor"
+cask "visual-studio-code"
+cask "vlc"

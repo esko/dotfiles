@@ -9,23 +9,61 @@ echo "========================================"
 # 1. OS Detection & Package Installation
 OS="$(uname -s)"
 if [ "$OS" = "Linux" ]; then
-    echo "=> Linux detected. Installing core dependencies via apt..."
-    sudo apt-get update
-    sudo apt-get install -y stow fish age curl git wget build-essential
+    echo "=> Linux detected. Setting up repositories and installing packages..."
     
-    # Check Fish version and upgrade if < 4.0
-    FISH_VERSION=$(fish --version | awk '{print $3}')
-    REQUIRED_VERSION="4.0.0"
-    if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$FISH_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
-        echo "=> Fish version $FISH_VERSION is older than $REQUIRED_VERSION. Upgrading..."
-        # Debian OBS repository for Fish 4.x
-        echo "=> Adding Fish 4.x repository for Debian..."
-        curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg > /dev/null
-        echo "deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /" | sudo tee /etc/apt/sources.list.d/shells:fish:release:4.list > /dev/null
-        
-        sudo apt-get update
-        sudo apt-get install -y fish
-    fi
+    # Create keyrings directory
+    sudo mkdir -p -m 755 /etc/apt/keyrings
+    
+    # 1. Fish 4.x
+    echo "=> Adding Fish 4.x repository..."
+    curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg > /dev/null
+    echo "deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /" | sudo tee /etc/apt/sources.list.d/shells:fish:release:4.list > /dev/null
+
+    # 2. GitHub CLI
+    echo "=> Adding GitHub CLI repository..."
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    
+    # 3. Zed Editor (Julian Fairfax repository)
+    echo "=> Adding Zed repository..."
+    curl -fsSL https://julianfairfax.codeberg.page/package-repo/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/julians-package-repo.gpg > /dev/null
+    echo "deb [ signed-by=/usr/share/keyrings/julians-package-repo.gpg ] https://julianfairfax.codeberg.page/package-repo/debs packages main" | sudo tee /etc/apt/sources.list.d/julians-package-repo.list > /dev/null
+
+    # 4. Tabby Terminal
+    echo "=> Adding Tabby Terminal repository..."
+    curl -fsSL https://packagecloud.io/eugeny/tabby/gpgkey | gpg --dearmor | sudo tee /etc/apt/keyrings/eugeny_tabby-archive-keyring.gpg > /dev/null
+    echo "deb [signed-by=/etc/apt/keyrings/eugeny_tabby-archive-keyring.gpg] https://packagecloud.io/eugeny/tabby/debian/ bookworm main" | sudo tee /etc/apt/sources.list.d/eugeny_tabby.list > /dev/null
+
+    # 5. Sublime Text
+    echo "=> Adding Sublime Text repository..."
+    wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
+    echo "Types: deb
+URIs: https://download.sublimetext.com/
+Suites: apt/stable/
+Signed-By: /etc/apt/keyrings/sublimehq-pub.asc" | sudo tee /etc/apt/sources.list.d/sublime-text.sources > /dev/null
+
+    # 6. Cursor Editor
+    echo "=> Adding Cursor repository..."
+    curl -fsSL https://downloads.cursor.com/aptrepo/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/anysphere.gpg > /dev/null
+    echo "Types: deb
+URIs: https://downloads.cursor.com/aptrepo
+Suites: stable
+Components: main
+Architectures: amd64,arm64
+Signed-By: /usr/share/keyrings/anysphere.gpg" | sudo tee /etc/apt/sources.list.d/cursor.sources > /dev/null
+
+    # 7. VS Code
+    echo "=> Adding VS Code repository..."
+    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/packages.microsoft.gpg > /dev/null
+    echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+
+    # Update and Install
+    echo "=> Updating package lists and installing software..."
+    sudo apt-get update
+    sudo apt-get install -y stow fish age curl git wget build-essential \
+        vulkan-tools lsb-release nano adw-gtk3 \
+        python3-secretstorage python3-gi gir1.2-secret-1 gnome-keyring libsecret-tools python3-pip \
+        gh zed tabby-terminal sublime-text cursor code vlc
 
     # Install Rust if not present
     if ! command -v cargo >/dev/null 2>&1; then
@@ -88,7 +126,7 @@ fi
 # 4. NPM Packages
 echo "=> Installing global NPM packages..."
 if command -v npm >/dev/null 2>&1; then
-    npm install -g hunkdiff @google/gemini-cli @openai/codex
+    npm install -g hunkdiff @google/gemini-cli @openai/codex @google/jules agent-browser command-code pnpm
 else
     echo "=> npm not found. Skipping NPM packages."
 fi
@@ -117,9 +155,12 @@ stow --restow -t ~ fish
 stow --restow -t ~ "$STOW_OS"
 stow --restow -t ~ ssh
 
-# Safely stow git and zellij if directories exist
-if [ -d "git" ]; then stow --restow -t ~ git; fi
-if [ -d "zellij" ]; then stow --restow -t ~ zellij; fi
+# Safely stow packages if directories exist
+for pkg in git zellij zed tabby cursor vscode gh sublime-text utilities; do
+    if [ -d "$pkg" ]; then
+        stow --restow -t ~ "$pkg"
+    fi
+done
 
 # 7. Set Default Shell
 echo "=> Setting Fish as the default shell..."

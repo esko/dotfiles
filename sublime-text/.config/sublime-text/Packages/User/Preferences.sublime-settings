@@ -1,0 +1,12 @@
+{
+    "theme": "Adaptive.sublime-theme",
+    "font_size": 11,
+    "gtk_client_side_window_decorations": true,
+    "themed_title_bar": true,
+	"hardware_acceleration": true,
+    "ignored_packages":
+    [
+		"Vintage",
+    ],
+    "color_scheme": "Catppuccin Frappe.sublime-color-scheme",
+}
