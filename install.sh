@@ -126,7 +126,7 @@ Signed-By: /usr/share/keyrings/anysphere.gpg" | sudo tee /etc/apt/sources.list.d
     echo "=> Updating package lists and installing software..."
     sudo apt-get update
     sudo apt-get install -y stow fish age curl git wget build-essential \
-        vulkan-tools lsb-release nano adw-gtk3 \
+        vulkan-tools lsb-release nano adw-gtk3 fonts-jetbrains-mono \
         python3-secretstorage python3-gi gir1.2-secret-1 gnome-keyring libsecret-tools python3-pip \
         python3-venv pipx pciutils shellcheck \
         gh zed tabby-terminal sublime-text cursor code vlc
@@ -202,7 +202,7 @@ fi
 # 5. Cargo Packages (Linux only)
 if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
     echo "=> Installing Cargo packages..."
-    for pkg in bat eza zellij; do
+    for pkg in bat eza starship zellij; do
         if ! command -v $pkg >/dev/null 2>&1; then
             cargo install $pkg
         else
@@ -219,7 +219,14 @@ else
     echo "=> npm not found. Skipping NPM packages."
 fi
 
-# 7. Decrypt SSH Keys
+# 7. Editor Themes
+for editor in code cursor; do
+    if command -v "$editor" >/dev/null 2>&1; then
+        "$editor" --install-extension catppuccin.catppuccin-vsc
+    fi
+done
+
+# 8. Decrypt SSH Keys
 echo "=> Checking SSH keys..."
 if [ ! -f "$HOME/.ssh/id_rsa" ]; then
     if [ -f "$DOTFILES_DIR/ssh/.ssh/id_rsa.age" ]; then
@@ -236,7 +243,7 @@ else
     echo "=> SSH key already exists at ~/.ssh/id_rsa. Skipping decryption."
 fi
 
-# 8. Stow Packages
+# 9. Stow Packages
 echo "=> Stowing configuration packages..."
 cd "$DOTFILES_DIR"
 
@@ -256,7 +263,7 @@ stow_package() {
     fi
 }
 
-for pkg in bash fish "$STOW_OS" ssh git zellij zed cursor vscode gh sublime-text utilities; do
+for pkg in bash fish "$STOW_OS" ssh git starship zellij zed cursor vscode gh sublime-text utilities; do
     stow_package "$pkg"
 done
 
@@ -269,7 +276,7 @@ if [ ! -e "$TABBY_CONFIG" ]; then
     chmod 600 "$TABBY_CONFIG"
 fi
 
-# 9. Set Default Shell
+# 10. Set Default Shell
 echo "=> Setting Fish as the default shell..."
 FISH_PATH="$(which fish)"
 if ! grep -q "$FISH_PATH" /etc/shells; then

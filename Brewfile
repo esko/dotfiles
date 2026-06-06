@@ -22,12 +22,14 @@ brew "zoxide"
 brew "lazygit"
 
 # Prompt and Multiplexer
+brew "starship"
 brew "zellij"
 
 # GitHub CLI
 brew "gh"
 
 # GUI Applications (Casks)
+cask "font-jetbrains-mono-nerd-font"
 cask "zed"
 cask "tabby"
 cask "sublime-text"

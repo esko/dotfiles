@@ -1,3 +1,4 @@
 {
-    "window.autoDetectColorScheme": true
+    "window.autoDetectColorScheme": false,
+    "workbench.colorTheme": "Catppuccin Frappé"
 }
