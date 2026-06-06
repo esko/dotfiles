@@ -28,6 +28,16 @@ The installer also sets up rustup, Node.js via fnm, uv, Claude Code, ShellCheck,
 and the platform-specific development packages declared in `install.sh` and
 `Brewfile`.
 
+The SSH private key can be stored as `ssh/.ssh/id_rsa.age`. Create or refresh
+it with a passphrase before committing:
+
+```bash
+./scripts/encrypt-ssh-key.sh
+```
+
+The installer decrypts it to `~/.ssh/id_rsa` when the key is not already
+present.
+
 To only link the dotfiles without installing packages:
 
 ```bash
