@@ -1,5 +1,5 @@
 [core]
-	pager = hunk
+	pager = hunk pager
 [merge]
 	conflictStyle = zdiff3
 [user]
@@ -13,3 +13,5 @@
 	helper = !/usr/bin/gh auth git-credential
 [url "git@github.com:"]
 	insteadOf = https://github.com/
+[init]
+	defaultBranch = main

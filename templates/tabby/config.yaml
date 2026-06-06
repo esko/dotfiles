@@ -173,6 +173,9 @@ hotkeys:
     - Ctrl-Shift-P
   toggle-window:
     - Ctrl-Space
+  toggle-voice-dictation:
+    - F9
+  cancel-voice-dictation: []
 terminal:
   searchOptions: {}
   colorScheme:
@@ -226,7 +229,8 @@ terminal:
   paletteGenerate: true
   hideTabIndex: true
   showTabProfileIcon: true
-  fontSize: 15
+  frontend: xterm
+  font: JetBrainsMono Nerd Font Mono
 ssh: {}
 clickableLinks: {}
 accessibility: {}
@@ -236,7 +240,8 @@ providerBlacklist: []
 commandBlacklist: []
 profileBlacklist: []
 enableWelcomeTab: false
-pluginBlacklist: []
 profileDefaults:
   ssh:
     disableDynamicTitle: true
+voiceDictation: {}
+pluginBlacklist: []

@@ -1,6 +1,9 @@
 *.log
-fish_variables
+fish_variables*
 
 # micro editor backups and history
 utilities/.config/micro/backups/
 utilities/.config/micro/buffers/
+
+# Machine-local authentication and secrets
+gh/.config/gh/hosts.yml

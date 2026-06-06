@@ -172,6 +172,13 @@ fi
 echo "=> Stowing configuration packages..."
 cd "$DOTFILES_DIR"
 
+# Prevent Stow from folding directories that also contain machine-local state.
+mkdir -p \
+    "$HOME/.config/fish" \
+    "$HOME/.config/gh" \
+    "$HOME/.config/btop" \
+    "$HOME/.config/micro"
+
 stow_package() {
     local pkg="$1"
     if [ -d "$pkg" ]; then
@@ -181,9 +188,18 @@ stow_package() {
     fi
 }
 
-for pkg in bash fish "$STOW_OS" ssh git zellij zed tabby cursor vscode gh sublime-text utilities; do
+for pkg in bash fish "$STOW_OS" ssh git zellij zed cursor vscode gh sublime-text utilities; do
     stow_package "$pkg"
 done
+
+# Seed Tabby without replacing machine-local vault data.
+TABBY_CONFIG="$HOME/.config/tabby/config.yaml"
+if [ ! -e "$TABBY_CONFIG" ]; then
+    echo "=> Seeding Tabby configuration..."
+    mkdir -p "$(dirname "$TABBY_CONFIG")"
+    cp "$DOTFILES_DIR/templates/tabby/config.yaml" "$TABBY_CONFIG"
+    chmod 600 "$TABBY_CONFIG"
+fi
 
 # 8. Set Default Shell
 echo "=> Setting Fish as the default shell..."

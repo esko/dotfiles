@@ -115,5 +115,6 @@ fi
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 
-# Added by Antigravity CLI installer
-export PATH="/home/esko/.local/bin:$PATH"
+if [ -f "$HOME/.cargo/env" ]; then
+    . "$HOME/.cargo/env"
+fi

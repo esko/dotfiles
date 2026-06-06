@@ -5,14 +5,7 @@ if status is-interactive
     bind \cz '__fish_echo fg 2>/dev/null'
 end
 
-
-# Added by Antigravity CLI installer
-set -gx PATH "/home/esko/.local/bin" $PATH
-
-# Enforce included Cursor Agent CLI budget before interactive runs.
-function agent --wraps agent
-    /home/esko/.cursor/hooks/agent-budget-check.sh $argv
-end
+fish_add_path --global "$HOME/.local/bin" "$HOME/.cargo/bin"
 
 # Enable Truecolor for micro
 set -gx MICRO_TRUECOLOR 1

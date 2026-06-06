@@ -10,7 +10,8 @@ Managed with [GNU Stow](https://www.gnu.org/software/stow/).
 - `fish-linux/`: Linux-specific Fish shell configuration
 - `fish-macos/`: macOS-specific Fish shell configuration
 - `zellij/`: Zellij terminal multiplexer configuration
-- `zed/`, `tabby/`, `cursor/`, `vscode/`, `gh/`, `sublime-text/`: App-specific configuration
+- `zed/`, `cursor/`, `vscode/`, `gh/`, `sublime-text/`: Stowed app configuration
+- `templates/tabby/`: Seed configuration that preserves Tabby's machine-local vault
 - `utilities/`: Various CLI utilities (bat, btop, micro)
 
 ## Usage
@@ -26,6 +27,6 @@ cd ~/dotfiles
 To only link the dotfiles without installing packages:
 
 ```bash
-stow --restow -t "$HOME" bash fish fish-linux git ssh zellij zed tabby cursor vscode gh sublime-text utilities
+stow --restow -t "$HOME" bash fish fish-linux git ssh zellij zed cursor vscode gh sublime-text utilities
 # On macOS, use fish-macos instead of fish-linux.
 ```
