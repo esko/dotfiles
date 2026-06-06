@@ -49,6 +49,27 @@ persist_homebrew_path() {
     fi
 }
 
+install_jetbrains_mono_nerd_font() {
+    local font_dir font_tmp_dir
+
+    if fc-list | grep -Fq "JetBrainsMono Nerd Font Mono"; then
+        echo "=> JetBrainsMono Nerd Font is already installed. Skipping."
+        return
+    fi
+
+    echo "=> Installing JetBrainsMono Nerd Font..."
+    font_dir="$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+    font_tmp_dir="$(mktemp -d)"
+
+    mkdir -p "$font_dir"
+    curl -fsSL \
+        https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip \
+        -o "$font_tmp_dir/JetBrainsMono.zip"
+    unzip -q -o "$font_tmp_dir/JetBrainsMono.zip" "*.ttf" -d "$font_dir"
+    fc-cache -f "$font_dir"
+    rm -rf "$font_tmp_dir"
+}
+
 echo "========================================"
 echo "  Dotfiles Automated Installation       "
 echo "========================================"
@@ -126,10 +147,12 @@ Signed-By: /usr/share/keyrings/anysphere.gpg" | sudo tee /etc/apt/sources.list.d
     echo "=> Updating package lists and installing software..."
     sudo apt-get update
     sudo apt-get install -y stow fish age curl git wget build-essential \
-        vulkan-tools lsb-release nano adw-gtk3 fonts-jetbrains-mono \
+        vulkan-tools lsb-release nano adw-gtk3 unzip fontconfig \
         python3-secretstorage python3-gi gir1.2-secret-1 gnome-keyring libsecret-tools python3-pip \
         python3-venv pipx pciutils shellcheck \
         gh zed tabby-terminal sublime-text cursor code vlc
+
+    install_jetbrains_mono_nerd_font
 
     STOW_OS="fish-linux"
 elif [ "$OS" = "Darwin" ]; then
