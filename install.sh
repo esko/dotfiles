@@ -266,6 +266,29 @@ else
     echo "=> SSH key already exists at ~/.ssh/id_rsa. Skipping decryption."
 fi
 
+if [ -f "$HOME/.ssh/id_rsa" ]; then
+    echo "=> Preparing and authorizing the SSH public key..."
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+    SSH_PUBLIC_KEY="$(ssh-keygen -y -f "$HOME/.ssh/id_rsa")"
+
+    if [ ! -f "$HOME/.ssh/id_rsa.pub" ]; then
+        printf '%s\n' "$SSH_PUBLIC_KEY" > "$HOME/.ssh/id_rsa.pub"
+        chmod 644 "$HOME/.ssh/id_rsa.pub"
+        echo "=> SSH public key written to ~/.ssh/id_rsa.pub."
+    fi
+
+    touch "$HOME/.ssh/authorized_keys"
+    chmod 600 "$HOME/.ssh/authorized_keys"
+
+    if ! grep -Fqx "$SSH_PUBLIC_KEY" "$HOME/.ssh/authorized_keys"; then
+        printf '%s\n' "$SSH_PUBLIC_KEY" >> "$HOME/.ssh/authorized_keys"
+        echo "=> SSH public key added to ~/.ssh/authorized_keys."
+    else
+        echo "=> SSH public key is already authorized."
+    fi
+fi
+
 # 9. Stow Packages
 echo "=> Stowing configuration packages..."
 cd "$DOTFILES_DIR"

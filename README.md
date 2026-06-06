@@ -37,7 +37,8 @@ it with a passphrase before committing:
 ```
 
 The installer decrypts it to `~/.ssh/id_rsa` when the key is not already
-present.
+present, recreates `~/.ssh/id_rsa.pub`, and adds the public key to
+`~/.ssh/authorized_keys` for incoming SSH connections.
 
 To only link the dotfiles without installing packages:
 
