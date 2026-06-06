@@ -85,13 +85,6 @@ Signed-By: /usr/share/keyrings/anysphere.gpg" | sudo tee /etc/apt/sources.list.d
         python3-secretstorage python3-gi gir1.2-secret-1 gnome-keyring libsecret-tools python3-pip \
         gh zed tabby-terminal sublime-text cursor code vlc
 
-    # Install Rust if not present
-    if ! command -v cargo >/dev/null 2>&1; then
-        echo "=> Installing Rust via rustup..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-        export PATH="$HOME/.cargo/bin:$PATH"
-    fi
-
     STOW_OS="fish-linux"
 elif [ "$OS" = "Darwin" ]; then
     echo "=> macOS detected."
@@ -108,7 +101,14 @@ else
     exit 1
 fi
 
-# 2. Node.js via fnm
+# 2. Rust and Cargo via rustup
+if [ ! -x "$HOME/.cargo/bin/rustup" ]; then
+    echo "=> Installing Rust and Cargo via rustup..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+fi
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# 3. Node.js via fnm
 echo "=> Setting up fnm and Node.js..."
 if ! command -v fnm >/dev/null 2>&1; then
     if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
@@ -131,7 +131,7 @@ else
     echo "=> fnm installation failed or not found."
 fi
 
-# 3. Cargo Packages (Linux only)
+# 4. Cargo Packages (Linux only)
 if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
     echo "=> Installing Cargo packages..."
     for pkg in bat eza zellij; do
@@ -143,7 +143,7 @@ if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
     done
 fi
 
-# 4. NPM Packages
+# 5. NPM Packages
 echo "=> Installing global NPM packages..."
 if command -v npm >/dev/null 2>&1; then
     npm install -g hunkdiff @google/gemini-cli @openai/codex @google/jules agent-browser command-code pnpm
@@ -151,7 +151,7 @@ else
     echo "=> npm not found. Skipping NPM packages."
 fi
 
-# 5. Decrypt SSH Keys
+# 6. Decrypt SSH Keys
 echo "=> Checking SSH keys..."
 if [ ! -f "$HOME/.ssh/id_rsa" ]; then
     if [ -f "$DOTFILES_DIR/ssh/.ssh/id_rsa.age" ]; then
@@ -168,7 +168,7 @@ else
     echo "=> SSH key already exists at ~/.ssh/id_rsa. Skipping decryption."
 fi
 
-# 6. Stow Packages
+# 7. Stow Packages
 echo "=> Stowing configuration packages..."
 cd "$DOTFILES_DIR"
 
@@ -185,7 +185,7 @@ for pkg in bash fish "$STOW_OS" ssh git zellij zed tabby cursor vscode gh sublim
     stow_package "$pkg"
 done
 
-# 7. Set Default Shell
+# 8. Set Default Shell
 echo "=> Setting Fish as the default shell..."
 FISH_PATH="$(which fish)"
 if ! grep -q "$FISH_PATH" /etc/shells; then
