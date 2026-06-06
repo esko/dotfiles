@@ -22,6 +22,33 @@ activate_homebrew() {
     eval "$("$brew_bin" shellenv)"
 }
 
+persist_homebrew_path() {
+    local brew_bin shell_name startup_file init_line
+
+    brew_bin="$(find_brew)" || return 1
+    shell_name="$(basename "${SHELL:-}")"
+
+    case "$shell_name" in
+        fish|bash)
+            # These are configured by the dotfiles stowed later in this script.
+            return 0
+            ;;
+        zsh)
+            startup_file="$HOME/.zprofile"
+            ;;
+        *)
+            startup_file="$HOME/.profile"
+            ;;
+    esac
+
+    init_line="eval \"\$($brew_bin shellenv)\""
+    touch "$startup_file"
+
+    if ! grep -Fqx "$init_line" "$startup_file"; then
+        printf '\n%s\n' "$init_line" >> "$startup_file"
+    fi
+}
+
 echo "========================================"
 echo "  Dotfiles Automated Installation       "
 echo "========================================"
@@ -117,22 +144,10 @@ elif [ "$OS" = "Darwin" ]; then
         exit 1
     fi
 
-    BREW_BIN="$(find_brew)"
-    USER_SHELL="$(basename "${SHELL:-}")"
-    case "$USER_SHELL" in
-        fish)
-            echo "=> Fish detected. Homebrew will use: eval ($BREW_BIN shellenv)"
-            ;;
-        bash)
-            echo "=> Bash detected. Homebrew will use: eval \"\$($BREW_BIN shellenv)\""
-            ;;
-        zsh)
-            echo "=> Zsh detected. Add 'eval \"\$($BREW_BIN shellenv)\"' to ~/.zprofile if Fish is not your default shell."
-            ;;
-        *)
-            echo "=> Shell '$USER_SHELL' detected. Add the output of '$BREW_BIN shellenv' to its startup config."
-            ;;
-    esac
+    if ! persist_homebrew_path; then
+        echo "=> Failed to configure Homebrew for the detected shell."
+        exit 1
+    fi
 
     echo "=> Running Homebrew bundle..."
     brew bundle --file="$DOTFILES_DIR/Brewfile"
