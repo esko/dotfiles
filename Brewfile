@@ -4,6 +4,9 @@
 brew "stow"
 brew "fish"
 brew "age"
+brew "shellcheck"
+brew "pipx"
+brew "uv"
 
 # Core replacements
 brew "eza"

@@ -24,6 +24,10 @@ cd ~/dotfiles
 ./install.sh
 ```
 
+The installer also sets up rustup, Node.js via fnm, uv, Claude Code, ShellCheck,
+and the platform-specific development packages declared in `install.sh` and
+`Brewfile`.
+
 To only link the dotfiles without installing packages:
 
 ```bash

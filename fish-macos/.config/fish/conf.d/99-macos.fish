@@ -1,6 +1,13 @@
-# Initialize Homebrew paths (critical for SSH on Apple Silicon)
-if test -d /opt/homebrew
-    fish_add_path /opt/homebrew/bin /opt/homebrew/sbin
+# Initialize Homebrew for Apple Silicon or Intel macOS.
+set -l brew_bin
+if test -x /opt/homebrew/bin/brew
+    set brew_bin /opt/homebrew/bin/brew
+else if test -x /usr/local/bin/brew
+    set brew_bin /usr/local/bin/brew
+end
+
+if test -n "$brew_bin"
+    eval ($brew_bin shellenv)
 end
 
 if status is-interactive

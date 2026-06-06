@@ -4,6 +4,24 @@ set -e
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+find_brew() {
+    if command -v brew >/dev/null 2>&1; then
+        command -v brew
+    elif [ -x /opt/homebrew/bin/brew ]; then
+        echo /opt/homebrew/bin/brew
+    elif [ -x /usr/local/bin/brew ]; then
+        echo /usr/local/bin/brew
+    else
+        return 1
+    fi
+}
+
+activate_homebrew() {
+    local brew_bin
+    brew_bin="$(find_brew)" || return 1
+    eval "$("$brew_bin" shellenv)"
+}
+
 echo "========================================"
 echo "  Dotfiles Automated Installation       "
 echo "========================================"
@@ -83,15 +101,39 @@ Signed-By: /usr/share/keyrings/anysphere.gpg" | sudo tee /etc/apt/sources.list.d
     sudo apt-get install -y stow fish age curl git wget build-essential \
         vulkan-tools lsb-release nano adw-gtk3 \
         python3-secretstorage python3-gi gir1.2-secret-1 gnome-keyring libsecret-tools python3-pip \
+        python3-venv pipx pciutils shellcheck \
         gh zed tabby-terminal sublime-text cursor code vlc
 
     STOW_OS="fish-linux"
 elif [ "$OS" = "Darwin" ]; then
     echo "=> macOS detected."
-    if ! command -v brew >/dev/null 2>&1; then
+    if ! find_brew >/dev/null 2>&1; then
         echo "=> Homebrew not found. Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
+
+    if ! activate_homebrew; then
+        echo "=> Homebrew installation failed or brew could not be located."
+        exit 1
+    fi
+
+    BREW_BIN="$(find_brew)"
+    USER_SHELL="$(basename "${SHELL:-}")"
+    case "$USER_SHELL" in
+        fish)
+            echo "=> Fish detected. Homebrew will use: eval ($BREW_BIN shellenv)"
+            ;;
+        bash)
+            echo "=> Bash detected. Homebrew will use: eval \"\$($BREW_BIN shellenv)\""
+            ;;
+        zsh)
+            echo "=> Zsh detected. Add 'eval \"\$($BREW_BIN shellenv)\"' to ~/.zprofile if Fish is not your default shell."
+            ;;
+        *)
+            echo "=> Shell '$USER_SHELL' detected. Add the output of '$BREW_BIN shellenv' to its startup config."
+            ;;
+    esac
+
     echo "=> Running Homebrew bundle..."
     brew bundle --file="$DOTFILES_DIR/Brewfile"
     
@@ -108,7 +150,18 @@ if [ ! -x "$HOME/.cargo/bin/rustup" ]; then
 fi
 export PATH="$HOME/.cargo/bin:$PATH"
 
-# 3. Node.js via fnm
+# 3. Developer CLIs
+if [ "$OS" = "Linux" ] && ! command -v uv >/dev/null 2>&1; then
+    echo "=> Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
+fi
+
+if ! command -v claude >/dev/null 2>&1; then
+    echo "=> Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+# 4. Node.js via fnm
 echo "=> Setting up fnm and Node.js..."
 if ! command -v fnm >/dev/null 2>&1; then
     if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
@@ -131,7 +184,7 @@ else
     echo "=> fnm installation failed or not found."
 fi
 
-# 4. Cargo Packages (Linux only)
+# 5. Cargo Packages (Linux only)
 if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
     echo "=> Installing Cargo packages..."
     for pkg in bat eza zellij; do
@@ -143,7 +196,7 @@ if [ "$OS" = "Linux" ] && command -v cargo >/dev/null 2>&1; then
     done
 fi
 
-# 5. NPM Packages
+# 6. NPM Packages
 echo "=> Installing global NPM packages..."
 if command -v npm >/dev/null 2>&1; then
     npm install -g hunkdiff @google/gemini-cli @openai/codex @google/jules agent-browser command-code pnpm
@@ -151,7 +204,7 @@ else
     echo "=> npm not found. Skipping NPM packages."
 fi
 
-# 6. Decrypt SSH Keys
+# 7. Decrypt SSH Keys
 echo "=> Checking SSH keys..."
 if [ ! -f "$HOME/.ssh/id_rsa" ]; then
     if [ -f "$DOTFILES_DIR/ssh/.ssh/id_rsa.age" ]; then
@@ -168,7 +221,7 @@ else
     echo "=> SSH key already exists at ~/.ssh/id_rsa. Skipping decryption."
 fi
 
-# 7. Stow Packages
+# 8. Stow Packages
 echo "=> Stowing configuration packages..."
 cd "$DOTFILES_DIR"
 
@@ -201,7 +254,7 @@ if [ ! -e "$TABBY_CONFIG" ]; then
     chmod 600 "$TABBY_CONFIG"
 fi
 
-# 8. Set Default Shell
+# 9. Set Default Shell
 echo "=> Setting Fish as the default shell..."
 FISH_PATH="$(which fish)"
 if ! grep -q "$FISH_PATH" /etc/shells; then
