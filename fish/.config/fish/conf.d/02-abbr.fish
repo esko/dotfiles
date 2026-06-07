@@ -43,4 +43,5 @@ if status is-interactive
     abbr -a gp 'git push'
     abbr -a gd 'git diff'
     abbr -a glg 'git log --stat'
+    abbr -a lh 'lefthook'
 end

@@ -172,7 +172,10 @@ elif [ "$OS" = "Darwin" ]; then
         exit 1
     fi
 
-    echo "=> Running Homebrew bundle..."
+    echo "=> Enabling Homebrew Bundle..."
+    brew tap homebrew/bundle
+
+    echo "=> Running Homebrew bundle, including Mac App Store apps..."
     brew bundle --file="$DOTFILES_DIR/Brewfile"
     
     STOW_OS="fish-macos"
@@ -189,6 +192,10 @@ fi
 export PATH="$HOME/.cargo/bin:$PATH"
 
 # 3. Developer CLIs
+# shellcheck source=scripts/install-lefthook.sh
+source "$DOTFILES_DIR/scripts/install-lefthook.sh"
+install_lefthook
+
 if [ "$OS" = "Linux" ] && ! command -v uv >/dev/null 2>&1; then
     echo "=> Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh

@@ -7,6 +7,7 @@ brew "age"
 brew "shellcheck"
 brew "pipx"
 brew "uv"
+brew "mas"
 
 # Core replacements
 brew "eza"
@@ -20,6 +21,7 @@ brew "fnm"
 brew "fzf"
 brew "zoxide"
 brew "lazygit"
+brew "lefthook"
 
 # Prompt and Multiplexer
 brew "starship"
@@ -36,3 +38,6 @@ cask "sublime-text"
 cask "cursor"
 cask "visual-studio-code"
 cask "vlc"
+
+# Mac App Store Applications
+mas "KeepSolid VPN Unlimited", id: 694633015

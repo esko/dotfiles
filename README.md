@@ -25,9 +25,16 @@ cd ~/dotfiles
 ./install.sh
 ```
 
-The installer also sets up rustup, Node.js via fnm, uv, Claude Code, ShellCheck,
-and the platform-specific development packages declared in `install.sh` and
-`Brewfile`.
+The installer also sets up rustup, Node.js via fnm, uv, Claude Code, Lefthook,
+ShellCheck, and the platform-specific development packages declared in
+`install.sh` and `Brewfile`. On macOS, Brew Bundle also installs the declared
+Mac App Store apps through `mas`, including KeepSolid VPN Unlimited.
+
+Install Lefthook alone on an existing machine:
+
+```bash
+./scripts/install-lefthook.sh
+```
 
 The SSH private key can be stored as `ssh/.ssh/id_rsa.age`. Create or refresh
 it with a passphrase before committing:
