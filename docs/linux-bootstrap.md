@@ -68,7 +68,23 @@ nix build .#homeConfigurations.crostini.activationPackage
 nix build .#homeConfigurations.debianTrixie.activationPackage
 ```
 
-The Trixie container profile contains the same shared CLI/toolchain profile,
-but leaves host Docker, GPU/device access, keyrings, desktop services, and GUI
-applications outside the container. Opting into GUI packages requires an
-explicit module override and a container image that supplies a display server.
+The Trixie container profile mirrors the complete shared CLI/toolchain profile
+(including `rg`, `fd`, `fzf`, `zoxide`, Git/GitHub tooling, Rust/Go/Zig, Node,
+Python/uv, agent CLIs, and shell tooling), but leaves host Docker, GPU/device
+access, keyrings, desktop services, and GUI applications outside the
+container.
+
+The approved GUI set is Zed, Tabby, Sublime Text, Cursor, VS Code, VLC, and
+Google Chrome. `dotfiles.container.allowGuiPackages` remains `false` and
+`guiPackages` defaults to an empty list in the flake output. A display-enabled
+image must opt in explicitly, for example:
+
+```nix
+{
+  dotfiles.container.allowGuiPackages = true;
+  dotfiles.container.guiPackages = [ pkgs.zed-editor pkgs.vlc ];
+}
+```
+
+This opt-in does not provide a display server or host device access; those
+remain image/runtime responsibilities.

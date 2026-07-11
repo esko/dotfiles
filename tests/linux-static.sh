@@ -11,7 +11,7 @@ for token in enableHostTools enableDesktopConfigs nativeBootstrap android-tools 
   rg -q --fixed-strings "$token" "$linux_module"
 done
 
-for token in enableSharedTools allowGuiPackages Debian Trixie Docker GUI; do
+for token in enableSharedTools allowGuiPackages guiPackages Debian Trixie Docker GUI; do
   rg -q --fixed-strings "$token" "$container_module" "$bootstrap"
 done
 
