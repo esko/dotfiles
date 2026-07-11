@@ -38,6 +38,10 @@ architecture and bootstrap commands are documented in
 [`docs/nix-architecture.md`](docs/nix-architecture.md). The legacy installer
 remains unchanged while the migration slices are reviewed.
 
+To install Nix interactively on a supported Linux or macOS host, review and
+run `./scripts/bootstrap-nix.sh`. It never runs automatically during a Home
+Manager activation.
+
 Install Lefthook alone on an existing machine:
 
 ```bash
