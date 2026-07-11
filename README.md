@@ -30,6 +30,14 @@ ShellCheck, and the platform-specific development packages declared in
 `install.sh` and `Brewfile`. On macOS, Brew Bundle also installs the declared
 Mac App Store apps through `mas`, including KeepSolid VPN Unlimited.
 
+## Nix (migration in progress)
+
+The new `flake.nix` provides standalone Home Manager profiles for Crostini and
+Debian Trixie containers, plus a nix-darwin profile for the Mac Mini. The
+architecture and bootstrap commands are documented in
+[`docs/nix-architecture.md`](docs/nix-architecture.md). The legacy installer
+remains unchanged while the migration slices are reviewed.
+
 Install Lefthook alone on an existing machine:
 
 ```bash

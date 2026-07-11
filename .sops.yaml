@@ -1,0 +1,6 @@
+# Placeholder only. Replace the recipient before adding any encrypted files.
+# No private keys or plaintext secrets belong in this repository.
+creation_rules:
+  - path_regex: secrets/.*\.(yaml|yml|json|env)$
+    age:
+      - age1REPLACE_WITH_YOUR_RECIPIENT
