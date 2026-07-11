@@ -8,9 +8,11 @@ Mac Mini's ProxyBridge v3.2.0 installation:
   helper processes listed in the JSON template)
 
 The `protocol` and `action` values use ProxyBridge's observed enum casing
-(`TCP` and `PROXY`). The JSON maps directly to the corresponding `proxyRules`
-array in the app's plist defaults; it is kept separate so credentials and
-machine-local plist state cannot be copied accidentally.
+(`TCP` and `PROXY`). The process, host, and port selectors are semicolon-
+delimited strings, and each rule carries an explicit `enabled` boolean. This
+JSON maps directly to the corresponding `proxyRules` array in the app's plist
+defaults; it is kept separate so credentials and machine-local plist state
+cannot be copied accidentally.
 
 This is a reference template only. Home Manager does not write ProxyBridge
 defaults, install the upstream signed package, or approve its system extension.

@@ -4,20 +4,12 @@
   "proxyPort": 8889,
   "proxyRules": [
     {
-      "processNames": [
-        "com.openai.codex",
-        "com.openai.codex.helper",
-        "Codex",
-        "codex",
-        "Codex Helper",
-        "Codex Helper (Renderer)",
-        "app-server",
-        "bare-modifier-monitor"
-      ],
-      "targetHosts": ["*"],
-      "targetPorts": ["*"],
+      "processNames": "com.openai.codex; com.openai.codex.helper; Codex; codex; Codex Helper; Codex Helper (Renderer); app-server; bare-modifier-monitor",
+      "targetHosts": "*",
+      "targetPorts": "*",
       "protocol": "TCP",
-      "action": "PROXY"
+      "action": "PROXY",
+      "enabled": true
     }
   ]
 }
