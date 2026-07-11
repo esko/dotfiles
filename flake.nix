@@ -27,6 +27,8 @@
 
       linuxPkgs = import nixpkgs {
         system = linuxSystem;
+        config.allowUnfreePredicate = pkg:
+          builtins.elem (nixpkgs.lib.getName pkg) [ "unrar" ];
       };
       linuxArgs = {
         inherit username stateVersion;

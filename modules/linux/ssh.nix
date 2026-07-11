@@ -49,12 +49,15 @@ in
 
     home.file.".ssh/id_ed25519.pub" = lib.mkIf (cfg.publicKey != null) {
       text = "${cfg.publicKey}\n";
-      mode = "0644";
     };
 
     home.file.".ssh/authorized_keys" = lib.mkIf cfg.manageAuthorizedKeys {
       text = "${lib.concatStringsSep "\n" cfg.authorizedKeys}\n";
-      mode = "0600";
     };
+
+    home.activation.dotfilesAuthorizedKeysMode = lib.mkIf cfg.manageAuthorizedKeys
+      (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        $DRY_RUN_CMD chmod 600 "$HOME/.ssh/authorized_keys"
+      '');
   };
 }

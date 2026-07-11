@@ -6,7 +6,12 @@ let
   # documenting the external install path in docs/shell-migration.md.
   optionalPackages = names:
     builtins.concatLists (map
-      (name: lib.optional (builtins.hasAttr name pkgs) (builtins.getAttr name pkgs))
+      (name:
+        if builtins.hasAttr name pkgs then
+          let package = builtins.getAttr name pkgs;
+          in lib.optional (lib.attrByPath [ "meta" "license" "free" ] true package) package
+        else
+          [ ])
       names);
 in
 {
@@ -28,7 +33,7 @@ in
 
     # Portable diagnostics and utilities audited from the existing hosts.
     curl wget openssh fastfetch p7zip unzip dos2unix dnsutils
-    inetutils nettools traceroute nmap bun cargo-binstall golangci-lint
+    inetutils nmap bun cargo-binstall golangci-lint
     python3Packages.pytest croc
   ] ++ optionalPackages [
     # Optional package names vary by nixpkgs channel and should not block
@@ -64,10 +69,10 @@ in
 
   programs.git = {
     enable = true;
-    userName = "Esko Pyyluoma";
-    userEmail = "esko.pyyluoma@gmail.com";
     ignores = [ ".DS_Store" ".direnv/" "result" "result-*" "*.swp" "*~" ];
-    extraConfig = {
+    settings = {
+      user.name = "Esko Pyyluoma";
+      user.email = "esko.pyyluoma@gmail.com";
       core.pager = "hunk pager";
       merge.conflictStyle = "zdiff3";
       init.defaultBranch = "main";

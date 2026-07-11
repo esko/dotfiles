@@ -39,7 +39,7 @@ in
       # Approved Linux-only tools and runtime integration.
       "android-tools" "adb" "jdk17" "openjdk17" "vulkan-tools"
       "libva-utils" "intel-gpu-tools" "intel-media-driver" "mesa"
-      "libdrm" "clinfo" "ocl-icd" "onevpl-intel-gpu"
+      "libdrm" "clinfo" "ocl-icd" "vpl-gpu-rt" "nettools" "traceroute"
       "wl-clipboard" "xclip" "xdotool" "xkbcomp" "xkeyboard-config"
       "fontconfig" "gnome-keyring" "libsecret" "libsecret-tools"
       "p7zip" "unrar" "streamlink" "qmk" "litert-lm"

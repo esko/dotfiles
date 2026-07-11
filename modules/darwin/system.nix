@@ -1,6 +1,7 @@
 { config, lib, pkgs, username, homeDirectory, stateVersion, hostName, ... }:
 
 {
+  system.stateVersion = 7;
   system.primaryUser = username;
   users.users.${username}.home = homeDirectory;
 

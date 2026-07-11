@@ -67,18 +67,20 @@ in
           IdentityFile ~/.ssh/id_ed25519
           IdentitiesOnly yes
       '';
-      mode = "0600";
     };
 
     home.file.".ssh/id_ed25519.pub" = lib.mkIf (sshCfg.publicKey != null) {
       text = "${sshCfg.publicKey}\n";
-      mode = "0644";
     };
 
     home.file.".ssh/authorized_keys" = lib.mkIf sshCfg.manageAuthorizedKeys {
       text = "${lib.concatStringsSep "\n" sshCfg.authorizedKeys}\n";
-      mode = "0600";
     };
+
+    home.activation.dotfilesAuthorizedKeysMode = lib.mkIf sshCfg.manageAuthorizedKeys
+      (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        $DRY_RUN_CMD chmod 600 "$HOME/.ssh/authorized_keys"
+      '');
 
     # This is an opt-in secret interface only. No encrypted file is committed
     # by the module and no private key is generated when it is disabled.
