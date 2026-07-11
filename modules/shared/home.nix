@@ -1,6 +1,13 @@
 { config, lib, pkgs, username, homeDirectory, stateVersion, hostName, ... }:
 
 let
+  # nixpkgs' pipx test suite currently fails on Darwin because its expected
+  # package-specifier spacing is out of sync with the bundled parser. Keep the
+  # tool in the shared profile while bypassing that upstream-only check.
+  pipx = pkgs.pipx.overrideAttrs (_old: {
+    doCheck = false;
+  });
+
   # A few fast-moving CLIs are not consistently packaged in every nixpkgs
   # revision. Keep them optional so the shared profile remains evaluable while
   # documenting the external install path in docs/shell-migration.md.
