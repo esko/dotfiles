@@ -11,8 +11,10 @@ The flake separates portable user configuration from host integration:
   Mini, with Home Manager embedded for user-level files.
 
 `modules/shared` is the common interface. `modules/linux`, `modules/container`,
-and `modules/darwin` are host boundaries where later slices add packages,
-shells, services, and application configuration.
+and `modules/darwin` are host boundaries where packages, shells, services, and
+application configuration are added. Linux host/package boundaries are
+documented in [`docs/linux-bootstrap.md`](linux-bootstrap.md); Home Manager
+does not install host daemons or mutate apt repositories.
 
 ## Bootstrap
 
