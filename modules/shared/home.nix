@@ -70,10 +70,10 @@ in
       merge.conflictStyle = "zdiff3";
       init.defaultBranch = "main";
       credential."https://github.com" = {
-        helper = [ "" "!/usr/bin/gh auth git-credential" ];
+        helper = [ "" "!gh auth git-credential" ];
       };
       credential."https://gist.github.com" = {
-        helper = [ "" "!/usr/bin/gh auth git-credential" ];
+        helper = [ "" "!gh auth git-credential" ];
       };
       url."git@github.com:".insteadOf = "https://github.com/";
     };
@@ -140,9 +140,6 @@ in
       zr = "zellij run --";
       zrf = "zellij run --floating --";
 
-      # Agent CLI parity with the reference zsh setup.
-      cc = "claude --dangerously-skip-permissions";
-      co = "codex --full-auto";
     };
     initContent = builtins.readFile ./zsh/init.zsh;
   };
