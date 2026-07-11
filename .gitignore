@@ -24,3 +24,8 @@ gh/.config/gh/hosts.yml
 **/state_*.sqlite
 **/*api-key*
 **/*apikey*
+**/.env
+**/*.pem
+**/*.key
+**/id_rsa
+**/id_ed25519
