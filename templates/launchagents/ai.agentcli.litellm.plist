@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>ai.agentcli.litellm</string>
+	<key>Disabled</key>
+	<true/>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>KeepAlive</key>
+	<false/>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__LITELLM_BIN__</string>
+		<string>--config</string>
+		<string>__LITELLM_CONFIG__</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>__HOME__</string>
+		<key>LITELLM_MASTER_KEY_FILE</key>
+		<string>__LITELLM_MASTER_KEY_FILE__</string>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>__LITELLM_LOG_DIR__/litellm.stdout.log</string>
+	<key>StandardErrorPath</key>
+	<string>__LITELLM_LOG_DIR__/litellm.stderr.log</string>
+</dict>
+</plist>

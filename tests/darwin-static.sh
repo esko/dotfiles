@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -eu
+
+root_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+for template in \
+  templates/launchagents/ai.agentcli.litellm.plist \
+  templates/launchagents/com.esko.llama-server.plist \
+  templates/proxybridge/ProxyBridge.defaults.json \
+  templates/proxybridge/README.md; do
+  test -f "$root_dir/$template"
+done
+
+if command -v plutil >/dev/null 2>&1; then
+  plutil -lint "$root_dir"/templates/launchagents/*.plist
+elif command -v perl >/dev/null 2>&1 && perl -MXML::Parser -e 1 >/dev/null 2>&1; then
+  perl -MXML::Parser -e 'for (@ARGV) { XML::Parser->new->parsefile($_) }' \
+    "$root_dir"/templates/launchagents/*.plist
+else
+  echo "darwin-static: no plutil or Perl XML::Parser; skipped plist parse" >&2
+fi
+
+jq empty "$root_dir/templates/proxybridge/ProxyBridge.defaults.json"
+grep -q '"protocol": "TCP"' "$root_dir/templates/proxybridge/ProxyBridge.defaults.json"
+grep -q '"action": "PROXY"' "$root_dir/templates/proxybridge/ProxyBridge.defaults.json"
+for plist in "$root_dir"/templates/launchagents/*.plist; do
+  grep -q '<key>Disabled</key>' "$plist"
+  grep -q '<true/>' "$plist"
+done
+
+echo "Darwin static checks passed"

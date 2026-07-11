@@ -75,6 +75,7 @@
             home-manager.extraSpecialArgs = darwinArgs;
             home-manager.users.${username} = {
               imports = [
+                sops-nix.homeManagerModules.sops
                 ./modules/shared/home.nix
                 ./modules/darwin/home.nix
               ];
