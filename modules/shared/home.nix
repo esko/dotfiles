@@ -6,6 +6,7 @@ let
   # tool in the shared profile while bypassing that upstream-only check.
   pipx = pkgs.pipx.overrideAttrs (_old: {
     doCheck = false;
+    pytestCheckPhase = ":";
   });
 
   # A few fast-moving CLIs are not consistently packaged in every nixpkgs
