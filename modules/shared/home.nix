@@ -46,7 +46,8 @@ in
 
     # Language/toolchain foundations. fnm manages the active Node release;
     # Python is available for uv-managed virtual environments and pytest.
-    rustup rustc cargo go zig fnm nodejs pnpm uv python3 pipx
+    # rustup supplies the rustc/cargo shims and manages the selected toolchain.
+    rustup go zig fnm nodejs pnpm uv python3 pipx
 
     # Portable diagnostics and utilities audited from the existing hosts.
     curl wget openssh fastfetch p7zip unzip dos2unix dnsutils
