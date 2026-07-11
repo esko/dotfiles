@@ -54,7 +54,15 @@ Home Manager publishes non-invasive templates for portable baselines:
 Keep machine-specific additions in `~/.Xresources.local` and host launchers in
 `~/.local/share/applications`. Review the existing `~/.config/xkb/finner.xkb`
 before promoting it to a shared file; it contains physical-key assumptions.
-Sommelier/Weston service wiring likewise stays in the host layer.
+Sommelier/Weston service wiring likewise stays in the host layer. The current
+host-owned set to preserve (disabled until manually tested) is:
+
+- `~/.sommelierrc` and its `setxkbmap -layout finansi` hook
+- `~/.config/systemd/user/finner-x11-keymap.service`
+- `~/.local/bin/zed-crostini-x11` and other local launch wrappers
+
+These files may be imported into a future Linux host module only after their
+`DISPLAY`, `WAYLAND_DISPLAY`, Sommelier socket, and XKB paths are parameterized.
 
 Do not enable a launcher from Home Manager merely because a template exists:
 the wrapper must be tested against the active Crostini/Bruschetta display
