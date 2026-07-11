@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+context_dir="${LLM_CONTEXT_DIR:-${HOME:?}/.local/share/llm-context}"
+seed_dir="${LLM_CONTEXT_SEED:-${HOME:?}/.codex/memories}"
+
+usage() {
+    cat <<'EOF'
+Usage: llm-context-sync {status|pull|rebase|push}
+
+Environment:
+  LLM_CONTEXT_DIR   private checkout (default: ~/.local/share/llm-context)
+  LLM_CONTEXT_SEED  local Codex memory seed (default: ~/.codex/memories)
+
+The command performs only the requested Git operation. It never creates a
+checkout, copies memory files, or runs as an agent/shell hook.
+EOF
+}
+
+require_checkout() {
+    if [ ! -d "$context_dir/.git" ] && [ ! -f "$context_dir/.git" ]; then
+        printf 'Private context checkout not found: %s\n' "$context_dir" >&2
+        printf 'Clone the private repository there or set LLM_CONTEXT_DIR.\n' >&2
+        exit 2
+    fi
+}
+
+upstream_ref() {
+    local branch
+    branch="$(git -C "$context_dir" symbolic-ref --quiet --short HEAD || true)"
+    if [ -z "$branch" ]; then
+        printf 'Private context checkout is detached; choose a branch before rebasing.\n' >&2
+        exit 2
+    fi
+    git -C "$context_dir" rev-parse --abbrev-ref "$branch@{upstream}" 2>/dev/null || {
+        printf 'No upstream configured for branch %s. Configure one before rebasing.\n' "$branch" >&2
+        exit 2
+    }
+}
+
+command="${1:-}"
+case "$command" in
+    status)
+        if [ ! -d "$context_dir/.git" ] && [ ! -f "$context_dir/.git" ]; then
+            printf 'Private context checkout: unavailable (%s)\n' "$context_dir"
+        else
+            git -C "$context_dir" status --short --branch
+        fi
+        if [ -d "$seed_dir" ]; then
+            printf 'Codex memory seed: available (%s)\n' "$seed_dir"
+        else
+            printf 'Codex memory seed: unavailable (%s)\n' "$seed_dir"
+        fi
+        ;;
+    pull)
+        require_checkout
+        git -C "$context_dir" pull --ff-only
+        ;;
+    rebase)
+        require_checkout
+        git -C "$context_dir" fetch --prune
+        git -C "$context_dir" rebase "$(upstream_ref)"
+        ;;
+    push)
+        require_checkout
+        git -C "$context_dir" push
+        ;;
+    -h|--help)
+        usage
+        ;;
+    *)
+        usage >&2
+        exit 64
+        ;;
+esac
