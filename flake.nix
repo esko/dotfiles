@@ -43,6 +43,7 @@
         pkgs = linuxPkgs;
         extraSpecialArgs = linuxArgs // { hostName = "crostini"; };
         modules = [
+          sops-nix.homeManagerModules.sops
           ./modules/shared/home.nix
           ./modules/linux/home.nix
         ];

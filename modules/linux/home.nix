@@ -12,6 +12,8 @@ let
       names);
 in
 {
+  imports = [ ./ssh.nix ];
+
   options.dotfiles.linux = {
     enableHostTools = mkOption {
       type = types.bool;
