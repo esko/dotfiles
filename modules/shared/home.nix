@@ -10,6 +10,8 @@ let
       names);
 in
 {
+  imports = [ ./llm-context.nix ];
+
   # Keep identity and state explicit so every host profile is reproducible.
   home.username = username;
   home.homeDirectory = homeDirectory;
@@ -162,4 +164,6 @@ in
   ];
 
   programs.home-manager.enable = true;
+
+  dotfiles.llmContext.enable = true;
 }
