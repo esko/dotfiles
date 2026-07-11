@@ -39,8 +39,15 @@ only the durable context that is safe to share privately.
 The Home Manager module installs the public templates at
 `~/.config/llm-context/templates` and the `llm-context-sync` command. It does
 not require that the private checkout exists, and it does not overwrite an
-existing client configuration. When a private checkout is ready, link a
-tool's file explicitly after reviewing it, for example:
+existing client configuration.
+
+Import `modules/shared/llm-context.nix` from each shared Home Manager module
+and set `dotfiles.llmContext.enable = true` for profiles that should expose
+the helper. Keep the option disabled for profiles that intentionally do not
+share agent context.
+
+When a private checkout is ready, link a tool's file explicitly after
+reviewing it, for example:
 
 ```sh
 target="$HOME/.codex/AGENTS.md"
