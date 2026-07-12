@@ -31,10 +31,10 @@ in
 
   config = {
     # Shared Home Manager already supplies the approved CLI/toolchain set.
-    # Keep only container-safe additions here; Docker, drivers, keyrings,
-    # desktop services, and device access belong to the outer Debian host.
+    # Containers cannot assume a host-provided SSH client, so keep Nix OpenSSH
+    # here. Native Debian and macOS profiles use their system clients instead.
     home.packages = lib.optionals config.dotfiles.container.enableSharedTools (optionalPackages [
-      "ca-certificates" "procps" "which"
+      "ca-certificates" "openssh" "procps" "which"
     ]) ++ lib.optionals config.dotfiles.container.allowGuiPackages config.dotfiles.container.guiPackages;
 
     # GUI packages are intentionally opt-in and empty by default. This option
