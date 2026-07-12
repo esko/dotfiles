@@ -47,9 +47,10 @@ in
 
     # System Manager builds users.users.<name>.packages into
     # /etc/profiles/per-user/<name>, but unlike NixOS it does not currently add
-    # that profile to login PATH. Add it explicitly for the embedded Baguette
-    # Home Manager profile so rg, gh, git, delta, and the rest are discoverable.
+    # that profile to login PATH. Baguette also keeps Determinate Nix host-owned,
+    # so expose its stable multi-user profile explicitly before shell hooks run.
     home.sessionPath = lib.optionals (hostName == "baguette") [
+      "/nix/var/nix/profiles/default/bin"
       "/etc/profiles/per-user/${username}/bin"
     ];
 
