@@ -45,6 +45,14 @@ in
       "p7zip" "unrar" "streamlink" "qmk" "litert-lm"
     ]);
 
+    # System Manager builds users.users.<name>.packages into
+    # /etc/profiles/per-user/<name>, but unlike NixOS it does not currently add
+    # that profile to login PATH. Add it explicitly for the embedded Baguette
+    # Home Manager profile so rg, gh, git, delta, and the rest are discoverable.
+    home.sessionPath = lib.optionals (hostName == "baguette") [
+      "/etc/profiles/per-user/${username}/bin"
+    ];
+
     # Keep templates separate from active host files. Home Manager must not
     # replace an existing Crostini/Baguette display configuration.
     home.file = mkIf config.dotfiles.linux.enableDesktopConfigs {
