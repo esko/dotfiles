@@ -11,6 +11,17 @@
   # Embedded Home Manager invokes Nix during its per-user activation service.
   nix.enable = true;
 
+  # System Manager advertises its binary cache through flake nixConfig. Trust
+  # that specific cache and signing key globally so unprivileged builds can use
+  # it without making the interactive user a root-equivalent Nix trusted user.
+  nix.settings = {
+    substituters = lib.mkAfter [ "https://cache.numtide.com" ];
+    trusted-substituters = [ "https://cache.numtide.com" ];
+    trusted-public-keys = lib.mkAfter [
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+    ];
+  };
+
   # The pinned System Manager revision does not include Debian in its runtime
   # allow-list. Keep the distro check explicit until Debian is recognized there.
   system-manager.allowAnyDistro = true;
