@@ -6,7 +6,7 @@ module="$repo_root/modules/shared/home.nix"
 init="$repo_root/modules/shared/zsh/init.zsh"
 
 for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'bun' 'home.sessionPath' '@openai/codex' 'npx --yes'; do
-  rg -q --fixed-strings "$token" "$module"
+  rg -q --fixed-strings "$token" "$module" "$init"
 done
 
 for function_name in backup extract mkcd rfv; do
