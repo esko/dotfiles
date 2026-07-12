@@ -8,9 +8,8 @@
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [ "unrar" ];
 
-  # v1.1.0 predates System Manager's Debian distribution allow-list even though
-  # Debian is supported. Keep the distro check explicit until the pinned release
-  # includes Debian in supportedIds.
+  # The pinned System Manager revision does not include Debian in its runtime
+  # allow-list. Keep the distro check explicit until Debian is recognized there.
   system-manager.allowAnyDistro = true;
 
   # Userborn merges the declaration with the existing Debian account database.
