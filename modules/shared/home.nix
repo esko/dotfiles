@@ -41,7 +41,9 @@ in
     rustup go zig fnm nodejs pnpm uv python3 pipx
 
     # Portable diagnostics and utilities audited from the existing hosts.
-    curl wget openssh fastfetch p7zip unzip dos2unix dnsutils
+    # Native hosts use their OS-provided OpenSSH client so its feature set
+    # matches /etc/ssh/ssh_config. The container module adds Nix OpenSSH.
+    curl wget fastfetch p7zip unzip dos2unix dnsutils
     inetutils nmap bun cargo-binstall golangci-lint
     python3Packages.pytest croc
   ] ++ optionalPackages [
@@ -88,13 +90,15 @@ in
       core.pager = "hunk pager";
       merge.conflictStyle = "zdiff3";
       init.defaultBranch = "main";
+      # HTTPS is the bootstrap-safe default. `gh auth login` supplies the
+      # credential helper; individual remotes can opt into SSH after a host key
+      # has been enrolled with GitHub.
       credential."https://github.com" = {
         helper = [ "" "!gh auth git-credential" ];
       };
       credential."https://gist.github.com" = {
         helper = [ "" "!gh auth git-credential" ];
       };
-      url."git@github.com:".insteadOf = "https://github.com/";
     };
   };
 
