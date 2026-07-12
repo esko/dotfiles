@@ -33,6 +33,7 @@ Then evaluate the intended profile:
 
 ```sh
 nix build .#homeConfigurations.crostini.activationPackage
+nix build .#homeConfigurations.baguette.activationPackage
 nix build .#homeConfigurations.debianTrixie.activationPackage
 nix build .#darwinConfigurations.mini.system
 ```
