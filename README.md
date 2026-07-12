@@ -44,11 +44,12 @@ nix build .#systemConfigs.debianTrixieContainer
 nix build .#darwinConfigurations.mini.system
 ```
 
-Activate Baguette only after reviewing the build and the preflight checks:
+Activate Baguette only after reviewing the build and the preflight checks. Use
+the same System Manager revision pinned by the flake:
 
 ```bash
 sudo apt install zsh
-nix run github:numtide/system-manager/v1.1.0 -- \
+nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
   switch --flake "$PWD#baguette" --sudo
 ```
 
