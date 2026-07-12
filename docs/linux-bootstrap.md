@@ -16,10 +16,15 @@ test "${VERSION_CODENAME:-}" = trixie
 test "$(uname -m)" = x86_64
 ```
 
-The pinned System Manager v1.1.0 release does not yet include Debian in its
+The pinned post-1.1 System Manager revision still does not include Debian in its
 runtime allow-list, so the profile explicitly enables the documented
 `allowAnyDistro` escape hatch. Repository preflight checks compensate by
-verifying the exact Baguette account and shell assumptions before activation.
+verifying the exact Baguette account, distro, architecture, and shell
+assumptions before activation.
+
+The revision is newer than v1.1.0 because Home Manager 26.05 requires System
+Manager's `system.userActivationScripts` compatibility stub. Keep the activation
+CLI on the same pinned revision as `flake.nix`.
 
 ## Native Debian packages
 
@@ -79,7 +84,7 @@ build result before switching.
 ## Activate Baguette
 
 ```sh
-nix run github:numtide/system-manager/v1.1.0 -- \
+nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
   switch --flake "$PWD#baguette" --sudo
 ```
 
@@ -139,7 +144,7 @@ PID 1 and owns its users and services:
 
 ```sh
 nix build .#systemConfigs.debianTrixieContainer
-nix run github:numtide/system-manager/v1.1.0 -- \
+nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
   switch --flake "$PWD#debianTrixieContainer" --sudo
 ```
 
