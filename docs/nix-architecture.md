@@ -1,42 +1,92 @@
 # Nix architecture
 
-The flake separates portable user configuration from host integration:
+The flake separates portable user configuration from privileged host policy:
 
-- `homeConfigurations.crostini` is a standalone Home Manager profile for the
-  current Crostini host.
-- `homeConfigurations.baguette` is the containerless/native Debian Trixie host
-  profile for the future Baguette migration. It intentionally uses the Linux
-  host module, not the headless container module.
-- `homeConfigurations.debianTrixie` is a deliberately small profile for Debian
-  Trixie containers. It does not install Docker, GUI applications, keyrings, or
-  device integration.
+- `homeConfigurations.crostini` is a standalone Home Manager profile. ChromeOS
+  and Crostini retain ownership of users, services, devices, and system files.
+- `systemConfigs.baguette` is the native Debian Trixie configuration. System
+  Manager owns the reviewed root-level boundary and activates Home Manager for
+  the existing `esko` account.
+- `homeConfigurations.debianTrixie` is the default lightweight container
+  profile. It does not require systemd or privileged activation.
+- `systemConfigs.debianTrixieContainer` is an explicit machine-like container
+  profile for a privileged image with systemd as PID 1.
 - `darwinConfigurations.mini` is a nix-darwin system configuration for the Mac
   Mini, with Home Manager embedded for user-level files.
 
-`modules/shared` is the common interface. `modules/linux`, `modules/container`,
-and `modules/darwin` are host boundaries where packages, shells, services, and
-application configuration are added. Linux host/package boundaries are
-documented in [`docs/linux-bootstrap.md`](linux-bootstrap.md); Home Manager
-does not install host daemons or mutate apt repositories.
+`modules/shared` is the common Home Manager interface. System-level Linux
+settings live in `modules/linux/system.nix` and
+`modules/container/system.nix`; user-level Linux settings remain in the
+corresponding `home.nix` files. This mirrors the nix-darwin pattern without
+pretending Debian is NixOS.
+
+## Ownership boundaries
+
+System Manager may manage:
+
+- declared users, groups, and login shells
+- explicitly declared files under `/etc`
+- systemd units and tmpfiles
+- packages exposed through `/run/system-manager/sw`
+- embedded Home Manager activation
+
+Debian continues to manage:
+
+- the kernel and bootloader
+- apt repositories and base packages
+- hardware drivers and the display manager
+- Docker Engine and host device access
+- files outside System Manager's explicit declarations
+
+The Baguette module deliberately uses `/usr/bin/zsh` as the account shell. The
+Debian package therefore remains the stable `/etc/passwd` target, while Home
+Manager owns `.zshrc`, Starship, completions, aliases, and user packages.
+
+## Account safety
+
+System Manager v1.1.0 uses userborn with mutable users. Before Baguette
+activation, repository assertions verify that:
+
+- `esko` already exists
+- UID and primary GID are `1000:1000`
+- the home directory is `/home/esko`
+- `/usr/bin/zsh` exists and is listed in `/etc/shells`
+
+Passwords are not declared or placed in the Nix store. The `sudo` auxiliary
+group is explicitly retained. A failed preflight stops before privileged
+activation.
 
 ## Bootstrap
 
-Nix is not installed by Home Manager. On a machine with Nix enabled, first
-create and review the lock file:
+Nix itself is installed outside Home Manager and System Manager. First update
+and review the lock file:
 
 ```sh
 nix flake lock
 nix flake check
 ```
 
-Then evaluate the intended profile:
+Then evaluate the intended profiles:
 
 ```sh
 nix build .#homeConfigurations.crostini.activationPackage
-nix build .#homeConfigurations.baguette.activationPackage
+nix build .#systemConfigs.baguette
 nix build .#homeConfigurations.debianTrixie.activationPackage
+nix build .#systemConfigs.debianTrixieContainer
 nix build .#darwinConfigurations.mini.system
 ```
+
+Activate Baguette explicitly:
+
+```sh
+sudo apt install zsh
+nix run github:numtide/system-manager/v1.1.0 -- \
+  switch --flake "$PWD#baguette" --sudo
+```
+
+For a systemd container, run the same command with
+`#debianTrixieContainer` from inside the container. The lightweight container
+profile continues to use `home-manager switch`.
 
 The Darwin configuration keeps Homebrew activation cleanup disabled. Existing
 apps remain untouched until an explicit package policy is added and reviewed.
@@ -68,24 +118,15 @@ and resource limits have been reviewed for the Mini.
 `.sops.yaml` is scaffolding only. The later SSH slice should add encrypted
 material under `secrets/` using age recipients, while keeping private keys,
 recovery keys, and plaintext exports out of Git. No secret files are created by
-the foundation. The Darwin Home Manager module now exposes an opt-in
+the foundation. The Darwin Home Manager module exposes an opt-in
 `dotfiles.darwin.ssh` interface: enable it only after adding a real per-host
-Ed25519 secret (for example `ssh/mini/id_ed25519`) encrypted with the Mini's
-age recipient. The module writes the decrypted key to `~/.ssh/id_ed25519` at
-activation and never creates a key or fake encrypted payload itself. Public-key
-text and an SSH config fragment are separate declarations. Management of
-`~/.ssh/authorized_keys` is disabled by default and requires an explicit,
-non-empty `authorizedKeys` list; it is intentionally not inferred from the
-private key. The generated `~/.ssh/config.d/90-dotfiles-mini.conf` is inert
-until the existing `~/.ssh/config` contains `Include ~/.ssh/config.d/*.conf`;
-the module leaves that hand-maintained file untouched.
+Ed25519 secret encrypted with the Mini's age recipient.
 
 Bootstrap the secret boundary manually on each host:
 
 1. Install `age`/`sops` and configure the host age recipient in `.sops.yaml`.
-2. Add only the encrypted secret under `secrets/`; keep recovery keys and
-   plaintext exports outside the repository.
-3. Set `dotfiles.darwin.ssh.enable = true` in a private host overlay and run a
-   reviewed `darwin-rebuild build` before `switch`.
+2. Add only encrypted secrets under `secrets/`; keep recovery keys and plaintext
+   exports outside the repository.
+3. Enable only the relevant private host overlay and build before switching.
 4. Add `authorizedKeys` only when incoming SSH access is intentionally part of
    that host's role.
