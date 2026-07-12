@@ -38,6 +38,19 @@ nix build .#homeConfigurations.debianTrixie.activationPackage
 nix build .#darwinConfigurations.mini.system
 ```
 
+After activating a Linux Home Manager profile, install the fast-moving
+Node-based CLIs from their published npm packages rather than building their
+nixpkgs derivations:
+
+```bash
+install-node-tools
+# Also download the agent-browser managed browser runtime:
+install-node-tools --with-browser
+```
+
+The installer writes only to the user-owned npm prefix under `~/.local`.
+Re-running it updates the complete approved Node CLI set.
+
 See [`docs/platform-targets.md`](docs/platform-targets.md) for the host matrix
 and [`docs/linux-bootstrap.md`](docs/linux-bootstrap.md) for the Crostini to
 Baguette transition. Host daemons, Docker, display integration, and machine-
@@ -52,13 +65,6 @@ Install Lefthook alone on an existing machine:
 
 ```bash
 ./scripts/install-lefthook.sh
-```
-
-On Crostini, Codex does not need a global installation. Use the npm package
-directly when the optional Nix package is unavailable:
-
-```bash
-npx --yes @openai/codex
 ```
 
 SSH keys and agent context are opt-in private material. Follow the SOPS/age
