@@ -8,6 +8,9 @@
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [ "unrar" ];
 
+  # Embedded Home Manager invokes Nix during its per-user activation service.
+  nix.enable = true;
+
   # The pinned System Manager revision does not include Debian in its runtime
   # allow-list. Keep the distro check explicit until Debian is recognized there.
   system-manager.allowAnyDistro = true;
