@@ -78,20 +78,11 @@ rfv() {
   micro "$file" +"$line"
 }
 
-# Codex is optional in nixpkgs. Keep the command usable through the published
-# npm package when the host only has Node.js/npm and cannot install a global
-# CLI package.
-if (( ! $+commands[codex] && $+commands[npx] )); then
-  codex() {
-    command npx --yes @openai/codex "$@"
-  }
-fi
-
 # Keep a useful shell completion for the locally installed agy CLI. The
 # generated Fish completion remains the source of truth for future expansion.
 if (( $+commands[agy] )); then
   compdef '_arguments \
-    "(-c --continue)"{-c,--continue}' \
+    "(-c --continue)"{-c,--continue} \
     "--add-dir=[directory]:directory:_directories" \
     "--conversation=[conversation id]" \
     "--dangerously-skip-permissions" \
