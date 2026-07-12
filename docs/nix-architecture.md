@@ -42,11 +42,21 @@ The Baguette module deliberately uses `/usr/bin/zsh` as the account shell. The
 Debian package therefore remains the stable `/etc/passwd` target, while Home
 Manager owns `.zshrc`, Starship, completions, aliases, and user packages.
 
+## System Manager compatibility pin
+
+The flake pins System Manager commit
+`96f724be6f1411286e8ad0202e3e624c10116a6d` and makes it follow the same
+nixpkgs input as Home Manager. This post-1.1 revision contains the compatibility
+stubs required by Home Manager 26.05, including
+`system.userActivationScripts`. The v1.1.0 tag is too old for this Home Manager
+release and must not be used for activation.
+
 ## Account safety
 
-System Manager v1.1.0 uses userborn with mutable users. Before Baguette
-activation, repository assertions verify that:
+System Manager uses userborn with mutable users. Before Baguette activation,
+repository assertions verify that:
 
+- the host is Debian Trixie on x86_64
 - `esko` already exists
 - UID and primary GID are `1000:1000`
 - the home directory is `/home/esko`
@@ -80,7 +90,7 @@ Activate Baguette explicitly:
 
 ```sh
 sudo apt install zsh
-nix run github:numtide/system-manager/v1.1.0 -- \
+nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
   switch --flake "$PWD#baguette" --sudo
 ```
 
