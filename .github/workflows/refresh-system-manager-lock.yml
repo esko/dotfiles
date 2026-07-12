@@ -1,0 +1,42 @@
+name: Refresh System Manager lock
+
+on:
+  push:
+    branches:
+      - chore/install-node-clis-from-npm
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: chore/install-node-clis-from-npm
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f
+
+      - name: Refresh lock file
+        run: nix flake lock
+
+      - name: Evaluate migrated targets
+        run: |
+          nix flake check --no-build
+          nix eval .#systemConfigs.baguette.drvPath
+          nix eval .#systemConfigs.debianTrixieContainer.drvPath
+          nix eval .#homeConfigurations.crostini.activationPackage.drvPath
+          nix eval .#homeConfigurations.debianTrixie.activationPackage.drvPath
+
+      - name: Commit generated lock and remove temporary workflow
+        run: |
+          rm .github/workflows/refresh-system-manager-lock.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flake.lock .github/workflows/refresh-system-manager-lock.yml
+          git commit -m "chore: lock System Manager inputs"
+          git push origin HEAD:chore/install-node-clis-from-npm
