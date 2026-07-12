@@ -1,107 +1,112 @@
 # Crostini to Baguette Linux bootstrap
 
-The active Linux machine is Crostini. The `crostini` Home Manager output owns
-its user-facing Linux tools and reviewed X11/Wayland files. It does not pretend
-to manage a Docker daemon,
-kernel drivers, host devices, or GUI installers. Those are installed once on
-the outer Debian host and are intentionally absent from
-`homeConfigurations.debianTrixie`.
+Crostini remains a standalone Home Manager target. Baguette is a native Debian
+Trixie host managed by System Manager with Home Manager embedded for `esko`.
+The distinction is intentional: Crostini is an environment supplied by
+ChromeOS, while Baguette owns its Debian users and services.
 
-The future Baguette host should use Debian Trixie repositories only. Do not
-copy an older Bookworm repository into a Trixie system. Validate the new host
-before reusing any Crostini-specific integration.
-Confirm the host before applying packages:
+## Confirm the Baguette host
+
+Baguette must be Debian Trixie on x86_64:
 
 ```sh
 . /etc/os-release
-test "$ID" = debian && test "${VERSION_CODENAME:-}" = trixie
+test "$ID" = debian
+test "${VERSION_CODENAME:-}" = trixie
+test "$(uname -m)" = x86_64
 ```
 
-## Native host packages
+The pinned System Manager v1.1.0 release does not yet include Debian in its
+runtime allow-list, so the profile explicitly enables the documented
+`allowAnyDistro` escape hatch. Repository preflight checks compensate by
+verifying the exact Baguette account and shell assumptions before activation.
 
-The following are the host boundary approved for Crostini and, after review,
-Baguette:
+## Native Debian packages
 
-- Base network and source-control integration: `openssh-client`,
-  `ca-certificates`, `curl`, and `git`
-- Docker CE: `docker-ce`, `docker-ce-cli`, `containerd.io`,
+System Manager does not replace apt, the kernel, drivers, or the display stack.
+Install and maintain the host-owned packages through reviewed Debian/vendor
+repositories:
+
+- base integration: `openssh-client`, `ca-certificates`, `curl`, `git`, `zsh`
+- Docker host: `docker-ce`, `docker-ce-cli`, `containerd.io`,
   `docker-buildx-plugin`, `docker-compose-plugin`
-- Desktop/device integration: `gnome-keyring`, `libsecret-tools`, `adb`,
+- desktop/device integration: `gnome-keyring`, `libsecret-tools`, `adb`,
   `wl-clipboard`, `xclip`, `xdotool`, `x11-xkb-utils`, `fontconfig`
-- Graphics/runtime support: `vulkan-tools`, `intel-gpu-tools`, VA-API/OpenCL
-  runtime packages appropriate to the host GPU
-- Archive and utility packages: `p7zip-full`, `unrar`, `streamlink`, and
-  `qmk` (where the Debian package or a reviewed upstream install is available)
+- graphics/runtime support: `vulkan-tools`, `intel-gpu-tools`, and appropriate
+  VA-API/OpenCL packages
+- optional utilities not suitable for the shared Nix profile: `unrar`,
+  `streamlink`, and `qmk`
 
-Native Debian and macOS profiles intentionally use the operating system's SSH
-client. Installing a second OpenSSH build through Nix can make the client read
-`/etc/ssh/ssh_config` options that were compiled for a different feature set,
-for example Debian's `GSSAPIAuthentication` option. The headless container
-profile still includes Nix OpenSSH because it cannot assume a host client.
+Use Debian's OpenSSH client. A second Nix OpenSSH build can read Debian's
+`/etc/ssh/ssh_config` with a different compiled feature set, producing warnings
+for options such as `GSSAPIAuthentication`.
 
-GitHub uses HTTPS as the bootstrap-safe default. Authenticate after profile
-activation with `gh auth login`; the managed Git credential helper then handles
-HTTPS remotes. Change an individual remote to `git@github.com:OWNER/REPO.git`
-only after that host has an SSH key enrolled with GitHub.
-
-Docker must be installed from Docker's official Debian Trixie repository after
-its signing key and `deb822` source have been reviewed. The profile does not
-add repositories or run `apt`; this prevents a Home Manager activation from
-silently changing host trust or daemon state.
-
-GUI applications such as Zed, Tabby, Cursor, VS Code, VLC, and Chrome should
-be installed through the approved Debian package, Flatpak, or vendor channel
-for the host. Their launcher files are machine-local and are not overwritten
-by this profile.
-
-## Preserved Crostini integration
-
-Home Manager publishes non-invasive templates for portable baselines:
-
-- `~/.config/dotfiles/templates/Xresources` (120 DPI) and
-  `~/.config/dotfiles/templates/weston.ini` (XWayland module)
-- a Nerd Font fallback under the managed, uniquely named file
-  `~/.config/fontconfig/conf.d/10-dotfiles-symbols.conf`
-- the shared `finner`/Finansi keyboard intent, which remains an explicit host
-  integration because XKB device names and Sommelier wiring differ by machine
-- Sommelier/Weston and Finansi launch wrappers, which remain host-owned and
-  should be enabled only after checking the current display/session variables
-
-Keep machine-specific additions in `~/.Xresources.local` and host launchers in
-`~/.local/share/applications`. Review the existing `~/.config/xkb/finner.xkb`
-before promoting it to a shared file; it contains physical-key assumptions.
-Sommelier/Weston service wiring likewise stays in the host layer. The current
-host-owned set to preserve (disabled until manually tested) is:
-
-- `~/.sommelierrc` and its `setxkbmap -layout finansi` hook
-- `~/.config/systemd/user/finner-x11-keymap.service`
-- `~/.local/bin/zed-crostini-x11` and other local launch wrappers
-
-These files may be imported into a future Baguette host module only after their
-`DISPLAY`, `WAYLAND_DISPLAY`, Sommelier socket, and XKB paths are parameterized.
-
-Do not enable a launcher from Home Manager merely because a template exists:
-the wrapper must be tested against the active Crostini display first, then
-against the Baguette display server, XKB path, and
-`WAYLAND_DISPLAY`/`DISPLAY` environment.
-
-## Evaluate without installing
+At minimum, prepare the shell and verify the existing account:
 
 ```sh
-nix flake check
-nix build .#homeConfigurations.crostini.activationPackage
-nix build .#homeConfigurations.baguette.activationPackage
-nix build .#homeConfigurations.debianTrixie.activationPackage
+sudo apt update
+sudo apt install -y zsh
+
+test -x /usr/bin/zsh
+grep -qxF /usr/bin/zsh /etc/shells
+id esko
+test "$(id -u esko)" = 1000
+test "$(id -g esko)" = 1000
+test "$(getent passwd esko | cut -d: -f6)" = /home/esko
 ```
 
-The Trixie container profile mirrors the complete shared CLI/toolchain profile
-(including `rg`, `fd`, `fzf`, `zoxide`, Git/GitHub tooling, Rust/Go/Zig, Node,
-Python/uv, and shell tooling), but leaves host Docker, GPU/device access,
-keyrings, desktop services, and GUI applications outside the container.
+Do not run `chsh` manually after this migration. System Manager declares the
+login shell and updates the existing mutable account during activation.
+Passwords are not declared.
 
-Fast-moving Node-based CLIs are intentionally not built by Nix. After
-activating the profile, download their published npm packages into the
-user-owned `~/.local` prefix:
+GitHub uses HTTPS as the bootstrap-safe default. Authenticate with
+`gh auth login`; change an individual remote to SSH only after that host has an
+SSH key enrolled with GitHub.
+
+## Build before activation
+
+From the repository checkout:
+
+```sh
+nix flake lock
+nix flake check
+nix build .#systemConfigs.baguette
+```
+
+Building does not mutate `/etc`, users, or services. Review the branch diff and
+build result before switching.
+
+## Activate Baguette
+
+```sh
+nix run github:numtide/system-manager/v1.1.0 -- \
+  switch --flake "$PWD#baguette" --sudo
+```
+
+One System Manager activation now:
+
+- verifies the existing `esko` UID, GID, home, and Debian Zsh installation
+- keeps users mutable and retains `esko` in the Debian `sudo` group
+- changes the account shell to `/usr/bin/zsh`
+- activates the embedded Home Manager configuration
+- generates `.zshrc`, Starship, aliases, completions, and user packages
+
+Log out completely and log back in after the first activation. Confirm:
+
+```zsh
+printf 'argv0=%s\nSHELL=%s\n' "$0" "$SHELL"
+getent passwd esko | cut -d: -f7
+readlink -f ~/.zshrc
+command -v starship
+```
+
+Expected login shell values are `/usr/bin/zsh` and `-zsh`. The Home Manager
+`.zshrc` should resolve into the Nix store and contain a real Starship init path.
+
+## Node-based CLI bootstrap
+
+Fast-moving Node CLIs are not built by Nix. After Home Manager activation, use
+the explicit user-owned npm installer:
 
 ```sh
 install-node-tools
@@ -109,17 +114,49 @@ install-node-tools
 install-node-tools --with-browser
 ```
 
-The approved GUI set is Zed, Tabby, Sublime Text, Cursor, VS Code, VLC, and
-Google Chrome. `dotfiles.container.allowGuiPackages` remains `false` and
-`guiPackages` defaults to an empty list in the flake output. A display-enabled
-image must opt in explicitly, for example:
+The npm prefix is `~/.local`, which is already on the managed PATH.
 
-```nix
-{
-  dotfiles.container.allowGuiPackages = true;
-  dotfiles.container.guiPackages = [ pkgs.zed-editor pkgs.vlc ];
-}
+## Container profiles
+
+There are two distinct Debian Trixie container outputs.
+
+### Lightweight OCI/dev containers
+
+Use this for normal Docker, Podman, and devcontainer images without systemd:
+
+```sh
+nix build .#homeConfigurations.debianTrixie.activationPackage
+home-manager switch --flake .#debianTrixie
 ```
 
-This opt-in does not provide a display server or host device access; those
-remain image/runtime responsibilities.
+This profile owns only `/home/esko` files and user packages. It does not require
+root, modify `/etc/passwd`, or install services.
+
+### Machine-like systemd containers
+
+Use this only for a privileged container that intentionally boots systemd as
+PID 1 and owns its users and services:
+
+```sh
+nix build .#systemConfigs.debianTrixieContainer
+nix run github:numtide/system-manager/v1.1.0 -- \
+  switch --flake "$PWD#debianTrixieContainer" --sudo
+```
+
+A pre-activation assertion rejects this target unless PID 1 is systemd. This is
+not the default for Synology Container Manager or ordinary OCI containers; use
+the lightweight profile unless the image/runtime was deliberately built for
+systemd and granted the required cgroup and privilege access.
+
+## Preserved Crostini integration
+
+Home Manager continues to publish non-invasive templates for Crostini:
+
+- `~/.config/dotfiles/templates/Xresources`
+- `~/.config/dotfiles/templates/weston.ini`
+- `~/.config/dotfiles/templates/finner.xkb`
+- Nerd Font fallback configuration
+
+Live Sommelier, XKB, display, and launcher files remain host-owned until their
+paths and device assumptions are parameterized and tested. Do not activate
+those templates merely because they are present.
