@@ -22,9 +22,9 @@ runtime allow-list, so the profile explicitly enables the documented
 verifying the exact Baguette account, distro, architecture, and shell
 assumptions before activation.
 
-The revision is newer than v1.1.0 because Home Manager 26.05 requires System
-Manager's `system.userActivationScripts` compatibility stub. Keep the activation
-CLI on the same pinned revision as `flake.nix`.
+The revision is newer than v1.1.0 because Home Manager 26.11 on Linux requires
+System Manager's `system.userActivationScripts` compatibility stub. Keep the
+activation CLI on the same pinned revision as `flake.nix`.
 
 ## Native Debian packages
 
@@ -111,7 +111,8 @@ Expected login shell values are `/usr/bin/zsh` and `-zsh`. The Home Manager
 ## Node-based CLI bootstrap
 
 Fast-moving Node CLIs are not built by Nix. After Home Manager activation, use
-the explicit user-owned npm installer:
+the explicit user-owned npm installer. It requires the active `node` runtime to
+be Node.js 24 or newer:
 
 ```sh
 install-node-tools

@@ -38,7 +38,7 @@ Node-based global CLIs are deliberately excluded from nixpkgs. Building their
 Nix derivations can compile Rust, native Node dependencies, or bundled frontend
 sources even though their upstream npm packages already publish runnable code
 or platform binaries. After activating Home Manager, install or update the
-approved set with:
+approved set with the active `node` runtime set to Node.js 24 or newer:
 
 ```sh
 install-node-tools

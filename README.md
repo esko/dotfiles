@@ -60,7 +60,8 @@ or Docker installation.
 
 After activating a Linux Home Manager profile, install the fast-moving
 Node-based CLIs from their published npm packages rather than building their
-nixpkgs derivations:
+nixpkgs derivations. The installer requires the active `node` runtime to be
+Node.js 24 or newer:
 
 ```bash
 install-node-tools

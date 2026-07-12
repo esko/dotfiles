@@ -8,7 +8,11 @@ container_module="$repo_root/modules/container/home.nix"
 bootstrap="$repo_root/docs/linux-bootstrap.md"
 flake="$repo_root/flake.nix"
 
-for token in 'homeConfigurations.crostini' 'homeConfigurations.baguette' 'homeConfigurations.debianTrixie'; do
+for token in 'homeConfigurations.crostini' 'systemConfigs.baguette' 'homeConfigurations.debianTrixie' 'systemConfigs.debianTrixieContainer'; do
+  rg -q --fixed-strings "$token" "$flake"
+done
+
+for token in "checks.\${linuxSystem}" 'baguette = self.systemConfigs.baguette' 'debianTrixieContainer = self.systemConfigs.debianTrixieContainer'; do
   rg -q --fixed-strings "$token" "$flake"
 done
 
@@ -34,9 +38,8 @@ if rg -q '"\.Xresources"|"\.config/weston\.ini"' "$linux_module"; then
   exit 1
 fi
 
-rg -q 'Bookworm' "$bootstrap"
-rg -q 'Sommelier' "$bootstrap"
-rg -q 'Finansi' "$bootstrap"
-rg -q 'launch wrapper' "$bootstrap"
+for token in 'Preserved Crostini integration' 'non-invasive templates' 'Sommelier' 'host-owned'; do
+  rg -q --fixed-strings "$token" "$bootstrap"
+done
 
 printf '%s\n' 'linux/container static checks passed'

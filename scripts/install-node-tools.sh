@@ -42,6 +42,19 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v node >/dev/null 2>&1; then
+  printf '%s\n' "Node.js 24 or newer is required. Activate the Home Manager profile first." >&2
+  exit 1
+fi
+
+node_version=$(node --version 2>/dev/null || true)
+node_major=${node_version#v}
+node_major=${node_major%%.*}
+if [[ ! $node_major =~ ^[0-9]+$ || $node_major -lt 24 ]]; then
+  printf 'Node.js 24 or newer is required; active version is %s.\n' "${node_version:-unknown}" >&2
+  exit 1
+fi
+
 prefix="${NPM_CONFIG_PREFIX:-$HOME/.local}"
 export NPM_CONFIG_PREFIX="$prefix"
 export PATH="$prefix/bin:$PATH"
@@ -75,10 +88,17 @@ EOF
 fi
 
 printf '\nInstalled commands:\n'
+missing_commands=0
 for command_name in agent-browser codex claude gemini jules cmd hunk portless; do
   if command -v "$command_name" >/dev/null 2>&1; then
     printf '  %-15s %s\n' "$command_name" "$(command -v "$command_name")"
   else
     printf '  %-15s %s\n' "$command_name" "not found on PATH"
+    missing_commands=$((missing_commands + 1))
   fi
 done
+
+if [[ $missing_commands -ne 0 ]]; then
+  printf '\nInstallation verification failed: %d command(s) are missing.\n' "$missing_commands" >&2
+  exit 1
+fi

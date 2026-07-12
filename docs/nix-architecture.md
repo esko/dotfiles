@@ -47,7 +47,7 @@ Manager owns `.zshrc`, Starship, completions, aliases, and user packages.
 The flake pins System Manager commit
 `96f724be6f1411286e8ad0202e3e624c10116a6d` and makes it follow the same
 nixpkgs input as Home Manager. This post-1.1 revision contains the compatibility
-stubs required by Home Manager 26.05, including
+stubs required by Home Manager 26.11 on Linux, including
 `system.userActivationScripts`. The v1.1.0 tag is too old for this Home Manager
 release and must not be used for activation.
 

@@ -2,14 +2,15 @@
   description = "Cross-platform dotfiles for Crostini, Baguette, Debian Trixie containers, and the Mac Mini";
 
   inputs = {
-    # Linux is pinned to the nixpkgs revision used by the compatible System
-    # Manager test matrix. Darwin remains on its dedicated 26.05 release channels.
-    nixpkgsLinux.url = "github:NixOS/nixpkgs/331800de5053fcebacf6813adb5db9c9dca22a0c";
+    # Linux follows the current unstable package set while flake.lock keeps each
+    # reviewed deployment reproducible. Darwin remains on its dedicated 26.05
+    # release channel.
+    nixpkgsLinux.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nixpkgsDarwin.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
 
     homeManagerLinux = {
-      # This revision declares Home Manager 26.11, matching the pinned Linux
-      # nixpkgs release. The earlier c909892 revision still declared 26.05 and
+      # This revision declares Home Manager 26.11, matching the Linux nixpkgs
+      # release. The earlier c909892 revision still declared 26.05 and
       # therefore correctly triggered Home Manager's release mismatch warning.
       url = "github:nix-community/home-manager/7566825d4652a1b885bd4ce65bd9e8def432fec9";
       inputs.nixpkgs.follows = "nixpkgsLinux";
@@ -182,6 +183,14 @@
             };
           }
         ];
+      };
+
+      # Expose the System Manager derivations through the standard flake check
+      # interface so `nix flake check` evaluates both machine-like Linux
+      # configurations instead of silently skipping the custom output.
+      checks.${linuxSystem} = {
+        baguette = self.systemConfigs.baguette;
+        debianTrixieContainer = self.systemConfigs.debianTrixieContainer;
       };
 
       # nix-darwin owns the Mac host and embeds Home Manager for the user.
