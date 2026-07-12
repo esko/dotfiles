@@ -10,11 +10,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     system-manager = {
-      url = "github:numtide/system-manager/v1.1.0";
-      # Do not make this follow the newer cross-platform nixpkgs input. System
-      # Manager v1.1.0 carries a compatible nixpkgs revision for its imported
-      # NixOS module subset; overriding it causes missing-option failures such as
-      # security.dhparams while evaluating the nginx compatibility module.
+      # This post-1.1 revision contains the System Manager compatibility stubs
+      # required by Home Manager 26.05, including system.userActivationScripts.
+      url = "github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -70,9 +69,7 @@
       # Native Debian/Trixie host. System Manager owns the reviewed root-level
       # boundary and activates Home Manager for the existing esko account.
       systemConfigs.baguette = system-manager.lib.makeSystemConfig {
-        # System Manager v1.1.0 calls this extraSpecialArgs. The newer
-        # specialArgs spelling is not accepted by the pinned release.
-        extraSpecialArgs = linuxArgs // { hostName = "baguette"; };
+        specialArgs = linuxArgs // { hostName = "baguette"; };
         modules = [
           home-manager.nixosModules.home-manager
           ./modules/linux/system.nix
@@ -109,7 +106,7 @@
       # container that boots systemd. Normal containers must use the standalone
       # Home Manager output above.
       systemConfigs.debianTrixieContainer = system-manager.lib.makeSystemConfig {
-        extraSpecialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
+        specialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
         modules = [
           home-manager.nixosModules.home-manager
           ./modules/container/system.nix
