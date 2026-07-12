@@ -36,10 +36,32 @@
     shell = "/usr/bin/zsh";
   };
 
-  # Fail safely before privileged activation if this host is not the expected
-  # existing Baguette account. This avoids silently reallocating IDs or changing
-  # an unrelated account on another Debian machine.
+  # Fail safely before privileged activation if this is not the expected
+  # Baguette host/account. This avoids applying the user declaration to an
+  # unrelated Linux machine.
   system-manager.preActivationAssertions = {
+    baguetteDistro = {
+      enable = true;
+      script = ''
+        if [ ! -r /etc/os-release ]; then
+          echo "Cannot verify the host: /etc/os-release is missing."
+          exit 1
+        fi
+
+        . /etc/os-release
+        if [ "''${ID:-}" != debian ] || [ "''${VERSION_CODENAME:-}" != trixie ]; then
+          echo "Baguette requires Debian Trixie; found ID=''${ID:-unknown} VERSION_CODENAME=''${VERSION_CODENAME:-unknown}."
+          exit 1
+        fi
+
+        actual_arch=$(/usr/bin/uname -m)
+        if [ "$actual_arch" != x86_64 ]; then
+          echo "Baguette requires x86_64; found $actual_arch."
+          exit 1
+        fi
+      '';
+    };
+
     baguetteAccount = {
       enable = true;
       script = ''
