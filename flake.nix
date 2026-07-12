@@ -2,16 +2,16 @@
   description = "Cross-platform dotfiles for Crostini, Baguette, Debian Trixie containers, and the Mac Mini";
 
   inputs = {
-    # Linux uses the exact dependency tuple from the compatible System Manager
-    # test matrix. Darwin remains on its dedicated 26.05 release channels.
+    # Linux is pinned to the nixpkgs revision used by the compatible System
+    # Manager test matrix. Darwin remains on its dedicated 26.05 release channels.
     nixpkgsLinux.url = "github:NixOS/nixpkgs/331800de5053fcebacf6813adb5db9c9dca22a0c";
     nixpkgsDarwin.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
 
     homeManagerLinux = {
-      # This is the Home Manager revision tested with the pinned Linux nixpkgs
-      # and System Manager revisions. release-26.05 reports a 26.05/26.11
-      # mismatch against this nixpkgs snapshot.
-      url = "github:nix-community/home-manager/c909892de502b4de9e92838a503c09a9c8ebe4aa";
+      # This revision declares Home Manager 26.11, matching the pinned Linux
+      # nixpkgs release. The earlier c909892 revision still declared 26.05 and
+      # therefore correctly triggered Home Manager's release mismatch warning.
+      url = "github:nix-community/home-manager/7566825d4652a1b885bd4ce65bd9e8def432fec9";
       inputs.nixpkgs.follows = "nixpkgsLinux";
     };
     homeManagerDarwin = {
