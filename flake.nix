@@ -67,7 +67,9 @@
       # Native Debian/Trixie host. System Manager owns the reviewed root-level
       # boundary and activates Home Manager for the existing esko account.
       systemConfigs.baguette = system-manager.lib.makeSystemConfig {
-        specialArgs = linuxArgs // { hostName = "baguette"; };
+        # System Manager v1.1.0 calls this extraSpecialArgs. The newer
+        # specialArgs spelling is not accepted by the pinned release.
+        extraSpecialArgs = linuxArgs // { hostName = "baguette"; };
         modules = [
           home-manager.nixosModules.home-manager
           ./modules/linux/system.nix
@@ -104,7 +106,7 @@
       # container that boots systemd. Normal containers must use the standalone
       # Home Manager output above.
       systemConfigs.debianTrixieContainer = system-manager.lib.makeSystemConfig {
-        specialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
+        extraSpecialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
         modules = [
           home-manager.nixosModules.home-manager
           ./modules/container/system.nix
