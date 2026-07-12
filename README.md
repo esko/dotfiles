@@ -54,6 +54,13 @@ Install Lefthook alone on an existing machine:
 ./scripts/install-lefthook.sh
 ```
 
+On Crostini, Codex does not need a global installation. Use the npm package
+directly when the optional Nix package is unavailable:
+
+```bash
+npx --yes @openai/codex
+```
+
 SSH keys and agent context are opt-in private material. Follow the SOPS/age
 instructions in [`docs/nix-architecture.md`](docs/nix-architecture.md) and
 [`docs/llm-context.md`](docs/llm-context.md); never commit plaintext keys,
