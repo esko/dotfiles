@@ -2,9 +2,8 @@
 
 The shared Home Manager profile uses zsh on every target. Crostini is the
 current Linux validation host; Baguette is the future host migration target.
-The intent is to
-preserve the daily Fish workflow while using the zsh modules from
-`kunchenguid/dotfiles` as the baseline:
+The intent is to preserve the daily Fish workflow while using the zsh modules
+from `kunchenguid/dotfiles` as the baseline:
 
 - Home Manager enables zsh completion, autosuggestions, syntax highlighting,
   shared history, and Starship.
@@ -13,9 +12,6 @@ preserve the daily Fish workflow while using the zsh modules from
 - `backup`, `extract`, `mkcd`, and `rfv` are zsh functions with argument checks.
 - `fnm`, Bun, FZF, and the editor key binding initialize only when their
   binaries are present, keeping non-interactive shells safe.
-- Codex remains optional: when no `codex` executable is available but `npx` is,
-  the zsh profile exposes `codex` as `npx --yes @openai/codex`. This uses the
-  npm cache and does not require a global Codex installation.
 - The untracked `agy` Fish completion is represented by a zsh `_arguments`
   completion. The Fish source remains available as a reference until agy
   publishes an upstream completion contract.
@@ -31,12 +27,54 @@ intentionally excluded. `unrar` remains an external optional dependency
 because nixpkgs marks it unfree and the shared flake does not enable unfree
 packages globally; `extract` uses it automatically when present.
 
-Fast-moving agent CLIs (`codex`, Claude Code, Gemini CLI, Jules,
-`agent-browser`, command-code, hunkdiff, portless, Cursor Agent, Antigravity,
-Athas, Herdr, pass-cli, and agy) are represented as optional nixpkgs attrs when
-the selected channel provides them. Otherwise install them with their upstream
-installer or npm/pip tool; Home Manager does not run network installers during
-activation.
+Node-based global CLIs are deliberately excluded from nixpkgs. Building their
+Nix derivations can compile Rust, native Node dependencies, or bundled frontend
+sources even though their upstream npm packages already publish runnable code
+or platform binaries. After activating Home Manager, install or update the
+approved set with:
+
+```sh
+install-node-tools
+```
+
+This installs the following packages into the user-owned npm prefix
+`~/.local`, which is already on `PATH`:
+
+| Command | npm package |
+| --- | --- |
+| `agent-browser` | `agent-browser` |
+| `codex` | `@openai/codex` |
+| `claude` | `@anthropic-ai/claude-code` |
+| `gemini` | `@google/gemini-cli` |
+| `jules` | `@google/jules` |
+| `cmd` / `command-code` | `command-code` |
+| `hunk` | `hunkdiff` |
+| `portless` | `portless` |
+
+The installer is explicit rather than a Home Manager activation hook: profile
+activation stays deterministic and does not perform network operations. The
+script uses `@latest` because these agent CLIs move faster than the Nix channel.
+Re-run it to update the complete set.
+
+The `agent-browser` npm package supplies its platform CLI binary. Its managed
+browser runtime is a separate download:
+
+```sh
+agent-browser install
+# Fresh Debian host with missing browser libraries:
+agent-browser install --with-deps
+```
+
+Alternatively, install the package set and browser runtime in one pass:
+
+```sh
+install-node-tools --with-browser
+```
+
+Native fast-moving tools (`agy`/Antigravity, Cursor Agent, Athas, Herdr, and
+pass-cli) are not part of the npm installer. They remain optional nixpkgs
+attributes when available or should use their reviewed upstream binary
+installer. Do not build them from a source checkout merely to bootstrap a host.
 
 GUI applications (Cursor, VS Code, Chrome, and other approved GUI intent) stay
 in Darwin/Linux host modules and are deliberately absent from this shared
@@ -54,6 +92,7 @@ nix build .#homeConfigurations.baguette.activationPackage
 nix build .#homeConfigurations.debianTrixie.activationPackage
 nix build .#darwinConfigurations.mini.system
 home-manager switch --flake .#crostini
+install-node-tools --help
 zsh -lic 'typeset -f backup extract mkcd rfv; alias | rg "^(ls|ll|g|zj)="'
 ```
 
