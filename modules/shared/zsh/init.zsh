@@ -1,6 +1,9 @@
 # Fish-to-zsh compatibility layer. Keep functions small and POSIX-friendly so
 # the same profile works in Crostini, Debian Trixie containers, and macOS.
 
+# Allow pasteable command blocks to contain shell comments in interactive zsh.
+setopt interactivecomments
+
 # fnm provides shell hooks only when installed and available on this host.
 if (( $+commands[fnm] )); then
   eval "$(fnm env --use-on-cd --shell zsh)"
