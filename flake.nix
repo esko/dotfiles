@@ -1,5 +1,5 @@
 {
-  description = "Cross-platform dotfiles for Crostini, Debian containers, and the Mac Mini";
+  description = "Cross-platform dotfiles for Crostini, Baguette, Debian Trixie containers, and the Mac Mini";
 
   inputs = {
     # These release branches are intentionally conservative. `nix flake lock`
@@ -40,10 +40,23 @@
         hostName = "mini";
       };
     in {
-      # Standalone Home Manager profile for the Crostini/Bruschetta Linux host.
+      # Standalone Home Manager profile for the current Crostini host.
       homeConfigurations.crostini = home-manager.lib.homeManagerConfiguration {
         pkgs = linuxPkgs;
         extraSpecialArgs = linuxArgs // { hostName = "crostini"; };
+        modules = [
+          sops-nix.homeManagerModules.sops
+          ./modules/shared/home.nix
+          ./modules/linux/home.nix
+        ];
+      };
+
+      # Baguette is the future native Debian/Trixie Linux host. Keep it on the
+      # Linux host module rather than the headless container module: Docker,
+      # GPU, keyring, device, and display integration remain host boundaries.
+      homeConfigurations.baguette = home-manager.lib.homeManagerConfiguration {
+        pkgs = linuxPkgs;
+        extraSpecialArgs = linuxArgs // { hostName = "baguette"; };
         modules = [
           sops-nix.homeManagerModules.sops
           ./modules/shared/home.nix

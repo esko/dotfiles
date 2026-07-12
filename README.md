@@ -1,46 +1,52 @@
 # Dotfiles
 
-Managed with [GNU Stow](https://www.gnu.org/software/stow/).
+Cross-platform configuration managed with Nix flakes and Home Manager. The
+active Linux host is Crostini; the planned replacement host is Baguette, with
+Debian Trixie as the container baseline. The Mac Mini is managed separately by
+nix-darwin.
 
 ## Structure
 
-- `bash/`: Bash shell configurations (`.bashrc`, `.profile`, `.bash_logout`)
-- `git/`: Git configuration (`.gitconfig`)
-- `fish/`: Fish shell configurations
-- `fish-linux/`: Linux-specific Fish shell configuration
-- `fish-macos/`: macOS-specific Fish shell configuration
-- `starship/`: Starship prompt using the Catppuccin Frappé Powerline preset
-- `zellij/`: Zellij terminal multiplexer configuration
-- `zed/`, `cursor/`, `vscode/`, `gh/`, `sublime-text/`: Stowed app configuration
-- `templates/tabby/`: Seed configuration that preserves Tabby's machine-local vault
-- `utilities/`: Various CLI utilities (bat, btop, micro)
+- `flake.nix`, `flake.lock`: pinned Nix inputs and host profiles
+- `modules/shared/`: portable Home Manager shell, CLI, editor, and context setup
+- `modules/linux/`: Crostini/Baguette host integration and Linux-only packages
+- `modules/container/`: headless Debian Trixie container profile
+- `modules/darwin/`: nix-darwin and Mac Mini Home Manager configuration
+- `templates/`: review-only templates for host integration and private tools
+- `docs/`: bootstrap, platform boundaries, shell migration, and context policy
 
-## Usage
+The old Stow packages and Fish files have been removed from the active tree.
+Their history remains available for rollback or for recovering a behavior that
+has not yet been represented in the Nix modules.
 
-To install these dotfiles on a new machine:
+## Nix workflow
+
+On a new host, install Nix using the platform bootstrap instructions, then
+review and evaluate the matching profile:
 
 ```bash
 git clone https://github.com/esko/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-./install.sh
+nix flake check
+# Crostini (current host)
+nix build .#homeConfigurations.crostini.activationPackage
+# Baguette (future native Linux host)
+nix build .#homeConfigurations.baguette.activationPackage
+# Debian Trixie container baseline
+nix build .#homeConfigurations.debianTrixie.activationPackage
+# Mac Mini (run on the Mini)
+nix build .#darwinConfigurations.mini.system
 ```
 
-The installer also sets up rustup, Node.js via fnm, uv, Claude Code, Lefthook,
-ShellCheck, and the platform-specific development packages declared in
-`install.sh` and `Brewfile`. On macOS, Brew Bundle also installs the declared
-Mac App Store apps through `mas`, including KeepSolid VPN Unlimited.
+See [`docs/platform-targets.md`](docs/platform-targets.md) for the host matrix
+and [`docs/linux-bootstrap.md`](docs/linux-bootstrap.md) for the Crostini to
+Baguette transition. Host daemons, Docker, display integration, and machine-
+local GUI installers remain outside Home Manager.
 
-## Nix (migration in progress)
-
-The new `flake.nix` provides standalone Home Manager profiles for Crostini and
-Debian Trixie containers, plus a nix-darwin profile for the Mac Mini. The
-architecture and bootstrap commands are documented in
-[`docs/nix-architecture.md`](docs/nix-architecture.md). The legacy installer
-remains unchanged while the migration slices are reviewed.
-
-To install Nix interactively on a supported Linux or macOS host, review and
-run `./scripts/bootstrap-nix.sh`. It never runs automatically during a Home
-Manager activation.
+The architecture and secret boundary are documented in
+[`docs/nix-architecture.md`](docs/nix-architecture.md) and
+[`docs/llm-context.md`](docs/llm-context.md). Nix bootstrap is explicit and
+never runs during Home Manager activation.
 
 Install Lefthook alone on an existing machine:
 
@@ -48,20 +54,7 @@ Install Lefthook alone on an existing machine:
 ./scripts/install-lefthook.sh
 ```
 
-The SSH private key can be stored as `ssh/.ssh/id_rsa.age`. Create or refresh
-it with a passphrase before committing:
-
-```bash
-./scripts/encrypt-ssh-key.sh
-```
-
-The installer decrypts it to `~/.ssh/id_rsa` when the key is not already
-present, recreates `~/.ssh/id_rsa.pub`, and adds the public key to
-`~/.ssh/authorized_keys` for incoming SSH connections.
-
-To only link the dotfiles without installing packages:
-
-```bash
-stow --restow -t "$HOME" bash fish fish-linux git ssh starship zellij zed cursor vscode gh sublime-text utilities
-# On macOS, use fish-macos instead of fish-linux.
-```
+SSH keys and agent context are opt-in private material. Follow the SOPS/age
+instructions in [`docs/nix-architecture.md`](docs/nix-architecture.md) and
+[`docs/llm-context.md`](docs/llm-context.md); never commit plaintext keys,
+tokens, histories, or client state.

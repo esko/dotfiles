@@ -1,6 +1,8 @@
 # Fish to zsh migration
 
-The shared Home Manager profile uses zsh on every target. The intent is to
+The shared Home Manager profile uses zsh on every target. Crostini is the
+current Linux validation host; Baguette is the future host migration target.
+The intent is to
 preserve the daily Fish workflow while using the zsh modules from
 `kunchenguid/dotfiles` as the baseline:
 
@@ -45,6 +47,7 @@ With Nix installed, evaluate all profiles and inspect the generated shell:
 ```sh
 nix flake check
 nix build .#homeConfigurations.crostini.activationPackage
+nix build .#homeConfigurations.baguette.activationPackage
 nix build .#homeConfigurations.debianTrixie.activationPackage
 nix build .#darwinConfigurations.mini.system
 home-manager switch --flake .#crostini
@@ -52,5 +55,6 @@ zsh -lic 'typeset -f backup extract mkcd rfv; alias | rg "^(ls|ll|g|zj)="'
 ```
 
 Do not switch the login shell until the aliases and functions have been tested
-in an interactive terminal. The legacy Fish files remain untouched during the
-migration and can be used for rollback.
+in an interactive terminal. The old Fish implementation was removed from the
+active tree; Git history remains available if a behavior needs to be recovered
+while the zsh profile is accepted on Crostini and Baguette.

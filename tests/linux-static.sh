@@ -6,6 +6,14 @@ linux_module="$repo_root/modules/linux/home.nix"
 linux_ssh_module="$repo_root/modules/linux/ssh.nix"
 container_module="$repo_root/modules/container/home.nix"
 bootstrap="$repo_root/docs/linux-bootstrap.md"
+flake="$repo_root/flake.nix"
+
+for token in 'homeConfigurations.crostini' 'homeConfigurations.baguette' 'homeConfigurations.debianTrixie'; do
+  rg -q --fixed-strings "$token" "$flake"
+done
+
+rg -q 'hostName = "baguette"' "$flake"
+rg -q 'modules/linux/home\.nix' "$flake"
 
 for token in enableHostTools enableDesktopConfigs nativeBootstrap android-tools jdk17 vulkan-tools \
   intel-media-driver wl-clipboard xclip xdotool gnome-keyring streamlink qmk; do

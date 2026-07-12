@@ -3,7 +3,10 @@
 The flake separates portable user configuration from host integration:
 
 - `homeConfigurations.crostini` is a standalone Home Manager profile for the
-  current Linux host and the future Bruschetta migration.
+  current Crostini host.
+- `homeConfigurations.baguette` is the containerless/native Debian Trixie host
+  profile for the future Baguette migration. It intentionally uses the Linux
+  host module, not the headless container module.
 - `homeConfigurations.debianTrixie` is a deliberately small profile for Debian
   Trixie containers. It does not install Docker, GUI applications, keyrings, or
   device integration.
@@ -18,8 +21,8 @@ does not install host daemons or mutate apt repositories.
 
 ## Bootstrap
 
-Nix is not assumed to be installed by the legacy `install.sh`. On a machine
-with Nix enabled, first create and review the lock file:
+Nix is not installed by Home Manager. On a machine with Nix enabled, first
+create and review the lock file:
 
 ```sh
 nix flake lock

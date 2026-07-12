@@ -46,7 +46,7 @@ in
     ]);
 
     # Keep templates separate from active host files. Home Manager must not
-    # replace an existing Crostini/Sommelier launcher or display configuration.
+    # replace an existing Crostini/Baguette display configuration.
     home.file = mkIf config.dotfiles.linux.enableDesktopConfigs {
       ".config/dotfiles/templates/Xresources" = {
         text = ''
@@ -86,7 +86,7 @@ in
     };
 
     home.activation.dotfilesLinuxNotice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if [ "${hostName}" = "crostini" ] && [ "${lib.boolToString config.dotfiles.linux.nativeBootstrap}" = true ]; then
+      if [ "${lib.boolToString (lib.elem hostName [ "crostini" "baguette" ])}" = true ] && [ "${lib.boolToString config.dotfiles.linux.nativeBootstrap}" = true ]; then
         $DRY_RUN_CMD printf '%s\\n' "Linux host integration: see docs/linux-bootstrap.md"
       fi
     '';

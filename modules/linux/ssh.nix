@@ -1,22 +1,22 @@
-{ config, lib, username, homeDirectory, ... }:
+{ config, lib, username, homeDirectory, hostName, ... }:
 
 let
   cfg = config.dotfiles.linux.ssh;
 in
 {
   options.dotfiles.linux.ssh = {
-    enable = lib.mkEnableOption "the encrypted Crostini Ed25519 SSH key";
+    enable = lib.mkEnableOption "the encrypted Linux-host Ed25519 SSH key";
 
     privateKeySecret = lib.mkOption {
       type = lib.types.str;
-      default = "ssh/crostini/id_ed25519";
-      description = "sops-nix secret name containing the Crostini Ed25519 private key.";
+      default = "ssh/${hostName}/id_ed25519";
+      description = "sops-nix secret name containing the private key for this Linux host.";
     };
 
     publicKey = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "Optional Crostini public key text.";
+      description = "Optional public key text for this Linux host.";
     };
 
     manageAuthorizedKeys = lib.mkOption {

@@ -1,13 +1,15 @@
-# Debian Linux host bootstrap
+# Crostini to Baguette Linux bootstrap
 
-The `crostini` Home Manager output owns the user-facing Linux tools and the
-reviewed X11/Wayland files. It does not pretend to manage a Docker daemon,
+The active Linux machine is Crostini. The `crostini` Home Manager output owns
+its user-facing Linux tools and reviewed X11/Wayland files. It does not pretend
+to manage a Docker daemon,
 kernel drivers, host devices, or GUI installers. Those are installed once on
 the outer Debian host and are intentionally absent from
 `homeConfigurations.debianTrixie`.
 
-The future Bruschetta host should use Debian Trixie repositories only. Do not
-copy the old Bookworm Tabby repository from `install.sh` into a Trixie system.
+The future Baguette host should use Debian Trixie repositories only. Do not
+copy an older Bookworm repository into a Trixie system. Validate the new host
+before reusing any Crostini-specific integration.
 Confirm the host before applying packages:
 
 ```sh
@@ -17,7 +19,8 @@ test "$ID" = debian && test "${VERSION_CODENAME:-}" = trixie
 
 ## Native host packages
 
-The following are the host boundary approved for Crostini/Bruschetta:
+The following are the host boundary approved for Crostini and, after review,
+Baguette:
 
 - Docker CE: `docker-ce`, `docker-ce-cli`, `containerd.io`,
   `docker-buildx-plugin`, `docker-compose-plugin`
@@ -61,18 +64,20 @@ host-owned set to preserve (disabled until manually tested) is:
 - `~/.config/systemd/user/finner-x11-keymap.service`
 - `~/.local/bin/zed-crostini-x11` and other local launch wrappers
 
-These files may be imported into a future Linux host module only after their
+These files may be imported into a future Baguette host module only after their
 `DISPLAY`, `WAYLAND_DISPLAY`, Sommelier socket, and XKB paths are parameterized.
 
 Do not enable a launcher from Home Manager merely because a template exists:
-the wrapper must be tested against the active Crostini/Bruschetta display
-server, XKB path, and `WAYLAND_DISPLAY`/`DISPLAY` environment first.
+the wrapper must be tested against the active Crostini display first, then
+against the Baguette display server, XKB path, and
+`WAYLAND_DISPLAY`/`DISPLAY` environment.
 
 ## Evaluate without installing
 
 ```sh
 nix flake check
 nix build .#homeConfigurations.crostini.activationPackage
+nix build .#homeConfigurations.baguette.activationPackage
 nix build .#homeConfigurations.debianTrixie.activationPackage
 ```
 
