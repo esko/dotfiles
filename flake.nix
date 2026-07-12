@@ -11,7 +11,10 @@
     };
     system-manager = {
       url = "github:numtide/system-manager/v1.1.0";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # Do not make this follow the newer cross-platform nixpkgs input. System
+      # Manager v1.1.0 carries a compatible nixpkgs revision for its imported
+      # NixOS module subset; overriding it causes missing-option failures such as
+      # security.dhparams while evaluating the nginx compatibility module.
     };
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
