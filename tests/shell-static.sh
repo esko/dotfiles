@@ -5,7 +5,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 module="$repo_root/modules/shared/home.nix"
 init="$repo_root/modules/shared/zsh/init.zsh"
 
-for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'bun' 'home.sessionPath'; do
+for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'bun' 'home.sessionPath' '@openai/codex' 'npx --yes'; do
   rg -q --fixed-strings "$token" "$module"
 done
 

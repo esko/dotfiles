@@ -13,6 +13,9 @@ preserve the daily Fish workflow while using the zsh modules from
 - `backup`, `extract`, `mkcd`, and `rfv` are zsh functions with argument checks.
 - `fnm`, Bun, FZF, and the editor key binding initialize only when their
   binaries are present, keeping non-interactive shells safe.
+- Codex remains optional: when no `codex` executable is available but `npx` is,
+  the zsh profile exposes `codex` as `npx --yes @openai/codex`. This uses the
+  npm cache and does not require a global Codex installation.
 - The untracked `agy` Fish completion is represented by a zsh `_arguments`
   completion. The Fish source remains available as a reference until agy
   publishes an upstream completion contract.
