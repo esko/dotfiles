@@ -103,6 +103,17 @@
           echo "The Nix daemon socket is missing: /nix/var/nix/daemon-socket/socket"
           exit 1
         fi
+
+        if [ -L /etc/nix/nix.conf ]; then
+          nix_conf_target=$(/usr/bin/readlink /etc/nix/nix.conf)
+          case "$nix_conf_target" in
+            /nix/store/*)
+              echo "/etc/nix/nix.conf still points into the Nix store: $nix_conf_target"
+              echo "Restore the Determinate Nix configuration before activating Baguette."
+              exit 1
+              ;;
+          esac
+        fi
       '';
     };
 
