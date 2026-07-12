@@ -14,9 +14,12 @@
   system-manager.allowAnyDistro = true;
 
   # Userborn merges the declaration with the existing Debian account database.
-  # Passwords remain mutable and are not declared in the Nix store.
+  # Passwords remain mutable and are not declared in the Nix store. Exclude the
+  # module's default root/nobody declarations so this profile owns only esko.
   services.userborn.enable = true;
   users.mutableUsers = true;
+  users.users.root.enable = false;
+  users.users.nobody.enable = false;
 
   users.groups.${username}.gid = 1000;
   users.users.${username} = {
