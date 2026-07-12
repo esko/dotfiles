@@ -65,6 +65,10 @@
         config.allowUnfreePredicate = pkg:
           builtins.elem (nixpkgsLinux.lib.getName pkg) [ "unrar" ];
       };
+      darwinPkgs = import nixpkgsDarwin {
+        system = darwinSystem;
+      };
+
       linuxArgs = {
         inherit username stateVersion;
         homeDirectory = linuxHome;
@@ -74,7 +78,33 @@
         homeDirectory = darwinHome;
         hostName = "mini";
       };
+
+      mkBootstrapSshApp = pkgs:
+        let
+          package = pkgs.writeShellApplication {
+            name = "bootstrap-ssh";
+            runtimeInputs = with pkgs; [
+              age
+              sops
+              openssh
+              git
+              gh
+              coreutils
+              findutils
+              gnugrep
+              gnused
+              gawk
+            ];
+            text = builtins.readFile ./scripts/bootstrap-ssh.sh;
+          };
+        in {
+          type = "app";
+          program = "${package}/bin/bootstrap-ssh";
+        };
     in {
+      apps.${linuxSystem}.bootstrap-ssh = mkBootstrapSshApp linuxPkgs;
+      apps.${darwinSystem}.bootstrap-ssh = mkBootstrapSshApp darwinPkgs;
+
       # Standalone Home Manager profile for the current Crostini host. ChromeOS
       # and the Crostini VM remain responsible for system-level configuration.
       homeConfigurations.crostini = homeManagerLinux.lib.homeManagerConfiguration {
@@ -83,6 +113,7 @@
         modules = [
           sopsNixLinux.homeManagerModules.sops
           ./modules/shared/home.nix
+          ./modules/shared/ssh.nix
           ./modules/linux/home.nix
         ];
       };
@@ -104,6 +135,7 @@
                 imports = [
                   sopsNixLinux.homeManagerModules.sops
                   ./modules/shared/home.nix
+                  ./modules/shared/ssh.nix
                   ./modules/linux/home.nix
                 ];
               };
@@ -118,7 +150,9 @@
         pkgs = linuxPkgs;
         extraSpecialArgs = linuxArgs // { hostName = "debian-trixie"; };
         modules = [
+          sopsNixLinux.homeManagerModules.sops
           ./modules/shared/home.nix
+          ./modules/shared/ssh.nix
           ./modules/container/home.nix
         ];
       };
@@ -139,7 +173,9 @@
               extraSpecialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
               users.${username} = {
                 imports = [
+                  sopsNixLinux.homeManagerModules.sops
                   ./modules/shared/home.nix
+                  ./modules/shared/ssh.nix
                   ./modules/container/home.nix
                 ];
               };
@@ -166,6 +202,7 @@
               imports = [
                 sopsNixDarwin.homeManagerModules.sops
                 ./modules/shared/home.nix
+                ./modules/shared/ssh.nix
                 ./modules/darwin/home.nix
               ];
             };
