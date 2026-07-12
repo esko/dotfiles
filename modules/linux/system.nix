@@ -3,24 +3,16 @@
 {
   # Baguette is Debian Trixie running on x86_64 hardware. System Manager owns
   # only the reviewed system-level boundary; Debian still owns the kernel,
-  # bootloader, hardware drivers, display manager, and apt repositories.
+  # bootloader, hardware drivers, display manager, apt repositories, and the
+  # existing Determinate Nix installation and configuration.
   nixpkgs.hostPlatform = "x86_64-linux";
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [ "unrar" ];
 
-  # Embedded Home Manager invokes Nix during its per-user activation service.
-  nix.enable = true;
-
-  # System Manager advertises its binary cache through flake nixConfig. Trust
-  # that specific cache and signing key globally so unprivileged builds can use
-  # it without making the interactive user a root-equivalent Nix trusted user.
-  nix.settings = {
-    substituters = lib.mkAfter [ "https://cache.numtide.com" ];
-    trusted-substituters = [ "https://cache.numtide.com" ];
-    trusted-public-keys = lib.mkAfter [
-      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-    ];
-  };
+  # Do not enable System Manager's nix module on Baguette. This host already has
+  # a working multi-user Determinate Nix installation, which Home Manager can
+  # use directly. Enabling the module would replace /etc/nix/nix.conf and remove
+  # Determinate-specific settings such as FlakeHub and its netrc integration.
 
   # The pinned System Manager revision does not include Debian in its runtime
   # allow-list. Keep the distro check explicit until Debian is recognized there.
@@ -94,6 +86,21 @@
 
         if [ "$actual_home" != ${lib.escapeShellArg homeDirectory} ]; then
           echo "Expected ${username} home ${homeDirectory}; found $actual_home."
+          exit 1
+        fi
+      '';
+    };
+
+    existingNix = {
+      enable = true;
+      script = ''
+        if [ ! -x /nix/var/nix/profiles/default/bin/nix ]; then
+          echo "Baguette requires the existing multi-user Determinate Nix installation."
+          exit 1
+        fi
+
+        if [ ! -S /nix/var/nix/daemon-socket/socket ]; then
+          echo "The Nix daemon socket is missing: /nix/var/nix/daemon-socket/socket"
           exit 1
         fi
       '';
