@@ -2,32 +2,50 @@
   description = "Cross-platform dotfiles for Crostini, Baguette, Debian Trixie containers, and the Mac Mini";
 
   inputs = {
-    # These release branches are intentionally conservative. `nix flake lock`
-    # records the immutable revisions used by each checkout.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
-    home-manager = {
+    # Linux is pinned to the nixpkgs revision used by the compatible System
+    # Manager test matrix. Darwin remains on its dedicated 26.05 channel.
+    nixpkgsLinux.url = "github:NixOS/nixpkgs/331800de5053fcebacf6813adb5db9c9dca22a0c";
+    nixpkgsDarwin.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+
+    homeManagerLinux = {
       url = "github:nix-community/home-manager/release-26.05";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgsLinux";
     };
+    homeManagerDarwin = {
+      url = "github:nix-community/home-manager/release-26.05";
+      inputs.nixpkgs.follows = "nixpkgsDarwin";
+    };
+
     system-manager = {
-      # This post-1.1 revision contains the System Manager compatibility stubs
-      # required by Home Manager 26.05, including system.userActivationScripts.
+      # This post-1.1 revision contains the compatibility stubs required by
+      # Home Manager 26.05, including system.userActivationScripts.
       url = "github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgsLinux";
     };
+
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
-    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
-    sops-nix.url = "github:Mic92/sops-nix";
-    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgsDarwin";
+
+    sopsNixLinux = {
+      url = "github:Mic92/sops-nix/8eaee5c45428b28b8c47a83e4c09dccec5f279b5";
+      inputs.nixpkgs.follows = "nixpkgsLinux";
+    };
+    sopsNixDarwin = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgsDarwin";
+    };
   };
 
   outputs = inputs@{
     self,
-    nixpkgs,
-    home-manager,
+    nixpkgsLinux,
+    nixpkgsDarwin,
+    homeManagerLinux,
+    homeManagerDarwin,
     system-manager,
     nix-darwin,
-    sops-nix,
+    sopsNixLinux,
+    sopsNixDarwin,
     ...
   }:
     let
@@ -39,10 +57,10 @@
       linuxSystem = "x86_64-linux";
       darwinSystem = "aarch64-darwin";
 
-      linuxPkgs = import nixpkgs {
+      linuxPkgs = import nixpkgsLinux {
         system = linuxSystem;
         config.allowUnfreePredicate = pkg:
-          builtins.elem (nixpkgs.lib.getName pkg) [ "unrar" ];
+          builtins.elem (nixpkgsLinux.lib.getName pkg) [ "unrar" ];
       };
       linuxArgs = {
         inherit username stateVersion;
@@ -56,11 +74,11 @@
     in {
       # Standalone Home Manager profile for the current Crostini host. ChromeOS
       # and the Crostini VM remain responsible for system-level configuration.
-      homeConfigurations.crostini = home-manager.lib.homeManagerConfiguration {
+      homeConfigurations.crostini = homeManagerLinux.lib.homeManagerConfiguration {
         pkgs = linuxPkgs;
         extraSpecialArgs = linuxArgs // { hostName = "crostini"; };
         modules = [
-          sops-nix.homeManagerModules.sops
+          sopsNixLinux.homeManagerModules.sops
           ./modules/shared/home.nix
           ./modules/linux/home.nix
         ];
@@ -71,7 +89,7 @@
       systemConfigs.baguette = system-manager.lib.makeSystemConfig {
         specialArgs = linuxArgs // { hostName = "baguette"; };
         modules = [
-          home-manager.nixosModules.home-manager
+          homeManagerLinux.nixosModules.home-manager
           ./modules/linux/system.nix
           {
             home-manager = {
@@ -81,7 +99,7 @@
               extraSpecialArgs = linuxArgs // { hostName = "baguette"; };
               users.${username} = {
                 imports = [
-                  sops-nix.homeManagerModules.sops
+                  sopsNixLinux.homeManagerModules.sops
                   ./modules/shared/home.nix
                   ./modules/linux/home.nix
                 ];
@@ -93,7 +111,7 @@
 
       # Lightweight OCI/dev-container profile. It intentionally does not mutate
       # /etc, create users, or require systemd/privileged activation.
-      homeConfigurations.debianTrixie = home-manager.lib.homeManagerConfiguration {
+      homeConfigurations.debianTrixie = homeManagerLinux.lib.homeManagerConfiguration {
         pkgs = linuxPkgs;
         extraSpecialArgs = linuxArgs // { hostName = "debian-trixie"; };
         modules = [
@@ -108,7 +126,7 @@
       systemConfigs.debianTrixieContainer = system-manager.lib.makeSystemConfig {
         specialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
         modules = [
-          home-manager.nixosModules.home-manager
+          homeManagerLinux.nixosModules.home-manager
           ./modules/container/system.nix
           {
             home-manager = {
@@ -134,16 +152,16 @@
         modules = [
           ./modules/darwin/system.nix
           {
-            imports = [ sops-nix.darwinModules.sops ];
+            imports = [ sopsNixDarwin.darwinModules.sops ];
           }
-          home-manager.darwinModules.home-manager
+          homeManagerDarwin.darwinModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = darwinArgs;
             home-manager.users.${username} = {
               imports = [
-                sops-nix.homeManagerModules.sops
+                sopsNixDarwin.homeManagerModules.sops
                 ./modules/shared/home.nix
                 ./modules/darwin/home.nix
               ];
