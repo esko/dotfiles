@@ -9,6 +9,8 @@
 
   services.userborn.enable = true;
   users.mutableUsers = true;
+  users.users.root.enable = false;
+  users.users.nobody.enable = false;
 
   users.groups.${username}.gid = 1000;
   users.users.${username} = {
@@ -30,7 +32,9 @@
   system-manager.preActivationAssertions.systemdContainer = {
     enable = true;
     script = ''
-      if [ "$(/usr/bin/ps -p 1 -o comm= | /usr/bin/tr -d ' ')" != systemd ]; then
+      init_comm=""
+      IFS= read -r init_comm < /proc/1/comm || true
+      if [ "$init_comm" != systemd ]; then
         echo "debianTrixieContainer requires systemd as PID 1."
         echo "Use homeConfigurations.debianTrixie for a normal OCI/dev container."
         exit 1
