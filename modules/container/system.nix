@@ -1,4 +1,4 @@
-{ pkgs, username, homeDirectory, ... }:
+{ lib, pkgs, username, homeDirectory, ... }:
 
 {
   # This target is only for a privileged Debian Trixie container that boots
@@ -9,6 +9,16 @@
 
   # Embedded Home Manager invokes Nix during its per-user activation service.
   nix.enable = true;
+
+  # Trust only the System Manager cache and signing key; do not grant the
+  # container user root-equivalent Nix trusted-user privileges.
+  nix.settings = {
+    substituters = lib.mkAfter [ "https://cache.numtide.com" ];
+    trusted-substituters = [ "https://cache.numtide.com" ];
+    trusted-public-keys = lib.mkAfter [
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+    ];
+  };
 
   services.userborn.enable = true;
   users.mutableUsers = true;
