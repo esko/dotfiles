@@ -74,6 +74,9 @@ in
 
   programs.starship = {
     enable = true;
+    # Do not rely on the global shell-integration default. Generate the
+    # `starship init zsh` hook explicitly whenever this profile manages Zsh.
+    enableZshIntegration = true;
     # Parse the existing Catppuccin Frappé Powerline configuration so the
     # migration preserves the prompt instead of silently replacing it.
     settings = builtins.fromTOML (builtins.readFile ../../starship/.config/starship.toml);
