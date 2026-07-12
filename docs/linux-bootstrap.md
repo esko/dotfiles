@@ -22,6 +22,8 @@ test "$ID" = debian && test "${VERSION_CODENAME:-}" = trixie
 The following are the host boundary approved for Crostini and, after review,
 Baguette:
 
+- Base network and source-control integration: `openssh-client`,
+  `ca-certificates`, `curl`, and `git`
 - Docker CE: `docker-ce`, `docker-ce-cli`, `containerd.io`,
   `docker-buildx-plugin`, `docker-compose-plugin`
 - Desktop/device integration: `gnome-keyring`, `libsecret-tools`, `adb`,
@@ -30,6 +32,17 @@ Baguette:
   runtime packages appropriate to the host GPU
 - Archive and utility packages: `p7zip-full`, `unrar`, `streamlink`, and
   `qmk` (where the Debian package or a reviewed upstream install is available)
+
+Native Debian and macOS profiles intentionally use the operating system's SSH
+client. Installing a second OpenSSH build through Nix can make the client read
+`/etc/ssh/ssh_config` options that were compiled for a different feature set,
+for example Debian's `GSSAPIAuthentication` option. The headless container
+profile still includes Nix OpenSSH because it cannot assume a host client.
+
+GitHub uses HTTPS as the bootstrap-safe default. Authenticate after profile
+activation with `gh auth login`; the managed Git credential helper then handles
+HTTPS remotes. Change an individual remote to `git@github.com:OWNER/REPO.git`
+only after that host has an SSH key enrolled with GitHub.
 
 Docker must be installed from Docker's official Debian Trixie repository after
 its signing key and `deb822` source have been reviewed. The profile does not
