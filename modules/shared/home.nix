@@ -9,15 +9,6 @@ let
     pytestCheckPhase = ":";
   });
 
-  agentBrowser =
-    if builtins.hasAttr "agent-browser" pkgs then
-      (builtins.getAttr "agent-browser" pkgs).overrideAttrs (_old: {
-        doCheck = false;
-        cargoCheckHook = ":";
-      })
-    else
-      null;
-
   # A few fast-moving CLIs are not consistently packaged in every nixpkgs
   # revision. Keep them optional so the shared profile remains evaluable while
   # documenting the external install path in docs/shell-migration.md.
@@ -53,12 +44,11 @@ in
     curl wget openssh fastfetch p7zip unzip dos2unix dnsutils
     inetutils nmap bun cargo-binstall golangci-lint
     python3Packages.pytest croc
-  ] ++ lib.optional (agentBrowser != null) agentBrowser ++ optionalPackages [
-    # Optional package names vary by nixpkgs channel and should not block
-    # profiles that use a leaner Trixie-compatible package set.
-    "agy" "antigravity" "athas" "claude-code" "codex"
-    "command-code" "cursor-agent" "gemini-cli" "herdr" "hunkdiff" "jules"
-    "pass-cli" "portless"
+  ] ++ optionalPackages [
+    # Native fast-moving CLIs may use nixpkgs when available. Node-based global
+    # CLIs are intentionally installed from their published npm packages by
+    # scripts/install-node-tools.sh so activation never compiles their sources.
+    "agy" "antigravity" "athas" "cursor-agent" "herdr" "pass-cli"
   ];
 
   # Keep existing utility configuration under declarative control. These are
@@ -68,6 +58,10 @@ in
   home.file.".config/micro/bindings.json".source = ../../utilities/.config/micro/bindings.json;
   home.file.".config/micro/settings.json".source = ../../utilities/.config/micro/settings.json;
   home.file.".config/zellij/config.kdl".source = ../../zellij/.config/zellij/config.kdl;
+  home.file.".local/bin/install-node-tools" = {
+    source = ../../scripts/install-node-tools.sh;
+    executable = true;
+  };
 
   programs.bat.enable = true;
   programs.fzf.enable = true;
