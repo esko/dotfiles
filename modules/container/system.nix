@@ -7,6 +7,9 @@
   nixpkgs.hostPlatform = "x86_64-linux";
   system-manager.allowAnyDistro = true;
 
+  # Embedded Home Manager invokes Nix during its per-user activation service.
+  nix.enable = true;
+
   services.userborn.enable = true;
   users.mutableUsers = true;
   users.users.root.enable = false;
@@ -21,9 +24,8 @@
     createHome = true;
     shell = pkgs.zsh;
 
-    # System Manager v1.1.0 does not import the full NixOS zsh module. The shell
-    # is installed into /run/system-manager/sw and Home Manager provides the
-    # interactive startup files.
+    # System Manager installs the shell into /run/system-manager/sw and Home
+    # Manager provides the interactive startup files.
     ignoreShellProgramCheck = true;
   };
 
