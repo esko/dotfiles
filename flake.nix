@@ -38,6 +38,10 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgsDarwin";
     };
+
+    # Fast-moving agent CLIs with daily package updates and a dedicated cache.
+    llmAgents.url = "github:numtide/llm-agents.nix";
+
   };
 
   outputs = inputs@{
@@ -50,6 +54,7 @@
     nix-darwin,
     sopsNixLinux,
     sopsNixDarwin,
+    llmAgents,
     ...
   }:
     let
@@ -64,8 +69,19 @@
       linuxPkgs = import nixpkgsLinux {
         system = linuxSystem;
         config.allowUnfreePredicate = pkg:
-          builtins.elem (nixpkgsLinux.lib.getName pkg) [ "unrar" ];
+          builtins.elem (nixpkgsLinux.lib.getName pkg) [
+            "antigravity-cli"
+            "unrar"
+          ];
       };
+      synologyPkgs = linuxPkgs.extend (final: _previous: {
+        # The DS918+'s J3455 has no AVX/AVX2. Keep the `bun` selected by the
+        # shared Home Manager module on Bun's published baseline build.
+        bun = final.callPackage ./packages/bun-baseline.nix { };
+        # Keep the shared profile's optional Herdr entry identical to the
+        # llm-agents package explicitly added to the runtime closure.
+        herdr = llmAgentPkgs.herdr;
+      });
       darwinPkgs = import nixpkgsDarwin {
         system = darwinSystem;
       };
@@ -102,6 +118,43 @@
           type = "app";
           program = "${package}/bin/bootstrap-ssh";
         };
+
+      synologyDevHome = homeManagerLinux.lib.homeManagerConfiguration {
+        pkgs = synologyPkgs;
+        extraSpecialArgs = linuxArgs // { hostName = "synology-dev"; };
+        modules = [
+          ./modules/shared/home.nix
+          ./modules/container/home.nix
+          {
+            # Persist history beneath the mutable state mount rather than next
+            # to image-owned Home Manager symlinks.
+            programs.zsh.history.path = "${linuxHome}/.local/state/zsh/history";
+          }
+        ];
+      };
+
+      bunBaseline = synologyPkgs.bun;
+      llmAgentPkgs = llmAgents.packages.${linuxSystem};
+      opencodeBaseline = llmAgentPkgs.opencode.overrideAttrs (_oldAttrs: {
+        version = "1.17.18";
+        src = linuxPkgs.fetchurl {
+          url = "https://github.com/anomalyco/opencode/releases/download/v1.17.18/opencode-linux-x64-baseline.tar.gz";
+          hash = "sha256-yB1cRpIgYE9lBrCdxGVovN1V0tTmP2tKwj5izNjBlHk=";
+        };
+        # Colima's QEMU TCG cannot execute Bun-compiled payloads reliably. The
+        # exact baseline payload is exercised directly on the target DS918+.
+        doInstallCheck = false;
+      });
+      codexAgent = llmAgentPkgs.codex;
+      antigravityCli = llmAgentPkgs.antigravity-cli;
+      herdrAgent = llmAgentPkgs.herdr;
+      hunkBaseline = synologyPkgs.callPackage ./packages/hunk-baseline.nix {
+        inherit bunBaseline;
+      };
+      synologyDevRoot = synologyPkgs.callPackage ./packages/synology-dev-root.nix {
+        homeConfiguration = synologyDevHome;
+        inherit antigravityCli codexAgent herdrAgent hunkBaseline opencodeBaseline;
+      };
     in {
       apps.${linuxSystem}.bootstrap-ssh = mkBootstrapSshApp linuxPkgs;
       apps.${darwinSystem}.bootstrap-ssh = mkBootstrapSshApp darwinPkgs;
@@ -158,6 +211,15 @@
         ];
       };
 
+      # Home Manager evaluation embedded into the unprivileged Synology image.
+      # It deliberately omits the SOPS/SSH module so no host identity can enter
+      # an image layer.
+      homeConfigurations.synologyDev = synologyDevHome;
+
+      packages.${linuxSystem} = {
+        inherit bunBaseline hunkBaseline opencodeBaseline synologyDevRoot;
+      };
+
       # Optional machine-like container profile for a privileged Debian Trixie
       # container that boots systemd. Normal containers must use the standalone
       # Home Manager output above.
@@ -191,6 +253,7 @@
       checks.${linuxSystem} = {
         baguette = self.systemConfigs.baguette;
         debianTrixieContainer = self.systemConfigs.debianTrixieContainer;
+        synologyDevRoot = synologyDevRoot;
       };
 
       # nix-darwin owns the Mac host and embeds Home Manager for the user.

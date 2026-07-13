@@ -1,0 +1,63 @@
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+
+FROM --platform=linux/amd64 nixos/nix:2.31.2@sha256:29fc5fe207f159ceb0143c25c19c774062fee02ce5eda118f3067547b3054894 AS nix-base
+
+FROM nix-base AS builder
+
+COPY . /tmp/build
+WORKDIR /tmp/build
+
+RUN --mount=type=cache,id=synology-dev-nix-store,from=nix-base,source=/nix/store,target=/nix/store,sharing=locked \
+    --mount=type=cache,id=synology-dev-nix-var,from=nix-base,source=/nix/var/nix,target=/nix/var/nix,sharing=locked \
+    --mount=type=cache,id=synology-dev-nix-cache,target=/root/.cache/nix,sharing=locked \
+    nix \
+    --accept-flake-config \
+    --extra-experimental-features "nix-command flakes" \
+    --option filter-syscalls false \
+    --option extra-substituters "https://cache.numtide.com" \
+    --option extra-trusted-public-keys "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" \
+    build .#packages.x86_64-linux.synologyDevRoot \
+    && mkdir -p /tmp/nix-store-closure \
+    && cp -R $(nix-store -qR result) /tmp/nix-store-closure/ \
+    && mkdir -p /tmp/synology-dev-root \
+    && root_path=$(readlink -f result) \
+    && cp -a "$root_path"/. /tmp/synology-dev-root/
+
+FROM scratch
+
+COPY --from=builder /tmp/nix-store-closure /nix/store
+COPY --from=builder /tmp/synology-dev-root/bin /bin
+COPY --from=builder /tmp/synology-dev-root/etc /etc
+COPY --from=builder /tmp/synology-dev-root/lib64 /lib64
+COPY --from=builder /tmp/synology-dev-root/usr /usr
+COPY --from=builder --chown=1026:100 /tmp/synology-dev-root/home/esko /home/esko
+COPY --from=builder --chown=1026:100 /tmp/synology-dev-root/workspace /workspace
+COPY --from=builder --chmod=1777 /tmp/synology-dev-root/tmp /tmp
+
+ENV HOME=/home/esko \
+    USER=esko \
+    LOGNAME=esko \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    TERM=xterm-256color \
+    COLORTERM=truecolor \
+    AGY_CLI_DISABLE_AUTO_UPDATE=true \
+    OPENCODE_DISABLE_AUTOUPDATE=true \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt \
+    PATH=/home/esko/.local/bin:/home/esko/.cargo/bin:/home/esko/.bun/bin:/bin
+
+LABEL org.opencontainers.image.title="dotfiles-synology-dev" \
+      org.opencontainers.image.description="Nix-built dotfiles development environment for Synology DS918+" \
+      org.opencontainers.image.source="https://github.com/esko/dotfiles"
+
+# Docker/BuildKit normalizes copied directory modes in some local backends.
+# Reassert the mutable runtime boundary before dropping privileges.
+RUN chmod 1777 /tmp \
+    && chmod u+rwx /home/esko/.cache /home/esko/.codex /home/esko/.config \
+      /home/esko/.gemini /home/esko/.local /home/esko/.local/share \
+      /home/esko/.local/state /home/esko/.pi
+
+USER 1026:100
+WORKDIR /workspace
+ENTRYPOINT ["/bin/synology-dev-entrypoint"]
+CMD ["/bin/zsh", "-l"]

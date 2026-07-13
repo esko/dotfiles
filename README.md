@@ -10,6 +10,8 @@ the native Debian/Baguette system boundary, and nix-darwin owns the Mac Mini.
 - `modules/shared/`: portable Home Manager shell, CLI, editor, and context setup
 - `modules/linux/`: Baguette System Manager policy plus Linux Home Manager files
 - `modules/container/`: lightweight and systemd-container profiles
+- `Dockerfile.synology-dev`: unprivileged x86_64 Synology development image
+- `compose/`: deployment definitions for handoff to Container Manager
 - `modules/darwin/`: nix-darwin and Mac Mini Home Manager configuration
 - `templates/`: review-only templates for host integration and private tools
 - `docs/`: bootstrap, platform boundaries, shell migration, and context policy
@@ -39,6 +41,9 @@ nix build .#homeConfigurations.debianTrixie.activationPackage
 
 # Privileged Debian Trixie container with systemd as PID 1
 nix build .#systemConfigs.debianTrixieContainer
+
+# Synology x86_64 development-container root closure
+nix build .#packages.x86_64-linux.synologyDevRoot
 
 # Mac Mini (run on the Mini)
 nix build .#darwinConfigurations.mini.system
@@ -80,6 +85,13 @@ The architecture and secret boundary are documented in
 [`docs/nix-architecture.md`](docs/nix-architecture.md) and
 [`docs/llm-context.md`](docs/llm-context.md). Nix bootstrap remains explicit and
 never runs during Home Manager activation.
+
+The Synology development image packages the shared command-line environment
+plus `pi`, `herdr`, `opencode`, `hunk`, `yazi`, Neurocyte Flow, `agy`, Codex,
+and the Mosh/ET/tsshd remote-session helpers. Build, test,
+archive, and copy it to the NAS with `./scripts/build-synology-dev.sh`; see
+[`docs/synology-dev-container.md`](docs/synology-dev-container.md) for the
+unprivileged runtime contract and the final manual Container Manager steps.
 
 Install Lefthook alone on an existing machine:
 

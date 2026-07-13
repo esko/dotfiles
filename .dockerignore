@@ -1,0 +1,36 @@
+.git
+.DS_Store
+result
+result-*
+dist/
+
+# Never place host identities, SOPS ciphertext, or local SSH state in a build
+# context. The image intentionally contains no deployment identity.
+ssh/.ssh/
+secrets/
+gh/.config/gh/hosts.yml
+/llm-context/
+/private-context/
+**/.llm-context/
+**/auth.json
+**/oauth_creds.json
+**/credentials.json
+**/history.jsonl
+**/sessions/
+**/transcripts/
+**/file-history/
+**/shell-snapshots/
+**/state_*.sqlite
+**/*api-key*
+**/*apikey*
+**/.env
+**/*.pem
+**/*.key
+**/id_rsa
+**/id_ed25519
+
+# Local editor/runtime debris.
+**/*.bak
+**/*.bak.*
+**/*.log
+**/.direnv/

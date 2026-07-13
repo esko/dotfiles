@@ -1,5 +1,6 @@
 *.log
 fish_variables*
+/dist/
 
 # micro editor backups and history
 utilities/.config/micro/backups/
