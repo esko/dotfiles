@@ -1,0 +1,12 @@
+# Register the isolated agent desktop MCP server inside the container.
+#
+# computer-use-linux drives the host's real desktop; this container uses the
+# sibling project agent-workspace-linux instead:
+# https://github.com/agent-sh/agent-workspace-linux
+#
+# Merge into ~/.codex/config.toml or configure the equivalent stdio server in
+# your MCP host.
+
+[mcp_servers.agent-workspace-linux]
+command = "/bin/agent-workspace-linux"
+args = ["mcp"]

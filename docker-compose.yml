@@ -4,8 +4,9 @@ services:
   dev:
     image: dotfiles-synology-dev:latest
     container_name: dotfiles-synology-dev
-    user: "1026:100"
+    user: "0:0"
     working_dir: /workspace
+    shm_size: "2gb"
     stdin_open: true
     tty: true
     environment:
@@ -16,21 +17,41 @@ services:
       COLORTERM: truecolor
       AGY_CLI_DISABLE_AUTO_UPDATE: "true"
       OPENCODE_DISABLE_AUTOUPDATE: "true"
+      SYNOLOGY_DEV_SSH_PORT: "2222"
+      SYNOLOGY_DEV_FAIL2BAN_MAXRETRY: "3"
+      SYNOLOGY_DEV_FAIL2BAN_FINDTIME: "10m"
+      SYNOLOGY_DEV_FAIL2BAN_BANTIME: "10m"
+      BROWSER_BIN: chromium
+      SYNOLOGY_DEV_VNC_PORT: "5900"
+      SYNOLOGY_DEV_NOVNC_PORT: "6080"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      macvlan_bridge:
+      mymacvlan:
+        ipv4_address: 192.168.1.252
+    command:
+      - /usr/local/bin/start-services.sh
     volumes:
-      # Replace CHANGE_ME_WORKSPACE in Container Manager with the absolute path
-      # of the NAS directory that should be available as /workspace.
       - /volume3/homes/esko/CHANGE_ME_WORKSPACE:/workspace
-      # Persist mutable XDG state without retaining image-specific Home Manager
-      # symlinks across image upgrades.
+      - /volume3/homes/esko/.ssh:/home/esko/.ssh:ro
+      - /volume3/homes/esko/dotfiles-synology-dev/start-sshd.sh:/usr/local/bin/start-sshd.sh:ro
+      - /volume3/homes/esko/dotfiles-synology-dev/start-services.sh:/usr/local/bin/start-services.sh:ro
       - synology-dev-cache:/home/esko/.cache
       - synology-dev-data:/home/esko/.local/share
       - synology-dev-state:/home/esko/.local/state
       - synology-dev-codex:/home/esko/.codex
       - synology-dev-pi:/home/esko/.pi
       - synology-dev-gemini:/home/esko/.gemini
-    security_opt:
-      - no-new-privileges:true
+      - synology-dev-workspace:/home/esko/.local/share/agent-workspace-linux
     restart: unless-stopped
+
+networks:
+  mymacvlan:
+    external: true
+  macvlan_bridge:
+    external: true
 
 volumes:
   synology-dev-cache:
@@ -45,3 +66,5 @@ volumes:
     name: dotfiles-synology-dev-pi
   synology-dev-gemini:
     name: dotfiles-synology-dev-gemini
+  synology-dev-workspace:
+    name: dotfiles-synology-dev-workspace

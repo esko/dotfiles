@@ -47,6 +47,7 @@ docker run --rm --entrypoint /bin/zsh "$image" -lc '
   for command_name in \
     pi herdr opencode hunk yazi flow \
     mosh-server etserver tsshd agy codex bun \
+    agent-workspace-linux Xvfb xdotool chromium \
     git rg fd jq zellij starship; do
     command -v "$command_name" >/dev/null
   done
@@ -74,6 +75,7 @@ docker run --rm --entrypoint /bin/zsh "$image" -lc '
   agy --version >/dev/null
   codex --version >/dev/null
   bun --version >/dev/null
+  agent-workspace-linux doctor >/dev/null
 
   for config_file in \
     "$HOME/.zshrc" \

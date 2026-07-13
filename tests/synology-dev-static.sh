@@ -73,7 +73,8 @@ done
 
 for command_name in \
   pi herdr opencode hunk yazi flow \
-  mosh eternal-terminal tsshd antigravity-cli codex; do
+  mosh eternal-terminal tsshd antigravity-cli codex \
+  agent-workspace-linux; do
   rg -q --glob '*.nix' \
     "\\b${command_name}\\b" \
     "$flake" "$repo_root/modules" "$repo_root/packages"

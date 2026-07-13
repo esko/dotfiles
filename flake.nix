@@ -151,9 +151,19 @@
       hunkBaseline = synologyPkgs.callPackage ./packages/hunk-baseline.nix {
         inherit bunBaseline;
       };
+      agentWorkspaceLinux = synologyPkgs.callPackage ./packages/agent-workspace-linux-baseline.nix { };
+      synologyDevGui = synologyPkgs.callPackage ./packages/synology-dev-gui.nix { };
       synologyDevRoot = synologyPkgs.callPackage ./packages/synology-dev-root.nix {
         homeConfiguration = synologyDevHome;
-        inherit antigravityCli codexAgent herdrAgent hunkBaseline opencodeBaseline;
+        inherit
+          agentWorkspaceLinux
+          antigravityCli
+          codexAgent
+          herdrAgent
+          hunkBaseline
+          opencodeBaseline
+          synologyDevGui
+          ;
       };
     in {
       apps.${linuxSystem}.bootstrap-ssh = mkBootstrapSshApp linuxPkgs;

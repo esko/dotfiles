@@ -7,6 +7,11 @@
   bashInteractive,
   cacert,
   glibc,
+  fail2ban,
+  iptables,
+  ipset,
+  agentWorkspaceLinux,
+  synologyDevGui,
   pi-coding-agent,
   mosh,
   eternal-terminal,
@@ -38,6 +43,11 @@ let
       homeConfiguration.config.home.path
       bashInteractive
       coreutils
+      fail2ban
+      iptables
+      ipset
+      agentWorkspaceLinux
+      synologyDevGui
       pi-coding-agent
       herdrAgent
       mosh
@@ -70,8 +80,16 @@ runCommand "synology-dev-root" { } ''
   ln -s ${glibc}/lib/ld-linux-x86-64.so.2 "$out/lib64/ld-linux-x86-64.so.2"
 
   cp -a ${runtime}/bin/. "$out/bin/"
+  chmod -R u+w "$out/bin"
   ln -s ${coreutils}/bin/env "$out/usr/bin/env"
   ln -s ${cacert}/etc/ssl/certs/ca-bundle.crt "$out/etc/ssl/certs/ca-bundle.crt"
+
+  cp -a ${fail2ban}/etc/fail2ban/. "$out/etc/fail2ban/"
+  chmod -R u+w "$out/etc/fail2ban"
+  install -Dm644 ${../config/synology-dev/fail2ban.local} "$out/etc/fail2ban/fail2ban.local"
+  install -Dm644 ${../config/synology-dev/paths-synology-dev.conf} "$out/etc/fail2ban/paths-synology-dev.conf"
+  mkdir -p "$out/var/lib/fail2ban" "$out/var/run/fail2ban"
+  install -Dm755 ${../scripts/synology-dev-workspace-novnc.sh} "$out/bin/synology-dev-workspace-novnc"
 
   cp -a ${homeConfiguration.config."home-files"}/. "$out/home/${username}/"
   chmod u+w "$out/home/${username}"
@@ -87,8 +105,12 @@ runCommand "synology-dev-root" { } ''
 
   cat > "$out/etc/passwd" <<'EOF'
 root:x:0:0:root:/root:/bin/sh
+sshd:x:74:74:Privilege-separated SSH:/var/empty/sshd:/sbin/nologin
 esko:x:${toString uid}:${toString gid}:Esko:${homeDirectory}:/bin/zsh
 EOF
+
+  mkdir -p "$out/var/empty/sshd"
+  chmod 711 "$out/var/empty/sshd"
 
   cat > "$out/etc/group" <<'EOF'
 root:x:0:
@@ -132,6 +154,14 @@ EOF
   test -x "$out/bin/agy"
   test -x "$out/bin/codex"
   test -x "$out/bin/bun"
+  test -x "$out/bin/fail2ban-server"
+  test -x "$out/bin/iptables"
+  test -x "$out/bin/agent-workspace-linux"
+  test -x "$out/bin/Xvfb"
+  test -x "$out/bin/chromium"
+  test -x "$out/bin/xdotool"
+  test -f "$out/etc/fail2ban/filter.d/sshd.conf"
+  test -f "$out/etc/fail2ban/paths-synology-dev.conf"
   test -x "$out/lib64/ld-linux-x86-64.so.2"
   test ! -e "$out/home/${username}/.ssh/id_ed25519"
 ''

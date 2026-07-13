@@ -116,6 +116,59 @@ persistent named volume (XDG data/state, `~/.codex`, `~/.pi`, or `~/.gemini`)
 instead of changing the image. Do not bind mount `/var/run/docker.sock`, and do
 not enable privileged mode.
 
+## Agent desktop and browser automation
+
+The container bundles [agent-workspace-linux](https://github.com/agent-sh/agent-workspace-linux),
+not [computer-use-linux](https://github.com/agent-sh/computer-use-linux). The
+distinction matters:
+
+- `computer-use-linux` drives the **host's real desktop** through AT-SPI and
+  session portals.
+- `agent-workspace-linux` gives agents an **isolated hidden X11 workspace**
+  (Xvfb + Openbox + workspace-owned Chromium) over MCP, without touching your
+  laptop or NAS desktop.
+
+After SSHing in, verify the runtime:
+
+```sh
+agent-workspace-linux doctor
+```
+
+Create a workspace explicitly, then launch the browser profile:
+
+```sh
+agent-workspace-linux workspace start \
+  --ack-hidden-workspace \
+  --purpose "Synology QA"
+
+agent-workspace-linux workspace launch \
+  --name browser \
+  --profile browser-session \
+  -- chromium
+```
+
+Agents can drive the workspace through MCP. Register the stdio server from
+`config/synology-dev/codex-mcp-workspace.toml`, or run:
+
+```sh
+agent-workspace-linux mcp
+```
+
+Visual debugging options on the LAN:
+
+- Screenshots: `agent-workspace-linux workspace observe --screenshot --output /tmp/ws.png`
+- Live view: after a workspace is running, attach noVNC against its display:
+
+```sh
+DISPLAY=:99 synology-dev-workspace-novnc
+```
+
+Then open `http://192.168.1.252:6080/vnc.html` in a browser.
+
+Browser automation uses the workspace-owned Chromium DevTools endpoint on
+loopback inside the container. Pair it with `agent-browser --cdp 9222` or the
+`agent-workspace-linux` browser MCP tools.
+
 ## Direct smoke run
 
 After the image has been imported manually, an optional terminal smoke test on
