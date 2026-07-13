@@ -6,14 +6,20 @@ flake="$repo_root/flake.nix"
 dockerfile="$repo_root/Dockerfile.synology-dev"
 dockerignore="$repo_root/.dockerignore"
 compose="$repo_root/compose/synology-dev.compose.yaml"
+root_compose="$repo_root/docker-compose.yml"
 guide="$repo_root/docs/synology-dev-container.md"
 
-for required_file in "$flake" "$dockerfile" "$dockerignore" "$compose" "$guide"; do
+for required_file in "$flake" "$dockerfile" "$dockerignore" "$compose" "$root_compose" "$guide"; do
   if [[ ! -f "$required_file" ]]; then
     printf 'required Synology dev-container file is missing: %s\n' "$required_file" >&2
     exit 1
   fi
 done
+
+if ! cmp -s "$compose" "$root_compose"; then
+  printf '%s\n' 'root docker-compose.yml must stay in sync with the Synology compose file' >&2
+  exit 1
+fi
 
 if rg -q -- '- [^:]+:/home/esko[[:space:]]*$' "$compose"; then
   printf '%s\n' 'Compose must not persist the image-owned Home Manager home' >&2

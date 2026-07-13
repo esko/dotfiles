@@ -1,0 +1,47 @@
+name: dotfiles-synology-dev
+
+services:
+  dev:
+    image: dotfiles-synology-dev:latest
+    container_name: dotfiles-synology-dev
+    user: "1026:100"
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    environment:
+      HOME: /home/esko
+      USER: esko
+      LOGNAME: esko
+      TERM: xterm-256color
+      COLORTERM: truecolor
+      AGY_CLI_DISABLE_AUTO_UPDATE: "true"
+      OPENCODE_DISABLE_AUTOUPDATE: "true"
+    volumes:
+      # Replace CHANGE_ME_WORKSPACE in Container Manager with the absolute path
+      # of the NAS directory that should be available as /workspace.
+      - /volume3/homes/esko/CHANGE_ME_WORKSPACE:/workspace
+      # Persist mutable XDG state without retaining image-specific Home Manager
+      # symlinks across image upgrades.
+      - synology-dev-cache:/home/esko/.cache
+      - synology-dev-data:/home/esko/.local/share
+      - synology-dev-state:/home/esko/.local/state
+      - synology-dev-codex:/home/esko/.codex
+      - synology-dev-pi:/home/esko/.pi
+      - synology-dev-gemini:/home/esko/.gemini
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  synology-dev-cache:
+    name: dotfiles-synology-dev-cache
+  synology-dev-data:
+    name: dotfiles-synology-dev-data
+  synology-dev-state:
+    name: dotfiles-synology-dev-state
+  synology-dev-codex:
+    name: dotfiles-synology-dev-codex
+  synology-dev-pi:
+    name: dotfiles-synology-dev-pi
+  synology-dev-gemini:
+    name: dotfiles-synology-dev-gemini

@@ -80,7 +80,8 @@ the NAS operator:
 
 1. In Container Manager, import
    `/volume3/homes/esko/dotfiles-synology-dev/dotfiles-synology-dev-linux-amd64.tar`.
-2. Create a project from `synology-dev.compose.yaml`.
+2. Create a project from `synology-dev.compose.yaml` (or the equivalent
+   root-level `docker-compose.yml`).
 3. Replace `/volume3/homes/esko/CHANGE_ME_WORKSPACE` with the absolute NAS path
    that should be mounted at `/workspace`.
 4. Review the mounts, retain user `1026:100`, then build and start the project.
