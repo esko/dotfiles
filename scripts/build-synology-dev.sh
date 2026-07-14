@@ -58,10 +58,36 @@ docker save --output "$archive" "$image"
 printf 'Creating remote handoff directory: %s:%s\n' "$remote" "$remote_dir"
 ssh "$remote" mkdir -p "$remote_dir"
 
-printf '%s\n' 'Copying image archive, checksum, and Compose definition'
+env_file="$artifact_dir/synology-dev.env"
+handoff_files=(
+  "$archive"
+  "$checksum"
+  "$compose"
+  "$repo_root/scripts/synology-dev-start-services.sh"
+  "$repo_root/scripts/synology-dev-start-sshd.sh"
+  "$repo_root/scripts/synology-dev-start-tailscale.sh"
+)
+
+if [[ -f "$repo_root/secrets/hosts/synology-dev.yaml" ]]; then
+  "$repo_root/scripts/sync-deployment-secrets.sh" synology-dev
+  if [[ -f "$env_file" ]]; then
+    handoff_files+=("$env_file")
+  fi
+else
+  printf '%s\n' \
+    'No secrets/hosts/synology-dev.yaml found; skipping deployment env handoff.' \
+    'Run: ./update.sh --bootstrap-secrets after adding env secrets.' >&2
+fi
+
+printf '%s\n' 'Copying image archive, checksum, Compose definition, startup scripts, and env file'
 # DSM's SSH service may not expose the SFTP subsystem required by modern SCP.
 # Force the legacy SCP transport, which is supported by the target NAS.
-scp -O "$archive" "$checksum" "$compose" "$remote:$remote_dir/"
+scp -O "${handoff_files[@]}" "$remote:$remote_dir/"
+
+if [[ -f "$env_file" ]]; then
+  printf '%s\n' 'Restricting the remote Tailscale env file to owner-read only'
+  ssh "$remote" chmod 600 "$remote_dir/$(basename "$env_file")"
+fi
 
 printf '%s\n' 'Verifying the transferred archive checksum on Synology'
 printf -v remote_verify \

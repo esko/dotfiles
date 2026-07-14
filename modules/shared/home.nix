@@ -44,7 +44,7 @@ in
     # Native hosts use their OS-provided OpenSSH client so its feature set
     # matches /etc/ssh/ssh_config. The container module adds Nix OpenSSH.
     curl wget fastfetch p7zip unzip dos2unix dnsutils
-    inetutils nmap bun cargo-binstall golangci-lint
+    inetutils nmap tailscale bun cargo-binstall golangci-lint
     python3Packages.pytest croc
   ] ++ optionalPackages [
     # Native fast-moving CLIs may use nixpkgs when available. Node-based global

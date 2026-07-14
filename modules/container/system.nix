@@ -39,7 +39,10 @@
     ignoreShellProgramCheck = true;
   };
 
-  environment.systemPackages = [ pkgs.zsh ];
+  environment.systemPackages = with pkgs; [
+    zsh
+    tailscale
+  ];
 
   system-manager.preActivationAssertions.systemdContainer = {
     enable = true;

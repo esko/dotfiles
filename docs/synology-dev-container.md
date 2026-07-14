@@ -7,9 +7,9 @@ Nix produces the runtime closure in a builder stage, and a `FROM scratch`
 stage receives only that closure and the prepared root filesystem. Nix is not
 installed in the final image.
 
-The image contains the shared dotfiles utilities plus `pi`, `herdr`,
+The image contains the shared dotfiles utilities plus `pi`, `herdr`, `reasonix`,
 `opencode`, `hunk`, `yazi`, `flow`, Google Antigravity CLI (`agy`), OpenAI
-Codex, `mosh-server`, Eternal Terminal (`et`/`etserver`), and `tsshd`. It runs
+Codex, `mosh-server`, Eternal Terminal (`et`/`etserver`), `tailscale`, and `tsshd`. It runs
 as the NAS user `1026:100`,
 uses `/home/esko` as `HOME`, and opens in `/workspace`. It does not contain an
 SSH server or systemd, does not request privileged mode, and should not be
@@ -35,6 +35,59 @@ With the supplied Compose file these three helpers are dormant binaries: there
 is no in-container SSH transport or port mapping through which a remote client
 can launch them. Making them remotely usable requires a separately reviewed
 SSH/exec bridge or SSH service and explicit Container Manager/firewall ports.
+
+## Tailscale inside the container
+
+Tailscale runs inside the container, not on the Synology host. The image ships
+`tailscaled` and a boot script that joins the tailnet before SSH starts. The
+Compose file grants `NET_ADMIN`, `NET_RAW`, and `/dev/net/tun`, and persists
+Tailscale identity in the `dotfiles-synology-dev-tailscale` volume at
+`/var/lib/tailscale`.
+
+Set a reusable auth key in Container Manager when creating the project:
+
+```yaml
+environment:
+  TAILSCALE_AUTHKEY: tskey-auth-...
+```
+
+### Automated auth key handoff
+
+Store the Tailscale auth key in the unified secrets file, then update:
+
+```sh
+nix run .#bootstrap-secrets -- env synology-dev tailscale_auth_key
+git add secrets/hosts/synology-dev.yaml secrets/age-recipients/synology-dev.txt .sops.yaml
+./update.sh --synology
+```
+
+`./update.sh --synology` builds the image, runs `render-deployment-env.sh`, and
+writes `synology-dev.env` when
+`secrets/hosts/synology-dev.yaml` exists, and copies the handoff bundle to the NAS.
+
+Create the auth key in the Tailscale admin console as **Reusable** (optionally
+tagged and expiring). After the first successful join, the
+`dotfiles-synology-dev-tailscale` volume keeps node identity; later container
+recreates rejoin without consuming another key.
+
+Optional overrides:
+
+- `TAILSCALE_HOSTNAME` (default `synology-dev`)
+- `TAILSCALE_EXTRA_ARGS` (extra flags passed to `tailscale up`, for example
+  `--advertise-tags=tag:container`)
+- `TAILSCALE_AUTHKEY_FILE` (read the key from a bind-mounted file instead of
+  the environment)
+- `TAILSCALE_SOCKET` (default `/var/run/tailscale/tailscaled.sock`)
+
+After SSHing in, inspect the node with:
+
+```sh
+tailscale --socket="$TAILSCALE_SOCKET" status
+```
+
+The macvlan LAN address (`192.168.1.252`) and the Tailscale address coexist.
+Use the tailnet IP or MagicDNS name for mesh access; keep the macvlan mapping
+for local LAN services such as noVNC.
 
 ## Build, test, and transfer
 
@@ -84,11 +137,15 @@ the NAS operator:
    root-level `docker-compose.yml`).
 3. Replace `/volume3/homes/esko/CHANGE_ME_WORKSPACE` with the absolute NAS path
    that should be mounted at `/workspace`.
-4. Review the mounts, retain user `1026:100`, then build and start the project.
+4. Ensure `synology-dev.env` is present on the NAS (produced by `./update.sh --synology`
+   after `nix run .#bootstrap-secrets -- env synology-dev tailscale_auth_key`),
+   or add `TAILSCALE_AUTHKEY` manually in Container Manager.
+5. Review the mounts, retain user `1026:100`, then build and start the project.
 
 The named cache, data, and state volumes preserve mutable XDG data and shell
 history across container replacement. Narrowly scoped volumes also preserve
-Codex (`~/.codex`), Pi (`~/.pi`), and Antigravity (`~/.gemini`) state.
+Codex (`~/.codex`), Pi (`~/.pi`), Antigravity (`~/.gemini`), Reasonix
+(`~/.reasonix`), and Tailscale (`/var/lib/tailscale`) state.
 Declarative Home Manager files remain in the image, so upgrades cannot retain
 symlinks to Nix-store paths from an older image. Deleting these volumes deletes
 the corresponding accumulated state.
@@ -112,8 +169,8 @@ services:
 Mounting `.ssh` read-only allows outbound Git/SSH use without letting the
 container alter the host's keys or `known_hosts`. If a CLI needs to update its
 configuration or token cache, copy just that configuration into its matching
-persistent named volume (XDG data/state, `~/.codex`, `~/.pi`, or `~/.gemini`)
-instead of changing the image. Do not bind mount `/var/run/docker.sock`, and do
+persistent named volume (XDG data/state, `~/.codex`, `~/.pi`, `~/.gemini`, or
+`~/.reasonix`) instead of changing the image. Do not bind mount `/var/run/docker.sock`, and do
 not enable privileged mode.
 
 ## Agent desktop and browser automation
@@ -183,6 +240,7 @@ the NAS is:
   --mount type=volume,src=dotfiles-synology-dev-codex,dst=/home/esko/.codex \
   --mount type=volume,src=dotfiles-synology-dev-pi,dst=/home/esko/.pi \
   --mount type=volume,src=dotfiles-synology-dev-gemini,dst=/home/esko/.gemini \
+  --mount type=volume,src=dotfiles-synology-dev-reasonix,dst=/home/esko/.reasonix \
   --mount type=bind,src=/volume3/homes/esko/CHANGE_ME_WORKSPACE,dst=/workspace \
   dotfiles-synology-dev:latest
 ```

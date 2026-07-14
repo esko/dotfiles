@@ -81,6 +81,42 @@ rfv() {
   micro "$file" +"$line"
 }
 
+# Pull latest changes when entering a git repository. Disable with
+# GIT_AUTO_PULL=0 or for one cd: GIT_AUTO_PULL=0 cd repo
+if [[ -o interactive ]]; then
+  typeset -g __git_auto_pull_last=""
+  typeset -g __git_auto_pull_repo=""
+  typeset -g __git_auto_pull_ts=0
+
+  _auto_git_pull_on_cd() {
+    [[ "${GIT_AUTO_PULL:-1}" == "0" ]] && return
+    (( $+commands[git] )) || return
+    git rev-parse --is-inside-work-tree &>/dev/null || return
+
+    local root
+    root="$(git rev-parse --show-toplevel 2>/dev/null)" || return
+
+    # Pull once per repo entry; skip when moving within the same repo.
+    if [[ "$root" == "$__git_auto_pull_repo" && "$PWD" != "$root" ]]; then
+      return
+    fi
+    __git_auto_pull_repo="$root"
+
+    local now=$(( $(date +%s) ))
+    if [[ "$root" == "$__git_auto_pull_last" && $(( now - __git_auto_pull_ts )) -lt 60 ]]; then
+      return
+    fi
+    __git_auto_pull_last="$root"
+    __git_auto_pull_ts=$now
+
+    print -u2 "↻ auto-pulling $(basename "$root")..."
+    git -C "$root" pull --rebase --autostash --ff-only 2>/dev/null \
+      || git -C "$root" pull --rebase --autostash
+  }
+
+  chpwd_functions+=(_auto_git_pull_on_cd)
+fi
+
 # Keep a useful shell completion for the locally installed agy CLI. Define a
 # normal zsh completion function rather than embedding one large quoted command.
 if (( $+commands[agy] )); then

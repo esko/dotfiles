@@ -96,6 +96,31 @@
         hostName = "mini";
       };
 
+      mkBootstrapSecretsApp = pkgs:
+        let
+          package = pkgs.writeShellApplication {
+            name = "bootstrap-secrets";
+            runtimeInputs = with pkgs; [
+              age
+              sops
+              openssh
+              git
+              gh
+              jq
+              coreutils
+              findutils
+              gnugrep
+              gnused
+              gawk
+              nix
+            ];
+            text = builtins.readFile ./scripts/bootstrap-secrets.sh;
+          };
+        in {
+          type = "app";
+          program = "${package}/bin/bootstrap-secrets";
+        };
+
       mkBootstrapSshApp = pkgs:
         let
           package = pkgs.writeShellApplication {
@@ -106,11 +131,13 @@
               openssh
               git
               gh
+              jq
               coreutils
               findutils
               gnugrep
               gnused
               gawk
+              nix
             ];
             text = builtins.readFile ./scripts/bootstrap-ssh.sh;
           };
@@ -118,6 +145,8 @@
           type = "app";
           program = "${package}/bin/bootstrap-ssh";
         };
+
+      secretsManifest = import ./secrets/manifest.nix;
 
       synologyDevHome = homeManagerLinux.lib.homeManagerConfiguration {
         pkgs = synologyPkgs;
@@ -148,6 +177,7 @@
       codexAgent = llmAgentPkgs.codex;
       antigravityCli = llmAgentPkgs.antigravity-cli;
       herdrAgent = llmAgentPkgs.herdr;
+      reasonixAgent = llmAgentPkgs.reasonix;
       hunkBaseline = synologyPkgs.callPackage ./packages/hunk-baseline.nix {
         inherit bunBaseline;
       };
@@ -160,14 +190,19 @@
           antigravityCli
           codexAgent
           herdrAgent
+          reasonixAgent
           hunkBaseline
           opencodeBaseline
           synologyDevGui
           ;
       };
     in {
+      apps.${linuxSystem}.bootstrap-secrets = mkBootstrapSecretsApp linuxPkgs;
       apps.${linuxSystem}.bootstrap-ssh = mkBootstrapSshApp linuxPkgs;
+      apps.${darwinSystem}.bootstrap-secrets = mkBootstrapSecretsApp darwinPkgs;
       apps.${darwinSystem}.bootstrap-ssh = mkBootstrapSshApp darwinPkgs;
+
+      inherit secretsManifest;
 
       # Standalone Home Manager profile for the current Crostini host. ChromeOS
       # and the Crostini VM remain responsible for system-level configuration.
@@ -177,7 +212,7 @@
         modules = [
           sopsNixLinux.homeManagerModules.sops
           ./modules/shared/home.nix
-          ./modules/shared/ssh.nix
+          ./modules/shared/secrets.nix
           ./modules/linux/home.nix
         ];
       };
@@ -199,7 +234,7 @@
                 imports = [
                   sopsNixLinux.homeManagerModules.sops
                   ./modules/shared/home.nix
-                  ./modules/shared/ssh.nix
+                  ./modules/shared/secrets.nix
                   ./modules/linux/home.nix
                 ];
               };
@@ -216,7 +251,7 @@
         modules = [
           sopsNixLinux.homeManagerModules.sops
           ./modules/shared/home.nix
-          ./modules/shared/ssh.nix
+          ./modules/shared/secrets.nix
           ./modules/container/home.nix
         ];
       };
@@ -248,7 +283,7 @@
                 imports = [
                   sopsNixLinux.homeManagerModules.sops
                   ./modules/shared/home.nix
-                  ./modules/shared/ssh.nix
+                  ./modules/shared/secrets.nix
                   ./modules/container/home.nix
                 ];
               };
@@ -284,7 +319,7 @@
               imports = [
                 sopsNixDarwin.homeManagerModules.sops
                 ./modules/shared/home.nix
-                ./modules/shared/ssh.nix
+                ./modules/shared/secrets.nix
                 ./modules/darwin/home.nix
               ];
             };

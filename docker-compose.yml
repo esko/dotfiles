@@ -24,27 +24,34 @@ services:
       BROWSER_BIN: chromium
       SYNOLOGY_DEV_VNC_PORT: "5900"
       SYNOLOGY_DEV_NOVNC_PORT: "6080"
+      TAILSCALE_SOCKET: /var/run/tailscale/tailscaled.sock
+      TAILSCALE_HOSTNAME: synology-dev
+      SYNOLOGY_DEV_TAILSCALE_STATE_DIR: /var/lib/tailscale
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
     networks:
       macvlan_bridge:
       mymacvlan:
         ipv4_address: 192.168.1.252
     command:
-      - /usr/local/bin/start-services.sh
+      - /bin/synology-dev-start-services.sh
+    env_file:
+      - /volume3/homes/esko/dotfiles-synology-dev/synology-dev.env
     volumes:
       - /volume3/homes/esko/CHANGE_ME_WORKSPACE:/workspace
       - /volume3/homes/esko/.ssh:/home/esko/.ssh:ro
-      - /volume3/homes/esko/dotfiles-synology-dev/start-sshd.sh:/usr/local/bin/start-sshd.sh:ro
-      - /volume3/homes/esko/dotfiles-synology-dev/start-services.sh:/usr/local/bin/start-services.sh:ro
       - synology-dev-cache:/home/esko/.cache
       - synology-dev-data:/home/esko/.local/share
       - synology-dev-state:/home/esko/.local/state
       - synology-dev-codex:/home/esko/.codex
       - synology-dev-pi:/home/esko/.pi
       - synology-dev-gemini:/home/esko/.gemini
+      - synology-dev-reasonix:/home/esko/.reasonix
       - synology-dev-workspace:/home/esko/.local/share/agent-workspace-linux
+      - synology-dev-tailscale:/var/lib/tailscale
     restart: unless-stopped
 
 networks:
@@ -66,5 +73,9 @@ volumes:
     name: dotfiles-synology-dev-pi
   synology-dev-gemini:
     name: dotfiles-synology-dev-gemini
+  synology-dev-reasonix:
+    name: dotfiles-synology-dev-reasonix
   synology-dev-workspace:
     name: dotfiles-synology-dev-workspace
+  synology-dev-tailscale:
+    name: dotfiles-synology-dev-tailscale

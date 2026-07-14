@@ -45,8 +45,9 @@ docker run --rm --entrypoint /bin/zsh "$image" -lc '
   /bin/zsh -lic '\''test "$ZSH_NAME" = zsh'\''
 
   for command_name in \
-    pi herdr opencode hunk yazi flow \
-    mosh-server etserver tsshd agy codex bun \
+    pi herdr reasonix opencode hunk yazi flow \
+    mosh-server etserver tailscale tailscaled tsshd agy codex bun \
+    synology-dev-start-tailscale synology-dev-start-services \
     agent-workspace-linux Xvfb xdotool chromium \
     git rg fd jq zellij starship; do
     command -v "$command_name" >/dev/null
@@ -54,6 +55,7 @@ docker run --rm --entrypoint /bin/zsh "$image" -lc '
 
   pi --version >/dev/null
   herdr --version >/dev/null
+  reasonix --version >/dev/null
   cpu_model=""
   while IFS= read -r cpu_line; do
     if [[ "$cpu_line" = "model name"* ]]; then
@@ -71,6 +73,7 @@ docker run --rm --entrypoint /bin/zsh "$image" -lc '
   flow --version >/dev/null
   mosh-server --version >/dev/null
   etserver --version >/dev/null
+  tailscale version >/dev/null
   tsshd --version >/dev/null
   agy --version >/dev/null
   codex --version >/dev/null
@@ -110,13 +113,14 @@ state_volume="synology-dev-runtime-state-$$"
 codex_volume="synology-dev-runtime-codex-$$"
 pi_volume="synology-dev-runtime-pi-$$"
 gemini_volume="synology-dev-runtime-gemini-$$"
+reasonix_volume="synology-dev-runtime-reasonix-$$"
 cleanup_state_volume() {
   docker volume rm --force \
-    "$state_volume" "$codex_volume" "$pi_volume" "$gemini_volume" \
+    "$state_volume" "$codex_volume" "$pi_volume" "$gemini_volume" "$reasonix_volume" \
     >/dev/null 2>&1 || true
 }
 trap cleanup_state_volume EXIT
-for volume in "$state_volume" "$codex_volume" "$pi_volume" "$gemini_volume"; do
+for volume in "$state_volume" "$codex_volume" "$pi_volume" "$gemini_volume" "$reasonix_volume"; do
   docker volume create "$volume" >/dev/null
 done
 
@@ -125,6 +129,7 @@ docker run --rm \
   --mount "type=volume,src=$codex_volume,dst=/home/esko/.codex" \
   --mount "type=volume,src=$pi_volume,dst=/home/esko/.pi" \
   --mount "type=volume,src=$gemini_volume,dst=/home/esko/.gemini" \
+  --mount "type=volume,src=$reasonix_volume,dst=/home/esko/.reasonix" \
   --entrypoint /bin/zsh \
   "$image" -lc '
     test -f "$HOME/.zshrc"
@@ -133,6 +138,7 @@ docker run --rm \
     : > "$HOME/.codex/upgrade-probe"
     : > "$HOME/.pi/upgrade-probe"
     : > "$HOME/.gemini/upgrade-probe"
+    : > "$HOME/.reasonix/upgrade-probe"
   '
 
 docker run --rm \
@@ -140,6 +146,7 @@ docker run --rm \
   --mount "type=volume,src=$codex_volume,dst=/home/esko/.codex" \
   --mount "type=volume,src=$pi_volume,dst=/home/esko/.pi" \
   --mount "type=volume,src=$gemini_volume,dst=/home/esko/.gemini" \
+  --mount "type=volume,src=$reasonix_volume,dst=/home/esko/.reasonix" \
   --entrypoint /bin/zsh \
   "$image" -lc '
     test -f "$HOME/.zshrc"
@@ -147,6 +154,7 @@ docker run --rm \
     test -f "$HOME/.codex/upgrade-probe"
     test -f "$HOME/.pi/upgrade-probe"
     test -f "$HOME/.gemini/upgrade-probe"
+    test -f "$HOME/.reasonix/upgrade-probe"
   '
 
 cleanup_state_volume

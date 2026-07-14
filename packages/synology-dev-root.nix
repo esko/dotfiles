@@ -15,10 +15,13 @@
   pi-coding-agent,
   mosh,
   eternal-terminal,
+  openssh,
+  tailscale,
   tsshd,
   flow-control,
   homeConfiguration,
   herdrAgent,
+  reasonixAgent,
   codexAgent,
   antigravityCli,
   hunkBaseline,
@@ -37,6 +40,29 @@ let
     text = builtins.readFile ../scripts/synology-dev-entrypoint.sh;
   };
 
+  startTailscale = writeShellApplication {
+    name = "synology-dev-start-tailscale";
+    runtimeInputs = [ coreutils tailscale ];
+    text = builtins.readFile ../scripts/synology-dev-start-tailscale.sh;
+  };
+
+  startSshd = writeShellApplication {
+    name = "synology-dev-start-sshd";
+    runtimeInputs = [
+      coreutils
+      fail2ban
+      iptables
+      openssh
+    ];
+    text = builtins.readFile ../scripts/synology-dev-start-sshd.sh;
+  };
+
+  startServices = writeShellApplication {
+    name = "synology-dev-start-services";
+    runtimeInputs = [ coreutils startTailscale startSshd ];
+    text = builtins.readFile ../scripts/synology-dev-start-services.sh;
+  };
+
   runtime = buildEnv {
     name = "synology-dev-environment";
     paths = [
@@ -50,8 +76,10 @@ let
       synologyDevGui
       pi-coding-agent
       herdrAgent
+      reasonixAgent
       mosh
       eternal-terminal
+      tailscale
       tsshd
       codexAgent
       antigravityCli
@@ -59,6 +87,9 @@ let
       hunkBaseline
       flow-control
       entrypoint
+      startTailscale
+      startSshd
+      startServices
     ];
     pathsToLink = [
       "/bin"
@@ -99,6 +130,7 @@ runCommand "synology-dev-root" { } ''
     "$out/home/${username}/.codex" \
     "$out/home/${username}/.config" \
     "$out/home/${username}/.gemini" \
+    "$out/home/${username}/.reasonix" \
     "$out/home/${username}/.local/share" \
     "$out/home/${username}/.local/state" \
     "$out/home/${username}/.pi"
@@ -144,12 +176,17 @@ EOF
   test -x "$out/bin/pi"
   test -x "$out/bin/herdr"
   test "$(readlink -f "$out/bin/herdr")" = "${herdrAgent}/bin/herdr"
+  test -x "$out/bin/reasonix"
   test -x "$out/bin/opencode"
   test -x "$out/bin/hunk"
   test -x "$out/bin/yazi"
   test -x "$out/bin/flow"
   test -x "$out/bin/mosh-server"
   test -x "$out/bin/etserver"
+  test -x "$out/bin/tailscale"
+  test -x "$out/bin/tailscaled"
+  test -x "$out/bin/synology-dev-start-tailscale"
+  test -x "$out/bin/synology-dev-start-services"
   test -x "$out/bin/tsshd"
   test -x "$out/bin/agy"
   test -x "$out/bin/codex"

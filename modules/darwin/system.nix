@@ -20,6 +20,7 @@
     brews = [
       "et"
       "mosh"
+      "tailscale"
       "tsshd"
     ];
     casks = [

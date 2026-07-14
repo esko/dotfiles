@@ -1,11 +1,11 @@
 # Encrypted host secrets
 
-Files in this directory are SOPS-encrypted, one file per deployment. They may
-contain host-specific private material such as `ssh/id_ed25519`; plaintext
-private keys must never be committed.
+Files in this directory are SOPS-encrypted, one file per deployment. They follow
+the schema documented in [`../README.md`](../README.md).
 
-Create a deployment file through:
+Create or update deployment secrets with:
 
 ```sh
-nix run .#bootstrap-ssh -- <deployment>
+nix run .#bootstrap-secrets -- ssh <deployment>
+nix run .#bootstrap-secrets -- env <deployment> <key>
 ```

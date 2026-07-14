@@ -6,7 +6,7 @@ module="$repo_root/modules/shared/home.nix"
 init="$repo_root/modules/shared/zsh/init.zsh"
 node_tools_installer="$repo_root/scripts/install-node-tools.sh"
 
-for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'bun' 'home.sessionPath'; do
+for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'tailscale' 'bun' 'home.sessionPath'; do
   rg -q --fixed-strings "$token" "$module" "$init"
 done
 

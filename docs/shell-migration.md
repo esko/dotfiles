@@ -29,7 +29,7 @@ Crostini and lightweight containers do not modify the account database.
 `modules/shared/home.nix` installs portable CLI tools that are available in
 nixpkgs, including the approved shared list (`rg`, `fd`, `fzf`, `eza`, `bat`,
 `zoxide`, `git`, `gh`, `age`, `jq`, `delta`, `btop`, `micro`, `yazi`, `rsync`,
-`mosh`, `shellcheck`, `lefthook`, `lazygit`, `cmake`, Rust, Go, Zig, fnm, pnpm,
+`mosh`, `tailscale`, `shellcheck`, `lefthook`, `lazygit`, `cmake`, Rust, Go, Zig, fnm, pnpm,
 uv, Python, pipx, and the audited diagnostics/archive tools). `chafa` is
 intentionally excluded. `unrar` remains optional because it is unfree;
 `extract` uses it automatically when present.

@@ -31,7 +31,9 @@ for mutable_path in \
   /home/esko/.local/state \
   /home/esko/.codex \
   /home/esko/.pi \
-  /home/esko/.gemini; do
+  /home/esko/.gemini \
+  /home/esko/.reasonix \
+  /var/lib/tailscale; do
   rg -q --fixed-strings ":${mutable_path}" "$compose"
 done
 
@@ -50,10 +52,16 @@ rg -q --fixed-strings 'opencode-linux-x64-baseline.tar.gz' "$flake"
 rg -q 'synologyPkgs[[:space:]]*=.*linuxPkgs\.extend' "$flake"
 rg -q 'bun[[:space:]]*=.*packages/bun-baseline\.nix' "$flake"
 rg -q 'herdr[[:space:]]*=[[:space:]]*llmAgentPkgs\.herdr' "$flake"
+rg -q 'reasonixAgent[[:space:]]*=[[:space:]]*llmAgentPkgs\.reasonix' "$flake"
 rg -q --fixed-strings 'https://cache.numtide.com' "$dockerfile"
 rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$dockerfile"
 rg -q 'OPENCODE_DISABLE_AUTOUPDATE=true' "$dockerfile"
 rg -q 'OPENCODE_DISABLE_AUTOUPDATE:[[:space:]]*"true"' "$compose"
+rg -q 'env_file:' "$compose"
+rg -q 'synology-dev\.env' "$compose" "$guide"
+rg -q '/dev/net/tun' "$compose"
+rg -q 'TAILSCALE_AUTHKEY|TAILSCALE_HOSTNAME|TAILSCALE_SOCKET|bootstrap-secrets' "$compose" "$guide"
+rg -q 'synology-dev-start-tailscale|render-deployment-env' "$repo_root/packages/synology-dev-root.nix" "$repo_root/scripts"
 
 # These modes are part of the non-root runtime contract. Some Docker backends
 # normalize modes on copied directories, so the final stage must reassert them.
@@ -72,8 +80,8 @@ for secret_pattern in \
 done
 
 for command_name in \
-  pi herdr opencode hunk yazi flow \
-  mosh eternal-terminal tsshd antigravity-cli codex \
+  pi herdr reasonix opencode hunk yazi flow \
+  mosh eternal-terminal tailscale tsshd antigravity-cli codex \
   agent-workspace-linux; do
   rg -q --glob '*.nix' \
     "\\b${command_name}\\b" \
@@ -92,6 +100,10 @@ for token in \
   '100' \
   '/home/esko' \
   '/workspace' \
+  '/var/lib/tailscale' \
+  'TAILSCALE_AUTHKEY' \
+  'bootstrap-secrets' \
+  'render-deployment-env' \
   'Container Manager'; do
   rg -q --fixed-strings "$token" "$guide"
 done

@@ -104,7 +104,7 @@ apps remain untouched until an explicit package policy is added and reviewed.
 The Mac host module owns approved host applications (including the Codex,
 ChatGPT, Claude, Mos, Osaurus, Termius, Kitty, Hyper, Godot, editor, browser,
 VLC, and JetBrains Mono casks) plus the Xcode and KeepSolid VPN Unlimited Mac
-App Store entries. `mosh`, `et` (Eternal Terminal), and `tsshd` are declared as
+App Store entries. `mosh`, `et` (Eternal Terminal), `tailscale`, and `tsshd` are declared as
 Homebrew formulae. ProxyBridge is retained as a documented upstream-install
 intent because its signed distribution is not treated as a stable cask.
 Homebrew never auto-updates, upgrades, or removes existing packages.
@@ -125,18 +125,30 @@ and resource limits have been reviewed for the Mini.
 
 ## Secrets boundary
 
-`.sops.yaml` is scaffolding only. The later SSH slice should add encrypted
-material under `secrets/` using age recipients, while keeping private keys,
-recovery keys, and plaintext exports out of Git. No secret files are created by
-the foundation. The Darwin Home Manager module exposes an opt-in
-`dotfiles.darwin.ssh` interface: enable it only after adding a real per-host
-Ed25519 secret encrypted with the Mini's age recipient.
+Deployment secrets are SOPS-encrypted in `secrets/hosts/<deployment>.yaml`.
+`secrets/manifest.nix` declares which hosts use SSH keys, which env secrets
+they need, and how env keys map to runtime variable names. Bootstrap and render
+automation lives in `scripts/bootstrap-secrets.sh` and
+`scripts/render-deployment-env.sh`.
 
-Bootstrap the secret boundary manually on each host:
+Nix-managed hosts decrypt secrets through `sops-nix` during Home Manager
+activation (`modules/shared/secrets.nix`):
 
-1. Install `age`/`sops` and configure the host age recipient in `.sops.yaml`.
-2. Add only encrypted secrets under `secrets/`; keep recovery keys and plaintext
-   exports outside the repository.
-3. Enable only the relevant private host overlay and build before switching.
-4. Add `authorizedKeys` only when incoming SSH access is intentionally part of
-   that host's role.
+- SSH private keys → `~/.ssh/id_ed25519`
+- Env secrets → `~/.config/dotfiles/secrets/env/<key>`
+
+Synology and similar handoff targets render dotenv files at build time. Plaintext
+never enters the Nix store or Docker image layers.
+
+Bootstrap a deployment:
+
+```sh
+nix run .#bootstrap-secrets -- ssh baguette --github
+nix run .#bootstrap-secrets -- env synology-dev tailscale_auth_key
+./update.sh --target baguette
+./update.sh --synology
+```
+
+Age private identities stay host-local at `~/.config/sops/age/keys.txt`. Public
+age recipients are committed under `secrets/age-recipients/`. See
+[`secrets/README.md`](../secrets/README.md) for the full schema.

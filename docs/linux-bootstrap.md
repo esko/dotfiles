@@ -41,6 +41,7 @@ repositories:
   VA-API/OpenCL packages
 - optional utilities not suitable for the shared Nix profile: `unrar`,
   `streamlink`, and `qmk`
+- VPN mesh: `tailscale` from Tailscale's Debian repository
 
 Use Debian's OpenSSH client. A second Nix OpenSSH build can read Debian's
 `/etc/ssh/ssh_config` with a different compiled feature set, producing warnings
@@ -67,6 +68,21 @@ Passwords are not declared.
 GitHub uses HTTPS as the bootstrap-safe default. Authenticate with
 `gh auth login`; change an individual remote to SSH only after that host has an
 SSH key enrolled with GitHub.
+
+Install Tailscale for the host daemon and systemd integration:
+
+```sh
+curl -fsSL https://pkgs.tailscale.com/stable/debian/$(. /etc/os-release && printf '%s' "${VERSION_CODENAME}")/noarmor.gpg \
+  | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+curl -fsSL "https://pkgs.tailscale.com/stable/debian/$(. /etc/os-release && printf '%s' "${VERSION_CODENAME}").tailscale-keyring.list" \
+  | sudo tee /etc/apt/sources.list.d/tailscale.list
+sudo apt update
+sudo apt install -y tailscale
+sudo systemctl enable --now tailscaled
+```
+
+The shared Home Manager profile also installs the Nix `tailscale` CLI. Use the
+Debian package for `tailscaled` on native Linux hosts.
 
 ## Build before activation
 

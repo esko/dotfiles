@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 linux_module="$repo_root/modules/linux/home.nix"
-linux_ssh_module="$repo_root/modules/linux/ssh.nix"
+secrets_module="$repo_root/modules/shared/secrets.nix"
 container_module="$repo_root/modules/container/home.nix"
 bootstrap="$repo_root/docs/linux-bootstrap.md"
 flake="$repo_root/flake.nix"
@@ -24,9 +24,10 @@ for token in enableHostTools enableDesktopConfigs nativeBootstrap android-tools 
   rg -q --fixed-strings "$token" "$linux_module"
 done
 
-for token in privateKeySecret authorizedKeys sops.secrets id_ed25519; do
-  rg -q --fixed-strings "$token" "$linux_ssh_module"
+for token in dotfiles.secrets sops.secrets ssh/id_ed25519; do
+  rg -q --fixed-strings "$token" "$secrets_module"
 done
+rg -q --fixed-strings 'consumers' "$repo_root/secrets/manifest.nix"
 
 for token in enableSharedTools allowGuiPackages guiPackages Debian Trixie Docker GUI; do
   rg -q --fixed-strings "$token" "$container_module" "$bootstrap"

@@ -55,7 +55,7 @@ LABEL org.opencontainers.image.title="dotfiles-synology-dev" \
 RUN chmod 1777 /tmp \
     && chmod u+rwx /home/esko/.cache /home/esko/.codex /home/esko/.config \
       /home/esko/.gemini /home/esko/.local /home/esko/.local/share \
-      /home/esko/.local/state /home/esko/.pi
+      /home/esko/.local/state /home/esko/.pi /home/esko/.reasonix
 
 USER 1026:100
 WORKDIR /workspace
