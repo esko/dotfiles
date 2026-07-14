@@ -12,13 +12,13 @@
   # Use the macOS zsh binary for the login shell, like Baguette uses /usr/bin/zsh.
   # Home Manager owns ~/.zshrc and user packages. Avoid environment.shells here;
   # nix-darwin would replace /etc/shells and abort when Homebrew fish is listed.
-  system.activationScripts.dotfilesLoginShell.text = ''
+  system.activationScripts.postActivation.text = lib.mkAfter ''
     target_shell=/bin/zsh
     current_shell=$(/usr/bin/dscl . -read "/Users/${username}" UserShell 2>/dev/null \
       | /usr/bin/awk 'NF { print $NF }')
     if [ "$current_shell" != "$target_shell" ]; then
       echo "Setting login shell for ${username} to $target_shell (was ''${current_shell:-unknown})"
-      /usr/bin/dscl . -create "/Users/${username}" UserShell "$target_shell"
+      /usr/bin/chsh -s "$target_shell" ${username}
     fi
   '';
 

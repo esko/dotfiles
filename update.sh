@@ -263,6 +263,23 @@ run_install_node_tools() {
   "$installer"
 }
 
+ensure_login_shell() {
+  local target_shell=$1
+  local current_shell=""
+
+  if ! current_shell=$(/usr/bin/dscl . -read "/Users/${USER}" UserShell 2>/dev/null \
+    | /usr/bin/awk 'NF { print $NF }'); then
+    return 0
+  fi
+
+  if [[ "$current_shell" == "$target_shell" ]]; then
+    return 0
+  fi
+
+  printf 'Setting login shell to %s (was %s)\n' "$target_shell" "$current_shell"
+  sudo /usr/bin/chsh -s "$target_shell" "$USER"
+}
+
 flake_attr_for_target() {
   case "$1" in
     crostini) printf '%s\n' homeConfigurations.crostini ;;
@@ -356,6 +373,7 @@ apply_target() {
         exit 1
       fi
       sudo nix run "$NIX_DARWIN#darwin-rebuild" -- switch --flake "$repo_root#mini"
+      ensure_login_shell /bin/zsh
       run_install_node_tools
       ;;
     synology)
