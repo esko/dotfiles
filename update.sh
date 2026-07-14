@@ -255,7 +255,7 @@ deployment_for_target() {
 
 sync_secrets_for_target() {
   local resolved_target=$1
-  local deployment sync_args=("$repo/scripts/sync-deployment-secrets.sh")
+  local deployment sync_args=("$repo_root/scripts/sync-deployment-secrets.sh")
 
   deployment=$(deployment_for_target "$resolved_target")
   sync_args+=("$deployment")
@@ -281,8 +281,8 @@ run_deployment_consumers_for_target() {
   local deployment
 
   deployment=$(deployment_for_target "$resolved_target")
-  if [[ -x "$repo/scripts/run-deployment-consumers.sh" ]]; then
-    "$repo/scripts/run-deployment-consumers.sh" "$deployment"
+  if [[ -x "$repo_root/scripts/run-deployment-consumers.sh" ]]; then
+    "$repo_root/scripts/run-deployment-consumers.sh" "$deployment"
   fi
 }
 
@@ -307,19 +307,19 @@ apply_target() {
 
   case "$resolved_target" in
     crostini)
-      nix run home-manager -- switch --flake "$repo#crostini"
+      nix run home-manager -- switch --flake "$repo_root#crostini"
       run_install_node_tools
       ;;
     baguette)
-      nix run "$SYSTEM_MANAGER" -- switch --flake "$repo#baguette" --sudo
+      nix run "$SYSTEM_MANAGER" -- switch --flake "$repo_root#baguette" --sudo
       run_install_node_tools
       ;;
     debian-trixie)
-      nix run home-manager -- switch --flake "$repo#debianTrixie"
+      nix run home-manager -- switch --flake "$repo_root#debianTrixie"
       run_install_node_tools
       ;;
     debian-trixie-container)
-      nix run "$SYSTEM_MANAGER" -- switch --flake "$repo#debianTrixieContainer" --sudo
+      nix run "$SYSTEM_MANAGER" -- switch --flake "$repo_root#debianTrixieContainer" --sudo
       run_install_node_tools
       ;;
     mini)
@@ -327,10 +327,10 @@ apply_target() {
         printf '%s\n' 'The mini profile must be applied on the Mac itself.' >&2
         exit 1
       fi
-      sudo darwin-rebuild switch --flake "$repo#mini"
+      sudo darwin-rebuild switch --flake "$repo_root#mini"
       ;;
     synology)
-      "$repo/scripts/build-synology-dev.sh"
+      "$repo_root/scripts/build-synology-dev.sh"
       ;;
   esac
 }
