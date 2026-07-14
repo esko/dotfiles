@@ -30,6 +30,7 @@ jq -e '.proxyRules[0].enabled == true' "$root_dir/templates/proxybridge/ProxyBri
 ! grep -q '"proxybridge"' "$root_dir/modules/darwin/system.nix"
 grep -q 'backupFileExtension = "home-manager-backup"' "$root_dir/flake.nix"
 grep -q 'nix.enable = false' "$root_dir/modules/darwin/system.nix"
+grep -q 'dotfilesLoginShell' "$root_dir/modules/darwin/system.nix"
 grep -q '/etc/profiles/per-user/' "$root_dir/modules/darwin/home.nix"
 ! grep -q 'launchagents-templates' "$root_dir/modules/darwin/home.nix"
 for plist in "$root_dir"/templates/launchagents/*.plist; do

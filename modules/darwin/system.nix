@@ -9,6 +9,18 @@
   # of nix-darwin's native Nix module, which aborts when Determinate is present.
   nix.enable = false;
 
+  environment.shells = [ pkgs.zsh ];
+
+  system.activationScripts.dotfilesLoginShell.text = ''
+    target_shell=${lib.getExe pkgs.zsh}
+    current_shell=$(/usr/bin/dscl . -read "/Users/${username}" UserShell 2>/dev/null \
+      | /usr/bin/awk 'NF { print $NF }')
+    if [ "$current_shell" != "$target_shell" ]; then
+      echo "Setting login shell for ${username} to $target_shell (was ''${current_shell:-unknown})"
+      /usr/bin/dscl . -create "/Users/${username}" UserShell "$target_shell"
+    fi
+  '';
+
   # Homebrew is an integration point for host applications. Never remove or
   # zap unmanaged software during activation; package selections come later.
   homebrew = {
