@@ -7,8 +7,8 @@ in
   options.dotfiles.darwin = {
     proxyBridgePackage = lib.mkOption {
       type = lib.types.str;
-      default = "proxybridge (Homebrew cask)";
-      description = "ProxyBridge install path; managed by nix-darwin Homebrew.";
+      default = "proxybridge (manual Homebrew cask; Rosetta required on Apple Silicon)";
+      description = "ProxyBridge install path; not managed during nix-darwin activation.";
     };
 
     ssh = {

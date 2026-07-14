@@ -106,19 +106,20 @@ The Mini uses Determinate Nix, so `nix.enable = false` in
 where Determinate already manages the daemon and settings.
 
 The Mac host module owns approved host applications (including the Codex,
-ChatGPT, Claude, Mos, ProxyBridge, Hyper, Godot, editor, browser, VLC, and
-JetBrains Mono casks) plus the Xcode and KeepSolid VPN Unlimited Mac App Store
-entries. `mosh`, `et` (Eternal Terminal), `tailscale`, and `tsshd` are
-declared as Homebrew formulae. Homebrew never auto-updates, upgrades, or
-removes existing packages.
+ChatGPT, Claude, Mos, Hyper, Godot, editor, browser, VLC, and JetBrains Mono
+casks). `mosh`, `et` (Eternal Terminal), `tailscale`, and `tsshd` are declared
+as Homebrew formulae. Homebrew never auto-updates, upgrades, or removes
+existing packages.
 
-ProxyBridge is installed through the `proxybridge` Homebrew cask. Reviewed
-non-secret defaults live at `templates/proxybridge/ProxyBridge.defaults.json`
-and are copied to `~/.config/proxybridge/`. They preserve the verified HTTP
-endpoint (`synology.local:8889`) and the Codex TCP process rule without proxy
-credentials, plist caches, or runtime activation. Approve its Network
-Extension in System Settings after the first install, then apply the template
-through ProxyBridge's UI.
+Mac App Store apps such as Xcode and KeepSolid VPN Unlimited are intentionally
+outside nix-darwin activation because they require interactive App Store
+sign-in and can block unattended `./update.sh` runs.
+
+ProxyBridge is also installed manually. On Apple Silicon the Homebrew cask
+requires Rosetta 2 for its `.pkg` installer, so it is not declared in the
+Homebrew module. Reviewed non-secret defaults live at
+`templates/proxybridge/ProxyBridge.defaults.json` and are copied to
+`~/.config/proxybridge/`.
 
 The two future Mac model services live as disabled templates under
 `templates/launchagents/`. They are not copied or registered by Home Manager;

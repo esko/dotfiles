@@ -26,7 +26,8 @@ grep -q '"protocol": "TCP"' "$root_dir/templates/proxybridge/ProxyBridge.default
 grep -q '"action": "PROXY"' "$root_dir/templates/proxybridge/ProxyBridge.defaults.json"
 jq -e '.proxyRules[0].processNames | type == "string"' "$root_dir/templates/proxybridge/ProxyBridge.defaults.json" >/dev/null
 jq -e '.proxyRules[0].enabled == true' "$root_dir/templates/proxybridge/ProxyBridge.defaults.json" >/dev/null
-grep -q '"proxybridge"' "$root_dir/modules/darwin/system.nix"
+! grep -q 'masApps' "$root_dir/modules/darwin/system.nix"
+! grep -q '"proxybridge"' "$root_dir/modules/darwin/system.nix"
 grep -q 'nix.enable = false' "$root_dir/modules/darwin/system.nix"
 ! grep -q 'launchagents-templates' "$root_dir/modules/darwin/home.nix"
 for plist in "$root_dir"/templates/launchagents/*.plist; do

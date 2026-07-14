@@ -44,15 +44,11 @@
       "google-chrome"
       "hyper"
       "godot"
-      "proxybridge"
     ];
-    masApps = {
-      "KeepSolid VPN Unlimited" = 694633015;
-      "Xcode" = 497799835;
-    };
   };
 
-  # ProxyBridge is installed via the Homebrew cask. Network Extension approval
-  # in System Settings remains a one-time manual step after the first install.
-  # Reviewed non-secret defaults live in templates/proxybridge.
+  # ProxyBridge and Mac App Store apps stay manual on Apple Silicon:
+  # - proxybridge cask v4.x requires Rosetta for its .pkg installer
+  # - mas installs need interactive App Store sign-in and block activation
+  # Reviewed ProxyBridge defaults live in templates/proxybridge.
 }

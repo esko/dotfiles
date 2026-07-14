@@ -14,12 +14,22 @@ JSON maps directly to the corresponding `proxyRules` array in the app's plist
 defaults; it is kept separate so credentials and machine-local plist state
 cannot be copied accidentally.
 
-nix-darwin installs ProxyBridge through the `proxybridge` Homebrew cask during
-`./update.sh`. Home Manager copies this template to
-`~/.config/proxybridge/` but does not write ProxyBridge runtime defaults or
-approve its Network Extension. After the first install, allow the extension in
-**System Settings → General → Login Items & Extensions → Network Extension**,
-then import or apply these rules through ProxyBridge's UI.
+Home Manager copies this template to `~/.config/proxybridge/` but does not
+install ProxyBridge or approve its Network Extension.
+
+## Manual install on the Mini
+
+On Apple Silicon, the Homebrew `proxybridge` cask currently ships an installer
+that requires Rosetta 2:
+
+```bash
+sudo softwareupdate --install-rosetta --agree-to-license
+brew install --cask proxybridge
+```
+
+After install, allow the extension in **System Settings → General → Login Items
+& Extensions → Network Extension**, then import or apply these rules through
+ProxyBridge's UI.
 
 Proxy credentials, `proxyUsername`, `proxyPassword`, caches, logs, and plist
 state are intentionally absent. Keep credentials in the app's secure storage
