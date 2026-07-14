@@ -9,10 +9,11 @@
   # of nix-darwin's native Nix module, which aborts when Determinate is present.
   nix.enable = false;
 
-  environment.shells = [ pkgs.zsh ];
-
+  # Use the macOS zsh binary for the login shell, like Baguette uses /usr/bin/zsh.
+  # Home Manager owns ~/.zshrc and user packages. Avoid environment.shells here;
+  # nix-darwin would replace /etc/shells and abort when Homebrew fish is listed.
   system.activationScripts.dotfilesLoginShell.text = ''
-    target_shell=${lib.getExe pkgs.zsh}
+    target_shell=/bin/zsh
     current_shell=$(/usr/bin/dscl . -read "/Users/${username}" UserShell 2>/dev/null \
       | /usr/bin/awk 'NF { print $NF }')
     if [ "$current_shell" != "$target_shell" ]; then

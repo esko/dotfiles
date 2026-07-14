@@ -22,9 +22,9 @@ the baseline:
 Home Manager owns `.zshenv`, `.zshrc`, Starship, aliases, and user packages.
 On Baguette, System Manager additionally declares `/usr/bin/zsh` in the existing
 `esko` account's `/etc/passwd` record. On the Mac Mini, nix-darwin sets the
-login shell to the managed Nix zsh during activation. Debian owns the shell
-binary itself on Baguette. Crostini and lightweight containers do not modify the
-account database.
+login shell to `/bin/zsh` during activation. macOS owns that shell binary;
+Home Manager owns the interactive startup files. Crostini and lightweight
+containers do not modify the account database.
 
 ## Package boundary
 

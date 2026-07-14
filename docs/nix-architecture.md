@@ -104,7 +104,8 @@ apps remain untouched until an explicit package policy is added and reviewed.
 The Mini uses Determinate Nix, so `nix.enable = false` in
 `modules/darwin/system.nix`. nix-darwin must not replace `/etc/nix` on a host
 where Determinate already manages the daemon and settings. Activation also sets
-the `esko` login shell from Homebrew Fish to the managed Nix zsh.
+the `esko` login shell from Homebrew Fish to `/bin/zsh` without replacing
+`/etc/shells`.
 
 The Mac host module owns approved host applications (including the Codex,
 ChatGPT, Claude, Mos, Hyper, Godot, editor, browser, VLC, and JetBrains Mono
