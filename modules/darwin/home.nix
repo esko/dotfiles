@@ -34,8 +34,6 @@ in
       '';
     };
 
-    home.file.".config/launchagents-templates/ai.agentcli.litellm.plist".source = ../../templates/launchagents/ai.agentcli.litellm.plist;
-    home.file.".config/launchagents-templates/com.esko.llama-server.plist".source = ../../templates/launchagents/com.esko.llama-server.plist;
     home.file.".config/proxybridge/ProxyBridge.defaults.json".source = ../../templates/proxybridge/ProxyBridge.defaults.json;
     home.file.".config/proxybridge/README.md".source = ../../templates/proxybridge/README.md;
   };

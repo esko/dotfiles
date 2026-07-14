@@ -28,6 +28,7 @@ jq -e '.proxyRules[0].processNames | type == "string"' "$root_dir/templates/prox
 jq -e '.proxyRules[0].enabled == true' "$root_dir/templates/proxybridge/ProxyBridge.defaults.json" >/dev/null
 grep -q '"proxybridge"' "$root_dir/modules/darwin/system.nix"
 grep -q 'nix.enable = false' "$root_dir/modules/darwin/system.nix"
+! grep -q 'launchagents-templates' "$root_dir/modules/darwin/home.nix"
 for plist in "$root_dir"/templates/launchagents/*.plist; do
   grep -q '<key>Disabled</key>' "$plist"
   grep -q '<true/>' "$plist"

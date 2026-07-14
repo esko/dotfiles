@@ -120,11 +120,10 @@ credentials, plist caches, or runtime activation. Approve its Network
 Extension in System Settings after the first install, then apply the template
 through ProxyBridge's UI.
 
-The two future Mac model services are represented by disabled templates under
-`templates/launchagents/`. Home Manager copies them to a review directory only;
-they are not registered with `launchd`, and all paths/secret references use
-placeholders. Keep `Disabled=true` until the model paths, credentials, logs,
-and resource limits have been reviewed for the Mini.
+The two future Mac model services live as disabled templates under
+`templates/launchagents/`. They are not copied or registered by Home Manager;
+review the plists in the repository and install them manually when the model
+paths, credentials, logs, and resource limits are ready for the Mini.
 
 ## Secrets boundary
 
