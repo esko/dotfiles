@@ -40,7 +40,7 @@ touch "$NPM_CALLED"
 EOF
 
 set +e
-output=$(HOME="$tmp_dir/home" NPM_CALLED="$tmp_dir/npm-called" PATH="$test_path" \
+output=$(env -i HOME="$tmp_dir/home" NPM_CALLED="$tmp_dir/npm-called" PATH="$test_path" \
   /bin/bash "$installer" 2>&1)
 status=$?
 set -e
@@ -59,15 +59,25 @@ make_fake_command node <<'EOF'
 printf '%s\n' 'v24.0.0'
 EOF
 make_fake_command npm <<'EOF'
+for arg in "$@"; do
+  if [[ "$arg" = --force ]]; then
+    touch "$NPM_FORCE_USED"
+  fi
+done
 for command_name in agent-browser codex claude gemini jules cmd hunk portless; do
   printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
   chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
 done
 EOF
 
-output=$(HOME="$tmp_dir/home" PATH="$test_path" /bin/bash "$installer" 2>&1)
+output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" PATH="$test_path" \
+  /bin/bash "$installer" 2>&1)
 assert_contains "$output" 'Installed commands:'
 assert_contains "$output" "$tmp_dir/home/.local/bin/portless"
+if [[ ! -e $tmp_dir/npm-force-used ]]; then
+  printf '%s\n' 'Expected npm install to pass --force for existing global bins' >&2
+  exit 1
+fi
 
 rm -rf "$tmp_dir/home/.local"
 make_fake_command npm <<'EOF'
@@ -78,7 +88,7 @@ done
 EOF
 
 set +e
-output=$(HOME="$tmp_dir/home" PATH="$test_path" /bin/bash "$installer" 2>&1)
+output=$(env -i HOME="$tmp_dir/home" PATH="$test_path" /bin/bash "$installer" 2>&1)
 status=$?
 set -e
 

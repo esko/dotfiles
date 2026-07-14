@@ -72,7 +72,7 @@ packages=(
 )
 
 printf 'Installing Node CLI packages into %s\n' "$prefix"
-npm install --global --no-audit --no-fund "${packages[@]}"
+npm install --global --force --no-audit --no-fund "${packages[@]}"
 
 if "$with_browser"; then
   agent-browser install
