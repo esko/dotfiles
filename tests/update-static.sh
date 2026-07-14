@@ -18,5 +18,6 @@ done
 rg -q --fixed-strings 'run_deployment_consumers_for_target' "$update"
 rg -q --fixed-strings 'NIX_DARWIN#darwin-rebuild' "$update"
 rg -q -U 'NIX_DARWIN#darwin-rebuild[\s\S]*run_install_node_tools' "$update"
+rg -q '/etc/profiles/per-user/\$\{USER\}/bin' "$update"
 
 printf '%s\n' 'update.sh static checks passed'

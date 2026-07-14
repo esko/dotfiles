@@ -242,7 +242,18 @@ run_install_node_tools() {
 
   # Home Manager and nix-darwin update PATH in login shells; the update script
   # keeps running in the pre-activation environment.
-  export PATH="/run/current-system/sw/bin:${HOME}/.local/bin:${HOME}/.nix-profile/bin:$PATH"
+  local path_prefix=""
+  for dir in \
+    "/etc/profiles/per-user/${USER}/bin" \
+    /run/current-system/sw/bin \
+    /nix/var/nix/profiles/default/bin \
+    "${HOME}/.local/bin" \
+    "${HOME}/.nix-profile/bin"; do
+    if [[ -d "$dir" ]]; then
+      path_prefix+="${dir}:"
+    fi
+  done
+  export PATH="${path_prefix}${PATH}"
 
   if ! command -v node >/dev/null 2>&1; then
     printf '%s\n' 'node is not available; skipping install-node-tools.' >&2

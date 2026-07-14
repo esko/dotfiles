@@ -42,6 +42,13 @@ in
       source = ../../templates/proxybridge/README.md;
       force = true;
     };
+
+    # nix-darwin exposes Home Manager packages under /etc/profiles/per-user.
+    # Add the profile explicitly so node/npm are available before shell hooks run.
+    home.sessionPath = [
+      "/etc/profiles/per-user/${username}/bin"
+      "/nix/var/nix/profiles/default/bin"
+    ];
   };
 }
 
