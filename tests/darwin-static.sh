@@ -28,6 +28,7 @@ jq -e '.proxyRules[0].processNames | type == "string"' "$root_dir/templates/prox
 jq -e '.proxyRules[0].enabled == true' "$root_dir/templates/proxybridge/ProxyBridge.defaults.json" >/dev/null
 ! grep -q 'masApps' "$root_dir/modules/darwin/system.nix"
 ! grep -q '"proxybridge"' "$root_dir/modules/darwin/system.nix"
+grep -q 'backupFileExtension = "home-manager-backup"' "$root_dir/flake.nix"
 grep -q 'nix.enable = false' "$root_dir/modules/darwin/system.nix"
 ! grep -q 'launchagents-templates' "$root_dir/modules/darwin/home.nix"
 for plist in "$root_dir"/templates/launchagents/*.plist; do
