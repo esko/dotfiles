@@ -60,6 +60,11 @@ in
   home.file.".config/micro/bindings.json".source = ../../utilities/.config/micro/bindings.json;
   home.file.".config/micro/settings.json".source = ../../utilities/.config/micro/settings.json;
   home.file.".config/zellij/config.kdl".source = ../../zellij/.config/zellij/config.kdl;
+  home.file.".config/starship.toml" = {
+    source = ../../starship/.config/starship.toml;
+    # Replace legacy dotfiles symlinks during the first Home Manager activation.
+    force = true;
+  };
   home.file.".local/bin/install-node-tools" = {
     source = ../../scripts/install-node-tools.sh;
     executable = true;
@@ -77,9 +82,6 @@ in
     # Do not rely on the global shell-integration default. Generate the
     # `starship init zsh` hook explicitly whenever this profile manages Zsh.
     enableZshIntegration = true;
-    # Parse the existing Catppuccin Frappé Powerline configuration so the
-    # migration preserves the prompt instead of silently replacing it.
-    settings = builtins.fromTOML (builtins.readFile ../../starship/.config/starship.toml);
   };
 
   programs.zellij.enable = true;

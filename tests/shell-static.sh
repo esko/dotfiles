@@ -10,6 +10,9 @@ for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zox
   rg -q --fixed-strings "$token" "$module" "$init"
 done
 
+rg -q '.config/starship.toml' "$module"
+rg -q 'starship/.config/starship.toml' "$module"
+
 for package in agent-browser @openai/codex @anthropic-ai/claude-code \
   @google/gemini-cli @google/jules command-code hunkdiff portless; do
   rg -q --fixed-strings "${package}@latest" "$node_tools_installer"
