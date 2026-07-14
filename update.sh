@@ -225,15 +225,31 @@ run_install_node_tools() {
   if "$skip_node_tools"; then
     return 0
   fi
-  if ! command -v install-node-tools >/dev/null 2>&1; then
-    printf '%s\n' 'install-node-tools is not on PATH yet; open a new shell after activation.' >&2
+
+  local installer=""
+  if command -v install-node-tools >/dev/null 2>&1; then
+    installer=$(command -v install-node-tools)
+  elif [[ -x "${HOME:?}/.local/bin/install-node-tools" ]]; then
+    installer="${HOME}/.local/bin/install-node-tools"
+  elif [[ -x "$repo_root/scripts/install-node-tools.sh" ]]; then
+    installer="$repo_root/scripts/install-node-tools.sh"
+  fi
+
+  if [[ -z "$installer" ]]; then
+    printf '%s\n' 'install-node-tools not found; open a new shell after activation.' >&2
     return 0
   fi
+
+  # Home Manager and nix-darwin update PATH in login shells; the update script
+  # keeps running in the pre-activation environment.
+  export PATH="/run/current-system/sw/bin:${HOME}/.local/bin:${HOME}/.nix-profile/bin:$PATH"
+
   if ! command -v node >/dev/null 2>&1; then
     printf '%s\n' 'node is not available; skipping install-node-tools.' >&2
     return 0
   fi
-  install-node-tools
+
+  "$installer"
 }
 
 flake_attr_for_target() {
@@ -329,6 +345,7 @@ apply_target() {
         exit 1
       fi
       sudo nix run "$NIX_DARWIN#darwin-rebuild" -- switch --flake "$repo_root#mini"
+      run_install_node_tools
       ;;
     synology)
       "$repo_root/scripts/build-synology-dev.sh"

@@ -7,8 +7,8 @@ in
   options.dotfiles.darwin = {
     proxyBridgePackage = lib.mkOption {
       type = lib.types.str;
-      default = "ProxyBridge v3.2.0 (upstream signed universal pkg)";
-      description = "Documented install intent; this package is never fetched or installed by Home Manager.";
+      default = "proxybridge (Homebrew cask)";
+      description = "ProxyBridge install path; managed by nix-darwin Homebrew.";
     };
 
     ssh = {

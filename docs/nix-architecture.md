@@ -102,20 +102,19 @@ The Darwin configuration keeps Homebrew activation cleanup disabled. Existing
 apps remain untouched until an explicit package policy is added and reviewed.
 
 The Mac host module owns approved host applications (including the Codex,
-ChatGPT, Claude, Mos, Osaurus, Termius, Kitty, Hyper, Godot, editor, browser,
-VLC, and JetBrains Mono casks) plus the Xcode and KeepSolid VPN Unlimited Mac
-App Store entries. `mosh`, `et` (Eternal Terminal), `tailscale`, and `tsshd` are declared as
-Homebrew formulae. ProxyBridge is retained as a documented upstream-install
-intent because its signed distribution is not treated as a stable cask.
-Homebrew never auto-updates, upgrades, or removes existing packages.
+ChatGPT, Claude, Mos, ProxyBridge, Hyper, Godot, editor, browser, VLC, and
+JetBrains Mono casks) plus the Xcode and KeepSolid VPN Unlimited Mac App Store
+entries. `mosh`, `et` (Eternal Terminal), `tailscale`, and `tsshd` are
+declared as Homebrew formulae. Homebrew never auto-updates, upgrades, or
+removes existing packages.
 
-ProxyBridge v3.2.0 has a review-only template at
-`templates/proxybridge/ProxyBridge.defaults.json`. It preserves the verified
-HTTP endpoint (`synology.local:8889`) and the Codex TCP process rule without
-proxy credentials, plist caches, or runtime activation. Install the official
-signed package manually, approve its Network Extension in System Settings,
-then review and apply the template through ProxyBridge's supported UI. Do not
-use a declarative activation hook for this system extension.
+ProxyBridge is installed through the `proxybridge` Homebrew cask. Reviewed
+non-secret defaults live at `templates/proxybridge/ProxyBridge.defaults.json`
+and are copied to `~/.config/proxybridge/`. They preserve the verified HTTP
+endpoint (`synology.local:8889`) and the Codex TCP process rule without proxy
+credentials, plist caches, or runtime activation. Approve its Network
+Extension in System Settings after the first install, then apply the template
+through ProxyBridge's UI.
 
 The two future Mac model services are represented by disabled templates under
 `templates/launchagents/`. Home Manager copies them to a review directory only;

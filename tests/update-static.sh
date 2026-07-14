@@ -16,5 +16,7 @@ for path in "$update" "$repo_root/scripts/build-synology-dev.sh" \
 done
 
 rg -q --fixed-strings 'run_deployment_consumers_for_target' "$update"
+rg -q --fixed-strings 'NIX_DARWIN#darwin-rebuild' "$update"
+rg -q -U 'NIX_DARWIN#darwin-rebuild[\s\S]*run_install_node_tools' "$update"
 
 printf '%s\n' 'update.sh static checks passed'

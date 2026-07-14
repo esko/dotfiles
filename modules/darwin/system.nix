@@ -40,6 +40,7 @@
       "google-chrome"
       "hyper"
       "godot"
+      "proxybridge"
     ];
     masApps = {
       "KeepSolid VPN Unlimited" = 694633015;
@@ -47,9 +48,7 @@
     };
   };
 
-  # ProxyBridge is distributed as an upstream signed v3.2.0 package rather
-  # than a stable Homebrew cask. Its reviewed, non-secret defaults live in
-  # templates/proxybridge and are not installed by this module. Installing the
-  # package and approving its network extension remains a deliberate one-time
-  # operator action documented in docs/nix-architecture.md.
+  # ProxyBridge is installed via the Homebrew cask. Network Extension approval
+  # in System Settings remains a one-time manual step after the first install.
+  # Reviewed non-secret defaults live in templates/proxybridge.
 }
