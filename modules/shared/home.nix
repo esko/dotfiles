@@ -101,6 +101,11 @@ in
     executable = true;
   };
 
+  # Shared shell profiles do not install Home Manager manual pages.
+  manual.manpages.enable = false;
+  manual.html.enable = false;
+  manual.json.enable = false;
+
   programs.bat.enable = true;
   programs.fzf.enable = true;
   programs.zoxide = {

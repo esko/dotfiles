@@ -372,7 +372,7 @@ apply_target() {
         printf '%s\n' 'The mini profile must be applied on the Mac itself.' >&2
         exit 1
       fi
-      sudo nix run "$NIX_DARWIN#darwin-rebuild" -- switch --flake "$repo_root#mini"
+      nix run "$NIX_DARWIN#darwin-rebuild" -- switch --flake "$repo_root#mini"
       ensure_login_shell /bin/zsh
       run_install_node_tools
       ;;

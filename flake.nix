@@ -16,7 +16,10 @@
       inputs.nixpkgs.follows = "nixpkgsLinux";
     };
     homeManagerDarwin = {
-      url = "github:nix-community/home-manager/release-26.05";
+      # Pin includes docs/default.nix fix for Determinate Nix options.json
+      # warnings (nix-community/home-manager@4c11a945) until release-26.05
+      # absorbs it.
+      url = "github:nix-community/home-manager/4c11a945f40cdd2c74307048204b71305dffd562";
       inputs.nixpkgs.follows = "nixpkgsDarwin";
     };
 

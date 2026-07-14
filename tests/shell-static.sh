@@ -20,6 +20,7 @@ rg -q '.config/starship.toml' "$module"
 rg -q 'starship/.config/starship.toml' "$module"
 rg -q 'utilities/.config/bat/themes' "$module"
 rg -q 'utilities/.config/micro/colorschemes' "$module"
+rg -q 'manual.manpages.enable = false' "$module"
 rg -q 'force = true' "$module"
 
 for package in agent-browser @openai/codex @anthropic-ai/claude-code \

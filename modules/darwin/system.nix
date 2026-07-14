@@ -9,6 +9,10 @@
   # of nix-darwin's native Nix module, which aborts when Determinate is present.
   nix.enable = false;
 
+  # Determinate Nix warns when nixpkgs/home-manager option docs embed store
+  # paths in options.json. The Mini does not need the generated manual.
+  documentation.enable = false;
+
   # Use the macOS zsh binary for the login shell, like Baguette uses /usr/bin/zsh.
   # Home Manager owns ~/.zshrc and user packages. Avoid environment.shells here;
   # nix-darwin would replace /etc/shells and abort when Homebrew fish is listed.
