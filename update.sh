@@ -8,6 +8,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$repo_root"
 
 SYSTEM_MANAGER='github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d'
+NIX_DARWIN='github:nix-darwin/nix-darwin/c3e90c89649b07d1a96e4b9dd6cd0d6e44b91a74'
 TARGET_MARKER="${DOTFILES_TARGET_MARKER:-$HOME/.config/dotfiles/target}"
 
 target=""
@@ -327,7 +328,7 @@ apply_target() {
         printf '%s\n' 'The mini profile must be applied on the Mac itself.' >&2
         exit 1
       fi
-      sudo darwin-rebuild switch --flake "$repo_root#mini"
+      sudo nix run "$NIX_DARWIN#darwin-rebuild" -- switch --flake "$repo_root#mini"
       ;;
     synology)
       "$repo_root/scripts/build-synology-dev.sh"
