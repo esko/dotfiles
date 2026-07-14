@@ -34,8 +34,14 @@ in
       '';
     };
 
-    home.file.".config/proxybridge/ProxyBridge.defaults.json".source = ../../templates/proxybridge/ProxyBridge.defaults.json;
-    home.file.".config/proxybridge/README.md".source = ../../templates/proxybridge/README.md;
+    home.file.".config/proxybridge/ProxyBridge.defaults.json" = {
+      source = ../../templates/proxybridge/ProxyBridge.defaults.json;
+      force = true;
+    };
+    home.file.".config/proxybridge/README.md" = {
+      source = ../../templates/proxybridge/README.md;
+      force = true;
+    };
   };
 }
 

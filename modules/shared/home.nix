@@ -55,14 +55,29 @@ in
 
   # Keep existing utility configuration under declarative control. These are
   # repository files, so edits remain reviewable and are shared by all hosts.
-  home.file.".config/bat/config".source = ../../utilities/.config/bat/config;
-  home.file.".config/btop/btop.conf".source = ../../utilities/.config/btop/btop.conf;
-  home.file.".config/micro/bindings.json".source = ../../utilities/.config/micro/bindings.json;
-  home.file.".config/micro/settings.json".source = ../../utilities/.config/micro/settings.json;
-  home.file.".config/zellij/config.kdl".source = ../../zellij/.config/zellij/config.kdl;
+  # force replaces legacy dotfiles symlinks instead of leaving them in place.
+  home.file.".config/bat/config" = {
+    source = ../../utilities/.config/bat/config;
+    force = true;
+  };
+  home.file.".config/btop/btop.conf" = {
+    source = ../../utilities/.config/btop/btop.conf;
+    force = true;
+  };
+  home.file.".config/micro/bindings.json" = {
+    source = ../../utilities/.config/micro/bindings.json;
+    force = true;
+  };
+  home.file.".config/micro/settings.json" = {
+    source = ../../utilities/.config/micro/settings.json;
+    force = true;
+  };
+  home.file.".config/zellij/config.kdl" = {
+    source = ../../zellij/.config/zellij/config.kdl;
+    force = true;
+  };
   home.file.".config/starship.toml" = {
     source = ../../starship/.config/starship.toml;
-    # Replace legacy dotfiles symlinks during the first Home Manager activation.
     force = true;
   };
   home.file.".local/bin/install-node-tools" = {

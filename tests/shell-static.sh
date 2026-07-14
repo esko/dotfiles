@@ -12,6 +12,7 @@ done
 
 rg -q '.config/starship.toml' "$module"
 rg -q 'starship/.config/starship.toml' "$module"
+rg -q 'force = true' "$module"
 
 for package in agent-browser @openai/codex @anthropic-ai/claude-code \
   @google/gemini-cli @google/jules command-code hunkdiff portless; do
