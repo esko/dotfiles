@@ -71,7 +71,33 @@ packages=(
   "portless@latest"
 )
 
+managed_packages=()
+for package_spec in "${packages[@]}"; do
+  managed_packages+=("${package_spec%%@*}")
+done
+
+remove_legacy_fnm_globals() {
+  local fnm_versions_dir="${HOME}/.local/share/fnm/node-versions"
+  [[ -d "$fnm_versions_dir" ]] || return 0
+
+  local install_dir npm_bin
+  for install_dir in "$fnm_versions_dir"/*/installation; do
+    [[ -d "$install_dir" ]] || continue
+    npm_bin="${install_dir}/bin/npm"
+    [[ -x "$npm_bin" ]] || continue
+
+    printf 'Removing legacy fnm globals from %s\n' "$install_dir"
+    # Pre-Nix manual installs lived in fnm's default npm prefix. Uninstall them
+    # so fnm's multishell PATH cannot shadow ~/.local/bin after updates.
+    set +e
+    env -u NPM_CONFIG_PREFIX PATH="${install_dir}/bin:${PATH}" \
+      "$npm_bin" uninstall --global --no-audit --no-fund "${managed_packages[@]}" >/dev/null 2>&1
+    set -e
+  done
+}
+
 printf 'Installing Node CLI packages into %s\n' "$prefix"
+remove_legacy_fnm_globals
 npm install --global --force --no-audit --no-fund "${packages[@]}"
 
 if "$with_browser"; then

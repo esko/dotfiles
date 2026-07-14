@@ -36,6 +36,14 @@ if rg -q --fixed-strings 'npx --yes' "$module" "$init"; then
   exit 1
 fi
 
+if rg -q 'fnm env' "$init"; then
+  echo 'shared shell configuration must not initialize fnm' >&2
+  exit 1
+fi
+
+rg -q 'remove_legacy_fnm_globals' "$node_tools_installer"
+rg -q 'fnm/node-versions' "$node_tools_installer"
+
 for function_name in backup extract mkcd rfv; do
   rg -q "^${function_name}[[:space:]]*\\(\\)" "$init"
 done

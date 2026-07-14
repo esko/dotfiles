@@ -38,10 +38,10 @@ in
     zsh starship zellij fzf zoxide git gh age bat eza fd ripgrep jq delta
     btop micro yazi rsync mosh shellcheck lefthook lazygit cmake
 
-    # Language/toolchain foundations. fnm manages the active Node release;
-    # Python is available for uv-managed virtual environments and pytest.
+    # Language/toolchain foundations. Nix nodejs supplies the active Node/npm
+    # runtime; install-node-tools publishes fast-moving CLIs into ~/.local.
     # rustup supplies the rustc/cargo shims and manages the selected toolchain.
-    rustup go zig fnm nodejs pnpm uv python3 pipx
+    rustup go zig nodejs pnpm uv python3 pipx
 
     # Portable diagnostics and utilities audited from the existing hosts.
     # Native hosts use their OS-provided OpenSSH client so its feature set
@@ -209,7 +209,6 @@ in
     EDITOR = "micro";
     VISUAL = "micro";
     BUN_INSTALL = "$HOME/.bun";
-    FNM_PATH = "$HOME/.local/share/fnm";
     NPM_CONFIG_PREFIX = "$HOME/.local";
   };
   home.sessionPath = [

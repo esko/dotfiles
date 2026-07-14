@@ -98,4 +98,36 @@ if [[ $status -eq 0 ]]; then
 fi
 assert_contains "$output" 'portless        not found on PATH'
 
+mkdir -p "$tmp_dir/home/.local/share/fnm/node-versions/v24.0.0/installation/bin"
+fnm_npm_called="$tmp_dir/fnm-npm-called"
+cat >"$tmp_dir/home/.local/share/fnm/node-versions/v24.0.0/installation/bin/npm" <<'EOF'
+#!/usr/bin/env bash
+if [[ ${1:-} == uninstall && ${2:-} == --global ]]; then
+  touch "$FNM_NPM_CALLED"
+fi
+exit 0
+EOF
+chmod +x "$tmp_dir/home/.local/share/fnm/node-versions/v24.0.0/installation/bin/npm"
+
+make_fake_command npm <<'EOF'
+for arg in "$@"; do
+  if [[ "$arg" = --force ]]; then
+    touch "$NPM_FORCE_USED"
+  fi
+done
+for command_name in agent-browser codex claude gemini jules cmd hunk portless; do
+  printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
+  chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
+done
+EOF
+
+output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
+  FNM_NPM_CALLED="$fnm_npm_called" PATH="$test_path" \
+  /bin/bash "$installer" 2>&1)
+assert_contains "$output" 'Removing legacy fnm globals from'
+if [[ ! -e $fnm_npm_called ]]; then
+  printf '%s\n' 'Expected install-node-tools to uninstall legacy fnm globals' >&2
+  exit 1
+fi
+
 printf '%s\n' 'install-node-tools behavior checks passed'

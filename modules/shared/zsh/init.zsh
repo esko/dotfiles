@@ -4,11 +4,6 @@
 # Allow pasteable command blocks to contain shell comments in interactive zsh.
 setopt interactivecomments
 
-# fnm provides shell hooks only when installed and available on this host.
-if (( $+commands[fnm] )); then
-  eval "$(fnm env --use-on-cd --shell zsh)"
-fi
-
 # Do not eval `bun completions` during shell startup. Bun chooses its output
 # from $SHELL and can emit Bash's `complete` builtin when the inherited shell is
 # stale or unset. Bun-installed completion files are discovered through zsh's

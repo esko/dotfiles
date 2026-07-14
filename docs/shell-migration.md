@@ -11,8 +11,9 @@ the baseline:
 - Fish abbreviations become zsh aliases for safe file operations, `eza`, `bat`,
   `fd`, `rg`, Git, Lefthook, and Zellij.
 - `backup`, `extract`, `mkcd`, and `rfv` are zsh functions with argument checks.
-- `fnm`, FZF, and the editor key binding initialize only when their binaries are
-  present, keeping non-interactive shells safe.
+- Node.js and npm come from the Home Manager profile; FZF and the editor key
+  binding initialize only when their binaries are present, keeping
+  non-interactive shells safe.
 - Bun completions are discovered through zsh's normal `fpath`/`compinit` flow;
   Bash completion output is never evaluated inside zsh.
 - The locally installed `agy` command has a native zsh `_arguments` completion.
@@ -31,7 +32,7 @@ containers do not modify the account database.
 `modules/shared/home.nix` installs portable CLI tools that are available in
 nixpkgs, including the approved shared list (`rg`, `fd`, `fzf`, `eza`, `bat`,
 `zoxide`, `git`, `gh`, `age`, `jq`, `delta`, `btop`, `micro`, `yazi`, `rsync`,
-`mosh`, `tailscale`, `shellcheck`, `lefthook`, `lazygit`, `cmake`, Rust, Go, Zig, fnm, pnpm,
+`mosh`, `tailscale`, `shellcheck`, `lefthook`, `lazygit`, `cmake`, Rust, Go, Zig, Node.js, npm, pnpm,
 uv, Python, pipx, and the audited diagnostics/archive tools). `chafa` is
 intentionally excluded. `unrar` remains optional because it is unfree;
 `extract` uses it automatically when present.
@@ -64,6 +65,11 @@ The installer is explicit rather than a Home Manager activation hook: profile
 activation stays deterministic and does not perform network operations. The
 script uses `@latest` because these agent CLIs move faster than the Nix channel.
 Re-run it to update the complete set.
+
+Node.js and npm come from the Home Manager profile. On hosts that used fnm
+before Nix, `install-node-tools` also removes stale globals from
+`~/.local/share/fnm/node-versions/*/installation` so old `codex` shims cannot
+shadow `~/.local/bin`.
 
 The `agent-browser` npm package supplies its platform CLI binary. Its managed
 browser runtime is a separate download:
