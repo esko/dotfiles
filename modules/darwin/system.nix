@@ -5,6 +5,10 @@
   system.primaryUser = username;
   users.users.${username}.home = homeDirectory;
 
+  # The Mini uses Determinate Nix. Let the host installer own /etc/nix instead
+  # of nix-darwin's native Nix module, which aborts when Determinate is present.
+  nix.enable = false;
+
   # Homebrew is an integration point for host applications. Never remove or
   # zap unmanaged software during activation; package selections come later.
   homebrew = {
