@@ -29,19 +29,15 @@
       "chatgpt"
       "claude"
       "mos"
-      "osaurus"
-      "termius"
 
       # Shared GUI intent, installed by the host package manager on macOS.
       "font-jetbrains-mono-nerd-font"
       "zed"
-      "tabby"
       "sublime-text"
       "cursor"
       "visual-studio-code"
       "vlc"
       "google-chrome"
-      "kitty"
       "hyper"
       "godot"
     ];
