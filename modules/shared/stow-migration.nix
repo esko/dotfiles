@@ -1,0 +1,27 @@
+{ config, lib, ... }:
+
+let
+  # GNU Stow symlinked whole app directories from ~/.config into the dotfiles
+  # tree. Home Manager now manages individual files under those paths. When the
+  # parent directory is still a stow symlink, link activation follows it and
+  # overwrites repository sources instead of creating store links in ~/.config.
+  legacyStowDirs = [
+    ".config/bat"
+    ".config/btop"
+    ".config/micro"
+    ".config/zellij"
+  ];
+in
+{
+  home.activation.removeLegacyStowSymlinks = lib.hm.dag.entryBefore [ "linkGeneration" ] ''
+    ${config.lib.bash.initHomeManagerLib}
+
+    ${lib.concatMapStrings (rel: ''
+      if [[ -L "$HOME/${rel}" ]]; then
+        verboseEcho "Removing legacy stow symlink $HOME/${rel} -> $(readlink "$HOME/${rel}")"
+        run rm $VERBOSE_ARG "$HOME/${rel}"
+        run mkdir -p $VERBOSE_ARG "$HOME/${rel}"
+      fi
+    '') legacyStowDirs}
+  '';
+}

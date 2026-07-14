@@ -6,6 +6,9 @@ fish_variables*
 utilities/.config/micro/backups/
 utilities/.config/micro/buffers/
 
+# Created when Home Manager backs up a colliding path during activation.
+*.home-manager-backup
+
 # Machine-local authentication and secrets
 gh/.config/gh/hosts.yml
 

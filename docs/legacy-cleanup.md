@@ -23,6 +23,11 @@ The following files are intentionally retained:
 - The editor and utility configuration directories remain where they are
   consumed by Home Manager or still represent user-owned settings awaiting a
   dedicated module.
+- Legacy GNU Stow directory symlinks under `~/.config` (for example
+  `~/.config/bat` pointing into this repository) are removed automatically
+  during Home Manager activation. See `modules/shared/stow-migration.nix`.
+  Editor trees such as `~/.config/Code` may still use manual stow links until
+  they gain a Home Manager module.
 
 Do not add new package installation logic to the removed installer. Add
   host-specific packages to the appropriate Nix module or document a manual

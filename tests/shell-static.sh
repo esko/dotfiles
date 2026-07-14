@@ -10,8 +10,16 @@ for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zox
   rg -q --fixed-strings "$token" "$module" "$init"
 done
 
+stow_migration="$repo_root/modules/shared/stow-migration.nix"
+rg -q 'removeLegacyStowSymlinks' "$stow_migration"
+rg -q 'entryBefore \[ "linkGeneration" \]' "$stow_migration"
+rg -q '.config/bat' "$stow_migration"
+rg -q '.config/zellij' "$stow_migration"
+
 rg -q '.config/starship.toml' "$module"
 rg -q 'starship/.config/starship.toml' "$module"
+rg -q 'utilities/.config/bat/themes' "$module"
+rg -q 'utilities/.config/micro/colorschemes' "$module"
 rg -q 'force = true' "$module"
 
 for package in agent-browser @openai/codex @anthropic-ai/claude-code \

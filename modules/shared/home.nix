@@ -23,7 +23,10 @@ let
       names);
 in
 {
-  imports = [ ./llm-context.nix ];
+  imports = [
+    ./llm-context.nix
+    ./stow-migration.nix
+  ];
 
   # Keep identity and state explicit so every host profile is reproducible.
   home.username = username;
@@ -55,13 +58,22 @@ in
 
   # Keep existing utility configuration under declarative control. These are
   # repository files, so edits remain reviewable and are shared by all hosts.
-  # force replaces legacy dotfiles symlinks instead of leaving them in place.
+  # stow-migration.nix removes legacy whole-directory stow symlinks before
+  # link activation; force replaces any remaining file-level collisions.
   home.file.".config/bat/config" = {
     source = ../../utilities/.config/bat/config;
     force = true;
   };
+  home.file.".config/bat/themes" = {
+    source = ../../utilities/.config/bat/themes;
+    force = true;
+  };
   home.file.".config/btop/btop.conf" = {
     source = ../../utilities/.config/btop/btop.conf;
+    force = true;
+  };
+  home.file.".config/btop/themes" = {
+    source = ../../utilities/.config/btop/themes;
     force = true;
   };
   home.file.".config/micro/bindings.json" = {
@@ -70,6 +82,10 @@ in
   };
   home.file.".config/micro/settings.json" = {
     source = ../../utilities/.config/micro/settings.json;
+    force = true;
+  };
+  home.file.".config/micro/colorschemes" = {
+    source = ../../utilities/.config/micro/colorschemes;
     force = true;
   };
   home.file.".config/zellij/config.kdl" = {
