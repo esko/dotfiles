@@ -51,8 +51,8 @@ rg -q 'llmAgents\.url[[:space:]]*=[[:space:]]*"github:numtide/llm-agents\.nix"' 
 rg -q --fixed-strings 'opencode-linux-x64-baseline.tar.gz' "$flake"
 rg -q 'synologyPkgs[[:space:]]*=.*linuxPkgs\.extend' "$flake"
 rg -q 'bun[[:space:]]*=.*packages/bun-baseline\.nix' "$flake"
-rg -q 'herdr[[:space:]]*=[[:space:]]*llmAgentPkgs\.herdr' "$flake"
-rg -q 'reasonixAgent[[:space:]]*=[[:space:]]*llmAgentPkgs\.reasonix' "$flake"
+rg -q 'herdr[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.herdr' "$flake"
+rg -q 'reasonixAgent[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.reasonix' "$flake"
 rg -q --fixed-strings 'https://cache.numtide.com' "$dockerfile"
 rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$dockerfile"
 rg -q 'OPENCODE_DISABLE_AUTOUPDATE=true' "$dockerfile"
@@ -81,7 +81,7 @@ done
 
 for command_name in \
   pi herdr reasonix opencode hunk yazi flow \
-  mosh eternal-terminal tailscale tsshd antigravity-cli codex \
+  mosh eternal-terminal tailscale tsshd antigravity-cli codex claude-code cursor-agent \
   agent-workspace-linux; do
   rg -q --glob '*.nix' \
     "\\b${command_name}\\b" \

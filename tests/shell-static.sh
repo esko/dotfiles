@@ -6,9 +6,19 @@ module="$repo_root/modules/shared/home.nix"
 init="$repo_root/modules/shared/zsh/init.zsh"
 node_tools_installer="$repo_root/scripts/install-node-tools.sh"
 
+llm_agents_module="$repo_root/modules/shared/llm-agents.nix"
+
 for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'tailscale' 'bun' 'home.sessionPath'; do
   rg -q --fixed-strings "$token" "$module" "$init"
 done
+
+for attr in cursor-agent antigravity-cli claude-code codex pi; do
+  rg -q --fixed-strings "\"${attr}\"" "$llm_agents_module"
+done
+rg -q 'writeShellScriptBin "agent"' "$llm_agents_module"
+
+rg -q 'llmAgentPkgs = linuxLlmAgentPkgs' "$repo_root/flake.nix"
+rg -q 'llmAgentPkgs = darwinLlmAgentPkgs' "$repo_root/flake.nix"
 
 stow_migration="$repo_root/modules/shared/stow-migration.nix"
 rg -q 'removeLegacyStowSymlinks' "$stow_migration"
@@ -23,12 +33,11 @@ rg -q 'utilities/.config/micro/colorschemes' "$module"
 rg -q 'manual.manpages.enable = false' "$module"
 rg -q 'force = true' "$module"
 
-for package in agent-browser @openai/codex @anthropic-ai/claude-code \
-  @google/gemini-cli @google/jules command-code hunkdiff portless; do
+for package in agent-browser @google/gemini-cli @google/jules command-code hunkdiff portless; do
   rg -q --fixed-strings "${package}@latest" "$node_tools_installer"
 done
 
-for command_name in agent-browser codex claude gemini jules cmd hunk portless; do
+for command_name in agent-browser gemini jules cmd hunk portless; do
   rg -q "for command_name in .*\b${command_name}\b" "$node_tools_installer"
 done
 

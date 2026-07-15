@@ -12,7 +12,7 @@
   ipset,
   agentWorkspaceLinux,
   synologyDevGui,
-  pi-coding-agent,
+  piAgent,
   mosh,
   eternal-terminal,
   openssh,
@@ -74,7 +74,7 @@ let
       ipset
       agentWorkspaceLinux
       synologyDevGui
-      pi-coding-agent
+      piAgent
       herdrAgent
       reasonixAgent
       mosh

@@ -64,7 +64,7 @@ for arg in "$@"; do
     touch "$NPM_FORCE_USED"
   fi
 done
-for command_name in agent-browser codex claude gemini jules cmd hunk portless; do
+for command_name in agent-browser gemini jules cmd hunk portless; do
   printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
   chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
 done
@@ -81,7 +81,7 @@ fi
 
 rm -rf "$tmp_dir/home/.local"
 make_fake_command npm <<'EOF'
-for command_name in agent-browser codex claude gemini jules cmd hunk; do
+for command_name in agent-browser gemini jules cmd hunk; do
   printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
   chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
 done
@@ -115,7 +115,7 @@ for arg in "$@"; do
     touch "$NPM_FORCE_USED"
   fi
 done
-for command_name in agent-browser codex claude gemini jules cmd hunk portless; do
+for command_name in agent-browser gemini jules cmd hunk portless; do
   printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
   chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
 done

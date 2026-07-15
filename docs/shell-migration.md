@@ -1,10 +1,7 @@
 # Fish to zsh migration
 
-The shared Home Manager profile uses zsh on every target. Crostini is the
-current user-level validation host; Baguette adds a System Manager declaration
-for the existing Debian account's login shell. The intent is to preserve the
-daily Fish workflow while using the zsh modules from `kunchenguid/dotfiles` as
-the baseline:
+The shared Home Manager profile uses zsh on every target. Baguette is the
+primary Linux workstation; lightweight containers use the same shared modules.
 
 - Home Manager enables zsh completion, autosuggestions, syntax highlighting,
   shared history, and Starship.
@@ -24,8 +21,8 @@ Home Manager owns `.zshenv`, `.zshrc`, Starship, aliases, and user packages.
 On Baguette, System Manager additionally declares `/usr/bin/zsh` in the existing
 `esko` account's `/etc/passwd` record. On the Mac Mini, nix-darwin sets the
 login shell to `/bin/zsh` during activation. macOS owns that shell binary;
-Home Manager owns the interactive startup files. Crostini and lightweight
-containers do not modify the account database.
+Home Manager owns the interactive startup files. Lightweight containers do not
+modify the account database.
 
 ## Package boundary
 
@@ -53,13 +50,15 @@ This installs the following packages into the user-owned npm prefix
 | Command | npm package |
 | --- | --- |
 | `agent-browser` | `agent-browser` |
-| `codex` | `@openai/codex` |
-| `claude` | `@anthropic-ai/claude-code` |
 | `gemini` | `@google/gemini-cli` |
 | `jules` | `@google/jules` |
 | `cmd` / `command-code` | `command-code` |
 | `hunk` | `hunkdiff` |
 | `portless` | `portless` |
+
+`agent` (Cursor Agent), `agy`, `claude`, `codex`, and `pi` are installed from
+`llm-agents.nix` on every deployment through the shared Home Manager profile.
+Re-run `./update.sh` after the flake input updates to refresh them.
 
 The installer is explicit rather than a Home Manager activation hook: profile
 activation stays deterministic and does not perform network operations. The
@@ -68,7 +67,7 @@ Re-run it to update the complete set.
 
 Node.js and npm come from the Home Manager profile. On hosts that used fnm
 before Nix, `install-node-tools` also removes stale globals from
-`~/.local/share/fnm/node-versions/*/installation` so old `codex` shims cannot
+`~/.local/share/fnm/node-versions/*/installation` so old npm shims cannot
 shadow `~/.local/bin`.
 
 The `agent-browser` npm package supplies its platform CLI binary. Its managed
@@ -86,10 +85,13 @@ Alternatively, install the package set and browser runtime in one pass:
 install-node-tools --with-browser
 ```
 
-Native fast-moving tools (`agy`/Antigravity, Cursor Agent, Athas, Herdr, and
-pass-cli) are not part of the npm installer. They remain optional nixpkgs
-attributes when available or should use their reviewed upstream binary
-installer. Do not build them from a source checkout merely to bootstrap a host.
+Native fast-moving tools (`athas`, `herdr`, and pass-cli) are not part of the
+npm installer. They remain optional nixpkgs attributes when available or
+should use their reviewed upstream binary installer. Do not build them from a
+source checkout merely to bootstrap a host.
+
+Core agent CLIs (`agent`, `agy`, `claude`, `codex`, and `pi`) are also
+outside the npm installer. They come from `llm-agents.nix` on every deployment.
 
 GUI applications, Docker, keyrings, device integration, and desktop services
 stay outside the shared Home Manager profile and follow each host boundary.
@@ -100,12 +102,9 @@ With Nix installed, evaluate all profiles and inspect the generated shell:
 
 ```sh
 nix flake check
-nix build .#homeConfigurations.crostini.activationPackage
 nix build .#systemConfigs.baguette
-nix build .#homeConfigurations.debianTrixie.activationPackage
-nix build .#systemConfigs.debianTrixieContainer
+nix build .#packages.x86_64-linux.synologyDevRoot
 nix build .#darwinConfigurations.mini.system
-home-manager switch --flake .#crostini
 install-node-tools --help
 zsh -lic 'typeset -f backup extract mkcd rfv; alias | rg "^(ls|ll|g|zj)="'
 ```

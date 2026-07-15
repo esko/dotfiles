@@ -62,8 +62,6 @@ mkdir -p "$prefix/bin"
 
 packages=(
   "agent-browser@latest"
-  "@openai/codex@latest"
-  "@anthropic-ai/claude-code@latest"
   "@google/gemini-cli@latest"
   "@google/jules@latest"
   "command-code@latest"
@@ -115,7 +113,7 @@ fi
 
 printf '\nInstalled commands:\n'
 missing_commands=0
-for command_name in agent-browser codex claude gemini jules cmd hunk portless; do
+for command_name in agent-browser gemini jules cmd hunk portless; do
   if command -v "$command_name" >/dev/null 2>&1; then
     printf '  %-15s %s\n' "$command_name" "$(command -v "$command_name")"
   else

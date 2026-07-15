@@ -24,6 +24,7 @@ let
 in
 {
   imports = [
+    ./llm-agents.nix
     ./llm-context.nix
     ./stow-migration.nix
   ];
@@ -50,10 +51,10 @@ in
     inetutils nmap tailscale bun cargo-binstall golangci-lint
     python3Packages.pytest croc
   ] ++ optionalPackages [
-    # Native fast-moving CLIs may use nixpkgs when available. Node-based global
-    # CLIs are intentionally installed from their published npm packages by
-    # scripts/install-node-tools.sh so activation never compiles their sources.
-    "agy" "antigravity" "athas" "cursor-agent" "herdr" "pass-cli"
+    # Core agent CLIs (cursor-agent, agy, claude, codex, pi) come from
+    # llm-agents.nix on every deployment. Remaining native tools stay optional
+    # nixpkgs attributes when available.
+    "antigravity" "athas" "herdr" "pass-cli"
   ];
 
   # Keep existing utility configuration under declarative control. These are

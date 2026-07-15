@@ -32,24 +32,10 @@
       env = [ "tailscale_auth_key" ];
       tailscaleHostname = "baguette";
     };
-    crostini = {
-      ssh = true;
-      env = [ "tailscale_auth_key" ];
-      tailscaleHostname = "crostini";
-    };
     mini = {
       ssh = true;
       env = [ "tailscale_auth_key" ];
       tailscaleHostname = "mini";
-    };
-    debian-trixie = {
-      ssh = false;
-      env = [ ];
-    };
-    debian-trixie-container = {
-      ssh = false;
-      env = [ "tailscale_auth_key" ];
-      tailscaleHostname = "debian-trixie-container";
     };
     synology-dev = {
       ssh = false;

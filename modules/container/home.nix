@@ -13,7 +13,7 @@ in
     enableSharedTools = mkOption {
       type = types.bool;
       default = true;
-      description = "Install the shared headless CLI profile in Debian Trixie containers.";
+      description = "Install the shared headless CLI profile in container images.";
     };
 
     allowGuiPackages = mkOption {
@@ -39,9 +39,9 @@ in
 
     # GUI packages are intentionally opt-in and empty by default. This option
     # exists to make the headless limitation explicit without pulling desktop
-    # dependencies into every Debian Trixie image.
+    # dependencies into every container image.
     home.activation.dotfilesContainerNotice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD printf '%s\\n' "Debian Trixie container profile: host services/devices/GUI remain outside Home Manager"
+      $DRY_RUN_CMD printf '%s\\n' "Container profile: host services/devices/GUI remain outside Home Manager"
     '';
   };
 }

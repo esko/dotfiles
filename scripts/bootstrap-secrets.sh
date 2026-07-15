@@ -20,7 +20,7 @@ Shared env secrets for all deployments live in secrets/shared.yaml.
 
 SSH examples:
   bootstrap-secrets ssh baguette --github --set-origin-ssh
-  bootstrap-secrets ssh crostini --github
+  bootstrap-secrets ssh baguette --github
   bootstrap-secrets ssh mini --github
 
 Environment examples:

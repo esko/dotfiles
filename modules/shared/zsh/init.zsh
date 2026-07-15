@@ -1,5 +1,5 @@
 # Fish-to-zsh compatibility layer. Keep functions small and POSIX-friendly so
-# the same profile works in Crostini, Debian Trixie containers, and macOS.
+# the same profile works in container images and macOS.
 
 # Allow pasteable command blocks to contain shell comments in interactive zsh.
 setopt interactivecomments

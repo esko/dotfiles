@@ -2,23 +2,19 @@
 
 The flake separates portable user configuration from privileged host policy:
 
-- `homeConfigurations.crostini` is a standalone Home Manager profile. ChromeOS
-  and Crostini retain ownership of users, services, devices, and system files.
 - `systemConfigs.baguette` is the native Debian Trixie configuration. System
   Manager owns the reviewed root-level boundary and activates Home Manager for
   the existing `esko` account.
-- `homeConfigurations.debianTrixie` is the default lightweight container
-  profile. It does not require systemd or privileged activation.
-- `systemConfigs.debianTrixieContainer` is an explicit machine-like container
-  profile for a privileged image with systemd as PID 1.
+- `packages.x86_64-linux.synologyDevRoot` is the unprivileged Synology
+  development-container root closure with embedded Home Manager evaluation.
 - `darwinConfigurations.mini` is a nix-darwin system configuration for the Mac
   Mini, with Home Manager embedded for user-level files.
 
 `modules/shared` is the common Home Manager interface. System-level Linux
-settings live in `modules/linux/system.nix` and
-`modules/container/system.nix`; user-level Linux settings remain in the
-corresponding `home.nix` files. This mirrors the nix-darwin pattern without
-pretending Debian is NixOS.
+settings live in `modules/linux/system.nix`; user-level Linux settings remain
+in `modules/linux/home.nix`. Container-specific Home Manager additions for the
+Synology image live in `modules/container/home.nix`. This mirrors the
+nix-darwin pattern without pretending Debian is NixOS.
 
 ## Ownership boundaries
 
@@ -79,10 +75,8 @@ nix flake check
 Then evaluate the intended profiles:
 
 ```sh
-nix build .#homeConfigurations.crostini.activationPackage
 nix build .#systemConfigs.baguette
-nix build .#homeConfigurations.debianTrixie.activationPackage
-nix build .#systemConfigs.debianTrixieContainer
+nix build .#packages.x86_64-linux.synologyDevRoot
 nix build .#darwinConfigurations.mini.system
 ```
 
@@ -93,10 +87,6 @@ sudo apt install zsh
 nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
   switch --flake "$PWD#baguette" --sudo
 ```
-
-For a systemd container, run the same command with
-`#debianTrixieContainer` from inside the container. The lightweight container
-profile continues to use `home-manager switch`.
 
 The Darwin configuration keeps Homebrew activation cleanup disabled. Existing
 apps remain untouched until an explicit package policy is added and reviewed.

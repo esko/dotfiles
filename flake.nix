@@ -1,5 +1,5 @@
 {
-  description = "Cross-platform dotfiles for Crostini, Baguette, Debian Trixie containers, and the Mac Mini";
+  description = "Cross-platform dotfiles for Baguette, the Synology dev container, and the Mac Mini";
 
   inputs = {
     # Linux follows the current unstable package set while flake.lock keeps each
@@ -69,6 +69,10 @@
       linuxSystem = "x86_64-linux";
       darwinSystem = "aarch64-darwin";
 
+      llmAgentPkgsFor = system: llmAgents.packages.${system};
+      linuxLlmAgentPkgs = llmAgentPkgsFor linuxSystem;
+      darwinLlmAgentPkgs = llmAgentPkgsFor darwinSystem;
+
       linuxPkgs = import nixpkgsLinux {
         system = linuxSystem;
         config.allowUnfreePredicate = pkg:
@@ -83,7 +87,7 @@
         bun = final.callPackage ./packages/bun-baseline.nix { };
         # Keep the shared profile's optional Herdr entry identical to the
         # llm-agents package explicitly added to the runtime closure.
-        herdr = llmAgentPkgs.herdr;
+        herdr = linuxLlmAgentPkgs.herdr;
       });
       darwinPkgs = import nixpkgsDarwin {
         system = darwinSystem;
@@ -92,11 +96,13 @@
       linuxArgs = {
         inherit username stateVersion;
         homeDirectory = linuxHome;
+        llmAgentPkgs = linuxLlmAgentPkgs;
       };
       darwinArgs = {
         inherit username stateVersion;
         homeDirectory = darwinHome;
         hostName = "mini";
+        llmAgentPkgs = darwinLlmAgentPkgs;
       };
 
       mkBootstrapSecretsApp = pkgs:
@@ -166,8 +172,7 @@
       };
 
       bunBaseline = synologyPkgs.bun;
-      llmAgentPkgs = llmAgents.packages.${linuxSystem};
-      opencodeBaseline = llmAgentPkgs.opencode.overrideAttrs (_oldAttrs: {
+      opencodeBaseline = linuxLlmAgentPkgs.opencode.overrideAttrs (_oldAttrs: {
         version = "1.17.18";
         src = linuxPkgs.fetchurl {
           url = "https://github.com/anomalyco/opencode/releases/download/v1.17.18/opencode-linux-x64-baseline.tar.gz";
@@ -177,10 +182,11 @@
         # exact baseline payload is exercised directly on the target DS918+.
         doInstallCheck = false;
       });
-      codexAgent = llmAgentPkgs.codex;
-      antigravityCli = llmAgentPkgs.antigravity-cli;
-      herdrAgent = llmAgentPkgs.herdr;
-      reasonixAgent = llmAgentPkgs.reasonix;
+      codexAgent = linuxLlmAgentPkgs.codex;
+      antigravityCli = linuxLlmAgentPkgs.antigravity-cli;
+      herdrAgent = linuxLlmAgentPkgs.herdr;
+      reasonixAgent = linuxLlmAgentPkgs.reasonix;
+      piAgent = linuxLlmAgentPkgs.pi;
       hunkBaseline = synologyPkgs.callPackage ./packages/hunk-baseline.nix {
         inherit bunBaseline;
       };
@@ -193,6 +199,7 @@
           antigravityCli
           codexAgent
           herdrAgent
+          piAgent
           reasonixAgent
           hunkBaseline
           opencodeBaseline
@@ -206,19 +213,6 @@
       apps.${darwinSystem}.bootstrap-ssh = mkBootstrapSshApp darwinPkgs;
 
       inherit secretsManifest;
-
-      # Standalone Home Manager profile for the current Crostini host. ChromeOS
-      # and the Crostini VM remain responsible for system-level configuration.
-      homeConfigurations.crostini = homeManagerLinux.lib.homeManagerConfiguration {
-        pkgs = linuxPkgs;
-        extraSpecialArgs = linuxArgs // { hostName = "crostini"; };
-        modules = [
-          sopsNixLinux.homeManagerModules.sops
-          ./modules/shared/home.nix
-          ./modules/shared/secrets.nix
-          ./modules/linux/home.nix
-        ];
-      };
 
       # Native Debian/Trixie host. System Manager owns the reviewed root-level
       # boundary and activates Home Manager for the existing esko account.
@@ -246,19 +240,6 @@
         ];
       };
 
-      # Lightweight OCI/dev-container profile. It intentionally does not mutate
-      # /etc, create users, or require systemd/privileged activation.
-      homeConfigurations.debianTrixie = homeManagerLinux.lib.homeManagerConfiguration {
-        pkgs = linuxPkgs;
-        extraSpecialArgs = linuxArgs // { hostName = "debian-trixie"; };
-        modules = [
-          sopsNixLinux.homeManagerModules.sops
-          ./modules/shared/home.nix
-          ./modules/shared/secrets.nix
-          ./modules/container/home.nix
-        ];
-      };
-
       # Home Manager evaluation embedded into the unprivileged Synology image.
       # It deliberately omits the SOPS/SSH module so no host identity can enter
       # an image layer.
@@ -268,39 +249,11 @@
         inherit bunBaseline hunkBaseline opencodeBaseline synologyDevRoot;
       };
 
-      # Optional machine-like container profile for a privileged Debian Trixie
-      # container that boots systemd. Normal containers must use the standalone
-      # Home Manager output above.
-      systemConfigs.debianTrixieContainer = system-manager.lib.makeSystemConfig {
-        specialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
-        modules = [
-          homeManagerLinux.nixosModules.home-manager
-          ./modules/container/system.nix
-          {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              backupFileExtension = "home-manager-backup";
-              extraSpecialArgs = linuxArgs // { hostName = "debian-trixie-container"; };
-              users.${username} = {
-                imports = [
-                  sopsNixLinux.homeManagerModules.sops
-                  ./modules/shared/home.nix
-                  ./modules/shared/secrets.nix
-                  ./modules/container/home.nix
-                ];
-              };
-            };
-          }
-        ];
-      };
-
       # Expose the System Manager derivations through the standard flake check
-      # interface so `nix flake check` evaluates both machine-like Linux
-      # configurations instead of silently skipping the custom output.
+      # interface so `nix flake check` evaluates the Linux configurations
+      # instead of silently skipping the custom output.
       checks.${linuxSystem} = {
         baguette = self.systemConfigs.baguette;
-        debianTrixieContainer = self.systemConfigs.debianTrixieContainer;
         synologyDevRoot = synologyDevRoot;
       };
 

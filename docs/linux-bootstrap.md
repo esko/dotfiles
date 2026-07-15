@@ -1,9 +1,7 @@
-# Crostini to Baguette Linux bootstrap
+# Baguette Linux bootstrap
 
-Crostini remains a standalone Home Manager target. Baguette is a native Debian
-Trixie host managed by System Manager with Home Manager embedded for `esko`.
-The distinction is intentional: Crostini is an environment supplied by
-ChromeOS, while Baguette owns its Debian users and services.
+Baguette is a native Debian Trixie host managed by System Manager with Home
+Manager embedded for `esko`.
 
 ## Confirm the Baguette host
 
@@ -138,41 +136,9 @@ install-node-tools --with-browser
 
 The npm prefix is `~/.local`, which is already on the managed PATH.
 
-## Container profiles
+## Display integration templates
 
-There are two distinct Debian Trixie container outputs.
-
-### Lightweight OCI/dev containers
-
-Use this for normal Docker, Podman, and devcontainer images without systemd:
-
-```sh
-nix build .#homeConfigurations.debianTrixie.activationPackage
-home-manager switch --flake .#debianTrixie
-```
-
-This profile owns only `/home/esko` files and user packages. It does not require
-root, modify `/etc/passwd`, or install services.
-
-### Machine-like systemd containers
-
-Use this only for a privileged container that intentionally boots systemd as
-PID 1 and owns its users and services:
-
-```sh
-nix build .#systemConfigs.debianTrixieContainer
-nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
-  switch --flake "$PWD#debianTrixieContainer" --sudo
-```
-
-A pre-activation assertion rejects this target unless PID 1 is systemd. This is
-not the default for Synology Container Manager or ordinary OCI containers; use
-the lightweight profile unless the image/runtime was deliberately built for
-systemd and granted the required cgroup and privilege access.
-
-## Preserved Crostini integration
-
-Home Manager continues to publish non-invasive templates for Crostini:
+Home Manager publishes non-invasive templates for optional display integration:
 
 - `~/.config/dotfiles/templates/Xresources`
 - `~/.config/dotfiles/templates/weston.ini`

@@ -1,15 +1,15 @@
 # Dotfiles
 
-Cross-platform configuration managed with Nix flakes. Standalone Home Manager
-owns Crostini and lightweight container user environments, System Manager owns
-the native Debian/Baguette system boundary, and nix-darwin owns the Mac Mini.
+Cross-platform configuration managed with Nix flakes. System Manager owns
+the native Debian/Baguette system boundary, the Synology image embeds a
+container Home Manager profile, and nix-darwin owns the Mac Mini.
 
 ## Structure
 
 - `flake.nix`, `flake.lock`: pinned Nix inputs and host profiles
 - `modules/shared/`: portable Home Manager shell, CLI, editor, and context setup
 - `modules/linux/`: Baguette System Manager policy plus Linux Home Manager files
-- `modules/container/`: lightweight and systemd-container profiles
+- `modules/container/`: Synology image Home Manager additions
 - `Dockerfile.synology-dev`: unprivileged x86_64 Synology development image
 - `compose/`: deployment definitions for handoff to Container Manager
 - `modules/darwin/`: nix-darwin and Mac Mini Home Manager configuration
@@ -59,17 +59,8 @@ git clone https://github.com/esko/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 nix flake check
 
-# Crostini: standalone Home Manager
-nix build .#homeConfigurations.crostini.activationPackage
-
 # Baguette: System Manager with embedded Home Manager
 nix build .#systemConfigs.baguette
-
-# Lightweight Debian Trixie OCI/dev container
-nix build .#homeConfigurations.debianTrixie.activationPackage
-
-# Privileged Debian Trixie container with systemd as PID 1
-nix build .#systemConfigs.debianTrixieContainer
 
 # Synology x86_64 development-container root closure
 nix build .#packages.x86_64-linux.synologyDevRoot
@@ -107,8 +98,8 @@ The installer writes only to the user-owned npm prefix under `~/.local`.
 Re-running it updates the complete approved Node CLI set.
 
 See [`docs/platform-targets.md`](docs/platform-targets.md) for the host matrix
-and [`docs/linux-bootstrap.md`](docs/linux-bootstrap.md) for the Crostini to
-Baguette transition and System Manager safety checks.
+and [`docs/linux-bootstrap.md`](docs/linux-bootstrap.md) for Baguette bootstrap
+and System Manager safety checks.
 
 The architecture and secret boundary are documented in
 [`docs/nix-architecture.md`](docs/nix-architecture.md) and

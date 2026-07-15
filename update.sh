@@ -30,8 +30,7 @@ single entry point for day-to-day dotfiles updates.
 
 Options:
   --target NAME     Force a profile instead of auto-detection:
-                      crostini, baguette, debian-trixie,
-                      debian-trixie-container, mini, synology
+                      baguette, mini, synology
   --synology        Build and hand off the Synology dev image (any host with Docker)
   --pull            Run git pull --ff-only before updating
   --check-only      Run nix flake check for the current target, do not activate
@@ -46,11 +45,8 @@ Options:
 
 Auto-detection order:
   1. --target or ~/.config/dotfiles/target
-  2. macOS                        -> mini
-  3. ChromeOS / Crostini          -> crostini
-  4. Debian Trixie + hostname     -> baguette
-  5. Debian Trixie + systemd PID1 -> debian-trixie-container
-  6. Debian Trixie + container    -> debian-trixie
+  2. macOS            -> mini
+  3. Debian Trixie    -> baguette
 
 Examples:
   ./update.sh
@@ -126,28 +122,6 @@ is_debian_trixie() {
   [[ "${ID:-}" = debian && "${VERSION_CODENAME:-}" = trixie ]]
 }
 
-is_crostini() {
-  [[ -f /etc/chrome_os-version ]] \
-    || [[ -n "${CHROMEOS_CONTAINER:-}" ]] \
-    || [[ -n "${CROS_CONTAINER_NAME:-}" ]] \
-    || command -v sommelier >/dev/null 2>&1
-}
-
-is_container() {
-  [[ -f /.dockerenv || -f /run/.containerenv ]]
-}
-
-is_systemd_host() {
-  local init_comm=""
-  [[ -r /proc/1/comm ]] || return 1
-  IFS= read -r init_comm < /proc/1/comm
-  [[ "$init_comm" = systemd ]]
-}
-
-hostname_short() {
-  hostname -s 2>/dev/null || hostname
-}
-
 detect_target() {
   if [[ -n "$target" ]]; then
     printf '%s\n' "$target"
@@ -165,30 +139,8 @@ detect_target() {
       return 0
       ;;
     Linux)
-      if is_crostini; then
-        printf '%s\n' crostini
-        return 0
-      fi
-
       if is_debian_trixie; then
-        if [[ "$(hostname_short)" = baguette ]]; then
-          printf '%s\n' baguette
-          return 0
-        fi
-        if is_systemd_host; then
-          printf '%s\n' debian-trixie-container
-          return 0
-        fi
-        if is_container; then
-          printf '%s\n' debian-trixie
-          return 0
-        fi
         printf '%s\n' baguette
-        return 0
-      fi
-
-      if is_container; then
-        printf '%s\n' debian-trixie
         return 0
       fi
       ;;
@@ -199,14 +151,8 @@ detect_target() {
 
 normalize_target() {
   case "$1" in
-    crostini|baguette|debian-trixie|debian-trixie-container|mini|synology)
+    baguette|mini|synology)
       printf '%s\n' "$1"
-      ;;
-    debianTrixie)
-      printf '%s\n' debian-trixie
-      ;;
-    debianTrixieContainer)
-      printf '%s\n' debian-trixie-container
       ;;
     *)
       printf 'Unknown target: %s\n' "$1" >&2
@@ -282,10 +228,7 @@ ensure_login_shell() {
 
 flake_attr_for_target() {
   case "$1" in
-    crostini) printf '%s\n' homeConfigurations.crostini ;;
     baguette) printf '%s\n' systemConfigs.baguette ;;
-    debian-trixie) printf '%s\n' homeConfigurations.debianTrixie ;;
-    debian-trixie-container) printf '%s\n' systemConfigs.debianTrixieContainer ;;
     mini) printf '%s\n' darwinConfigurations.mini.system ;;
     synology) printf '%s\n' packages.x86_64-linux.synologyDevRoot ;;
   esac
@@ -336,35 +279,15 @@ check_target() {
   local attr
   attr=$(flake_attr_for_target "$resolved_target")
   printf 'Checking %s (%s)\n' "$resolved_target" "$attr"
-  if [[ "$resolved_target" = mini ]]; then
-    nix build ".#$attr" --no-link
-  elif [[ "$resolved_target" = synology ]]; then
-    nix build ".#$attr" --no-link
-  elif [[ "$resolved_target" = baguette || "$resolved_target" = debian-trixie-container ]]; then
-    nix build ".#$attr" --no-link
-  else
-    nix build ".#${attr}.activationPackage" --no-link
-  fi
+  nix build ".#$attr" --no-link
 }
 
 apply_target() {
   local resolved_target=$1
 
   case "$resolved_target" in
-    crostini)
-      nix run home-manager -- switch --flake "$repo_root#crostini"
-      run_install_node_tools
-      ;;
     baguette)
       nix run "$SYSTEM_MANAGER" -- switch --flake "$repo_root#baguette" --sudo
-      run_install_node_tools
-      ;;
-    debian-trixie)
-      nix run home-manager -- switch --flake "$repo_root#debianTrixie"
-      run_install_node_tools
-      ;;
-    debian-trixie-container)
-      nix run "$SYSTEM_MANAGER" -- switch --flake "$repo_root#debianTrixieContainer" --sudo
       run_install_node_tools
       ;;
     mini)
@@ -399,7 +322,6 @@ if ! detected=$(detect_target); then
 Could not detect which dotfiles profile to apply.
 
 Set the target once:
-  ./update.sh --target crostini
   ./update.sh --target baguette
   ./update.sh --target mini
 
