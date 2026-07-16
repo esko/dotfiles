@@ -104,7 +104,7 @@ if [[ "$command_name" != shared-env ]]; then
 fi
 
 cd "$repo_root"
-SOPS_REPO_ROOT=$repo_root
+export SOPS_REPO_ROOT=$repo_root
 
 if [[ "$command_name" != shared-env ]]; then
   public_dir="$repo_root/secrets/public"
@@ -217,6 +217,8 @@ bootstrap_env() {
   if "$use_stdin"; then
     env_value=$(cat)
   elif [[ -z "$env_value" ]]; then
+    # Drop caller overrides so resolve prompts / uses the environment instead.
+    # shellcheck disable=SC2034
     SOPS_ENV_OVERRIDES=()
     if ! env_value=$(sops_resolve_env_value "$env_key"); then
       exit 1
@@ -266,6 +268,8 @@ bootstrap_shared_env() {
   if "$use_stdin"; then
     env_value=$(cat)
   elif [[ -z "$env_value" ]]; then
+    # Drop caller overrides so resolve prompts / uses the environment instead.
+    # shellcheck disable=SC2034
     SOPS_ENV_OVERRIDES=()
     if ! env_value=$(sops_resolve_env_value "$env_key"); then
       exit 1

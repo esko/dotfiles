@@ -21,6 +21,13 @@ done
 
 rg -q --fixed-strings 'bootstrap_env_if_needed' "$repo_root/scripts/sync-deployment-secrets.sh"
 rg -q --fixed-strings 'run_bootstrap_secrets' "$repo_root/scripts/sync-deployment-secrets.sh"
+rg -q --fixed-strings 'mkDotfilesScriptApp' "$repo_root/flake.nix"
+rg -q --fixed-strings 'scriptRelPath' "$repo_root/flake.nix"
+# Flake apps must exec the working-tree script, not inline it into the store.
+if rg -q 'builtins.readFile ./scripts/bootstrap-secrets.sh' "$repo_root/flake.nix"; then
+  printf '%s\n' 'bootstrap-secrets app must not builtins.readFile the mutable script' >&2
+  exit 1
+fi
 rg -q --fixed-strings 'manifest_deployment_wants_ssh' "$repo_root/scripts/lib/manifest-common.sh"
 rg -q --fixed-strings 'manifest_deployment_wants_ssh' "$repo_root/scripts/sync-deployment-secrets.sh"
 # Flake attr paths cannot embed Nix `or`; optional fields use jq.

@@ -118,10 +118,21 @@
         llmAgentPkgs = darwinLlmAgentPkgs;
       };
 
-      mkBootstrapSecretsApp = pkgs:
+      # Thin store wrappers: secrets scripts must mutate the git working tree, so
+      # they cannot be inlined into the Nix store via builtins.readFile.
+      mkDotfilesScriptApp = pkgs: {
+        name,
+        scriptRelPath,
+        prependArgs ? [ ],
+      }:
         let
+          prepend =
+            if prependArgs == [ ] then
+              ""
+            else
+              pkgs.lib.concatMapStringsSep " " pkgs.lib.escapeShellArg prependArgs;
           package = pkgs.writeShellApplication {
-            name = "bootstrap-secrets";
+            inherit name;
             runtimeInputs = with pkgs; [
               age
               sops
@@ -136,36 +147,36 @@
               gawk
               nix
             ];
-            text = builtins.readFile ./scripts/bootstrap-secrets.sh;
+            text = ''
+              repo_root="''${SOPS_REPO_ROOT:-''${DOTFILES_FLAKE:-}}"
+              if [[ -z "$repo_root" ]]; then
+                repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+              fi
+              script="$repo_root/${scriptRelPath}"
+              if [[ -z "$repo_root" || ! -f "$script" ]]; then
+                printf '%s\n' "${name}: run from the dotfiles checkout (or set SOPS_REPO_ROOT)" >&2
+                exit 1
+              fi
+              export SOPS_REPO_ROOT="$repo_root"
+              exec bash "$script" ${prepend} "$@"
+            '';
           };
         in {
           type = "app";
-          program = "${package}/bin/bootstrap-secrets";
+          program = "${package}/bin/${name}";
+        };
+
+      mkBootstrapSecretsApp = pkgs:
+        mkDotfilesScriptApp pkgs {
+          name = "bootstrap-secrets";
+          scriptRelPath = "scripts/bootstrap-secrets.sh";
         };
 
       mkBootstrapSshApp = pkgs:
-        let
-          package = pkgs.writeShellApplication {
-            name = "bootstrap-ssh";
-            runtimeInputs = with pkgs; [
-              age
-              sops
-              openssh
-              git
-              gh
-              jq
-              coreutils
-              findutils
-              gnugrep
-              gnused
-              gawk
-              nix
-            ];
-            text = builtins.readFile ./scripts/bootstrap-ssh.sh;
-          };
-        in {
-          type = "app";
-          program = "${package}/bin/bootstrap-ssh";
+        mkDotfilesScriptApp pkgs {
+          name = "bootstrap-ssh";
+          scriptRelPath = "scripts/bootstrap-secrets.sh";
+          prependArgs = [ "ssh" ];
         };
 
       secretsManifest = import ./secrets/manifest.nix;

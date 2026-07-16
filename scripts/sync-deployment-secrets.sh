@@ -78,7 +78,7 @@ fi
 sops_validate_deployment_name "$deployment"
 
 cd "$repo_root"
-SOPS_REPO_ROOT=$repo_root
+export SOPS_REPO_ROOT=$repo_root
 
 secret_file=$(sops_secret_file "$deployment")
 public_key_file="$repo_root/secrets/public/${deployment}-id_ed25519.pub"
@@ -89,7 +89,7 @@ repo="${DOTFILES_FLAKE:-$repo_root}"
 # Bootstrap must work before Home Manager puts sops on PATH. The flake app
 # bundles sops/age; prefer it over a host install.
 run_bootstrap_secrets() {
-  nix run "$repo#bootstrap-secrets" -- "$@"
+  SOPS_REPO_ROOT="$repo_root" nix run "$repo#bootstrap-secrets" -- "$@"
 }
 
 file_sha256() {
