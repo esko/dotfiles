@@ -118,6 +118,48 @@ elif isinstance(data, list) and data and isinstance(data[0], str):
 '
 }
 
+# Every executable name published by an installed package's `bin` field.
+package_bin_commands() {
+  local name=$1 version=${2:-} pkg_json bin_json
+
+  pkg_json="$prefix/lib/node_modules/$name/package.json"
+  if [[ -f "$pkg_json" ]]; then
+    python3 -c '
+import json, sys
+name = sys.argv[1]
+with open(sys.argv[2], encoding="utf-8") as fh:
+    data = json.load(fh)
+bin_field = data.get("bin")
+if isinstance(bin_field, str):
+    print(name)
+elif isinstance(bin_field, dict):
+    for command_name in sorted(bin_field):
+        print(command_name)
+' "$name" "$pkg_json"
+    return 0
+  fi
+
+  if [[ -n "$version" ]]; then
+    bin_json=$(npm view "${name}@${version}" bin --json 2>/dev/null || true)
+  else
+    bin_json=$(npm view "$name" bin --json 2>/dev/null || true)
+  fi
+  [[ -n "$bin_json" ]] || return 0
+  printf '%s' "$bin_json" | python3 -c '
+import json, sys
+name = sys.argv[1]
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if isinstance(data, str):
+    print(name)
+elif isinstance(data, dict):
+    for command_name in sorted(data):
+        print(command_name)
+' "$name"
+}
+
 remove_legacy_fnm_globals() {
   local fnm_versions_dir="${HOME}/.local/share/fnm/node-versions"
   [[ -d "$fnm_versions_dir" ]] || return 0
@@ -213,25 +255,36 @@ report_command() {
 
 printf '\nInstalled npm packages:\n'
 missing_packages=0
+declare -a installed_commands=()
 for package_spec in "${packages[@]}"; do
   name=$(package_name "$package_spec")
   installed=$(installed_package_version "$name" || true)
   if [[ -n "$installed" ]]; then
     printf '  %-28s %s\n' "$name" "$installed"
+    while IFS= read -r command_name; do
+      [[ -n "$command_name" ]] || continue
+      installed_commands+=("$command_name")
+    done < <(package_bin_commands "$name" "$installed")
   else
     printf '  %-28s %s\n' "$name" "not installed"
     missing_packages=$((missing_packages + 1))
   fi
 done
 
-printf '\nCommands on PATH:\n'
+printf '\nInstalled commands:\n'
 missing_commands=0
-# Primary bins plus alternate names published by the same packages.
-for command_name in agent-browser gemini jules cmd command-code hunk hunkdiff portless; do
-  if ! report_command "$command_name"; then
-    missing_commands=$((missing_commands + 1))
-  fi
-done
+if [[ ${#installed_commands[@]} -eq 0 ]]; then
+  printf '  (none)\n'
+  missing_commands=1
+else
+  # Unique + sorted so packages that share bins do not print twice.
+  while IFS= read -r command_name; do
+    [[ -n "$command_name" ]] || continue
+    if ! report_command "$command_name"; then
+      missing_commands=$((missing_commands + 1))
+    fi
+  done < <(printf '%s\n' "${installed_commands[@]}" | sort -u)
+fi
 
 printf '\nAgent CLIs (Home Manager / llm-agents.nix):\n'
 missing_agents=0

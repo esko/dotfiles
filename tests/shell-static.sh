@@ -60,15 +60,13 @@ for package in agent-browser @google/gemini-cli @google/jules command-code hunkd
   rg -q --fixed-strings "${package}@latest" "$node_tools_installer"
 done
 
-for command_name in agent-browser gemini jules cmd command-code hunk hunkdiff portless; do
-  rg -q "for command_name in .*\b${command_name}\b" "$node_tools_installer"
-done
+rg -q --fixed-strings 'package_bin_commands' "$node_tools_installer"
+rg -q --fixed-strings 'Installed commands:' "$node_tools_installer"
 for command_name in agent agy claude codex grok pi; do
   rg -q "for command_name in .*\b${command_name}\b" "$node_tools_installer"
 done
 rg -q --fixed-strings 'browser_runtime_present' "$node_tools_installer"
 rg -q --fixed-strings 'Installed npm packages:' "$node_tools_installer"
-rg -q --fixed-strings 'Commands on PATH:' "$node_tools_installer"
 rg -q --fixed-strings 'Agent CLIs (Home Manager / llm-agents.nix)' "$node_tools_installer"
 
 if rg -q --fixed-strings 'npx --yes' "$module" "$init"; then
