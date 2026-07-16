@@ -82,6 +82,29 @@ sudo systemctl enable --now tailscaled
 The shared Home Manager profile also installs the Nix `tailscale` CLI. Use the
 Debian package for `tailscaled` on native Linux hosts.
 
+## Numtide binary cache
+
+Baguette follows [`llm-agents.nix`](https://github.com/numtide/llm-agents.nix),
+which publishes pre-built agent CLIs to `https://cache.numtide.com`. The flake
+declares that cache in `nixConfig`, and `./update.sh` passes the same
+substituter options on every Nix invocation.
+
+Daemon builds still require the cache to be trusted by Determinate Nix. On
+Baguette, run the host helper once (safe to re-run; keeps existing Determinate
+settings):
+
+```sh
+./scripts/enable-numtide-cache.sh
+```
+
+That appends these lines to the host-owned `/etc/nix/nix.conf`, restarts
+`nix-daemon`, and verifies the cache is active:
+
+```
+extra-substituters = https://cache.numtide.com
+extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
+```
+
 ## Build before activation
 
 From the repository checkout:
@@ -89,16 +112,30 @@ From the repository checkout:
 ```sh
 nix flake lock
 nix flake check
-nix build .#systemConfigs.baguette
+./update.sh --check-only
 ```
 
-Building does not mutate `/etc`, users, or services. Review the branch diff and
-build result before switching.
+`--check-only` builds the baguette closure with the Numtide cache options and
+does not mutate `/etc`, users, or services. Review the branch diff and build
+result before switching.
 
 ## Activate Baguette
 
+Prefer the day-to-day entry point, which enables the Numtide cache and avoids a
+redundant pre-activation build:
+
 ```sh
-nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
+./update.sh --target baguette
+```
+
+Or activate directly with the same cache options:
+
+```sh
+nix run \
+  --accept-flake-config \
+  --option extra-substituters https://cache.numtide.com \
+  --option extra-trusted-public-keys 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' \
+  github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
   switch --flake "$PWD#baguette" --sudo
 ```
 
@@ -135,6 +172,12 @@ install-node-tools --with-browser
 ```
 
 The npm prefix is `~/.local`, which is already on the managed PATH.
+
+Baguette also installs the Cursor and Antigravity GUI editors from nixpkgs
+through Home Manager (`code-cursor` and `antigravity`). Launch them from the
+application menu or with the `cursor` and `antigravity` commands after
+activation. Desktop entries are published under `~/.local/share/applications/`
+so ChromeOS and other XDG launchers can find them.
 
 ## Display integration templates
 

@@ -59,8 +59,8 @@ git clone https://github.com/esko/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 nix flake check
 
-# Baguette: System Manager with embedded Home Manager
-nix build .#systemConfigs.baguette
+# Baguette: System Manager with embedded Home Manager (Numtide cache options)
+./update.sh --check-only --target baguette
 
 # Synology x86_64 development-container root closure
 nix build .#packages.x86_64-linux.synologyDevRoot
@@ -69,13 +69,13 @@ nix build .#packages.x86_64-linux.synologyDevRoot
 nix build .#darwinConfigurations.mini.system
 ```
 
-Activate Baguette only after reviewing the build and the preflight checks. Use
-the same System Manager revision pinned by the flake:
+Activate Baguette only after reviewing the build and the preflight checks.
+`./update.sh` enables Numtide's binary cache for `llm-agents.nix` and activates
+in one build:
 
 ```bash
 sudo apt install zsh
-nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
-  switch --flake "$PWD#baguette" --sudo
+./update.sh --target baguette
 ```
 
 This activation manages the existing `esko` account's login shell, the reviewed

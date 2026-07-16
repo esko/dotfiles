@@ -10,6 +10,9 @@ let
     builtins.concatLists (map
       (name: lib.optional (builtins.hasAttr name pkgs) (builtins.getAttr name pkgs))
       names);
+
+  cursorPackage = if builtins.hasAttr "code-cursor" pkgs then pkgs.code-cursor else null;
+  antigravityPackage = if builtins.hasAttr "antigravity" pkgs then pkgs.antigravity else null;
 in
 {
   options.dotfiles.linux = {
@@ -30,10 +33,17 @@ in
       default = true;
       description = "Document native Debian packages and services required outside Home Manager.";
     };
+
+    enableGuiApps = mkOption {
+      type = types.bool;
+      default = hostName == "baguette";
+      description = "Install Cursor and Antigravity GUI editors from nixpkgs.";
+    };
   };
 
   config = {
-    home.packages = lib.optionals config.dotfiles.linux.enableHostTools (optionalPackages [
+    home.packages =
+      lib.optionals config.dotfiles.linux.enableHostTools (optionalPackages [
       # Approved Linux-only tools and runtime integration.
       "android-tools" "adb" "jdk17" "openjdk17" "vulkan-tools"
       "libva-utils" "intel-gpu-tools" "intel-media-driver" "mesa"
@@ -41,7 +51,44 @@ in
       "wl-clipboard" "xclip" "xdotool" "xkbcomp" "xkeyboard-config"
       "fontconfig" "gnome-keyring" "libsecret" "libsecret-tools"
       "p7zip" "unrar" "streamlink" "qmk" "litert-lm"
+    ]) ++ lib.optionals config.dotfiles.linux.enableGuiApps (optionalPackages [
+      "code-cursor"
+      "antigravity"
     ]);
+
+    xdg.enable = mkIf config.dotfiles.linux.enableGuiApps true;
+
+    xdg.desktopEntries = mkIf config.dotfiles.linux.enableGuiApps (
+      lib.optionalAttrs (cursorPackage != null) {
+        cursor = {
+          name = "Cursor";
+          genericName = "Text Editor";
+          comment = "AI-powered code editor";
+          exec = "${lib.getExe cursorPackage} %F";
+          icon = "cursor";
+          terminal = false;
+          categories = [ "Development" "TextEditor" ];
+          mimeType = [
+            "application/x-cursor-workspace"
+            "inode/directory"
+            "text/plain"
+          ];
+          startupNotify = true;
+        };
+      }
+      // lib.optionalAttrs (antigravityPackage != null) {
+        antigravity = {
+          name = "Antigravity";
+          genericName = "IDE";
+          comment = "Agentic development platform";
+          exec = "${lib.getExe antigravityPackage} %F";
+          icon = "antigravity";
+          terminal = false;
+          categories = [ "Development" "IDE" ];
+          startupNotify = true;
+        };
+      }
+    );
 
     # System Manager builds users.users.<name>.packages into
     # /etc/profiles/per-user/<name>, but unlike NixOS it does not currently add

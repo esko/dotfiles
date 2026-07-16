@@ -16,10 +16,18 @@ for token in "checks.\${linuxSystem}" 'baguette = self.systemConfigs.baguette' '
   rg -q --fixed-strings "$token" "$flake"
 done
 
+rg -q --fixed-strings 'https://cache.numtide.com' "$flake"
+rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$flake"
+rg -q 'nixConfig' "$flake"
+
 rg -q 'hostName = "baguette"' "$flake"
+rg -q 'xdg\.desktopEntries' "$linux_module"
+rg -q --fixed-strings 'cursor = {' "$linux_module"
+rg -q --fixed-strings 'antigravity = {' "$linux_module"
 rg -q 'modules/linux/home\.nix' "$flake"
 
-for token in enableHostTools enableDesktopConfigs nativeBootstrap android-tools jdk17 vulkan-tools \
+for token in enableHostTools enableDesktopConfigs nativeBootstrap enableGuiApps \
+  code-cursor antigravity xdg.desktopEntries android-tools jdk17 vulkan-tools \
   intel-media-driver wl-clipboard xclip xdotool gnome-keyring streamlink qmk; do
   rg -q --fixed-strings "$token" "$linux_module"
 done
@@ -42,5 +50,15 @@ fi
 for token in 'non-invasive templates' 'Sommelier' 'host-owned'; do
   rg -q --fixed-strings "$token" "$bootstrap"
 done
+
+for token in 'Numtide binary cache' 'cache.numtide.com' './update.sh --check-only' \
+  './scripts/enable-numtide-cache.sh'; do
+  rg -q --fixed-strings "$token" "$bootstrap"
+done
+
+test -x "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'https://cache.numtide.com' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' \
+  "$repo_root/scripts/enable-numtide-cache.sh"
 
 printf '%s\n' 'linux/container static checks passed'

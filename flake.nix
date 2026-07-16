@@ -1,6 +1,16 @@
 {
   description = "Cross-platform dotfiles for Baguette, the Synology dev container, and the Mac Mini";
 
+  # llm-agents.nix publishes daily builds to Numtide's cache. Without this,
+  # following the flake as an input falls back to cache.nixos.org only and can
+  # rebuild large agent closures from source on Baguette.
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+    ];
+  };
+
   inputs = {
     # Linux follows the current unstable package set while flake.lock keeps each
     # reviewed deployment reproducible. Darwin remains on its dedicated 26.05
@@ -78,6 +88,8 @@
         config.allowUnfreePredicate = pkg:
           builtins.elem (nixpkgsLinux.lib.getName pkg) [
             "antigravity-cli"
+            "antigravity"
+            "code-cursor"
             "unrar"
           ];
       };

@@ -20,4 +20,20 @@ rg -q --fixed-strings 'NIX_DARWIN#darwin-rebuild' "$update"
 rg -q -U 'NIX_DARWIN#darwin-rebuild[\s\S]*ensure_login_shell[\s\S]*run_install_node_tools' "$update"
 rg -q '/etc/profiles/per-user/\$\{USER\}/bin' "$update"
 
+rg -q --fixed-strings 'https://cache.numtide.com' "$update"
+rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$update"
+rg -q --fixed-strings 'NIX_CACHE_OPTS' "$update"
+rg -q --fixed-strings 'accept-flake-config' "$update"
+# Apply path must not force a separate nix build before system-manager switch.
+if rg -q -U 'if "\$check_only"; then[\s\S]*check_target[\s\S]*apply_target' "$update"; then
+  :
+else
+  echo 'update.sh must run check_target only for --check-only' >&2
+  exit 1
+fi
+if rg -q -U 'check_target "\$resolved_target"\nif "\$check_only"' "$update"; then
+  echo 'update.sh must not always build before apply' >&2
+  exit 1
+fi
+
 printf '%s\n' 'update.sh static checks passed'

@@ -7,7 +7,11 @@
   # existing Determinate Nix installation and configuration.
   nixpkgs.hostPlatform = "x86_64-linux";
   nixpkgs.config.allowUnfreePredicate = pkg:
-    builtins.elem (lib.getName pkg) [ "unrar" ];
+    builtins.elem (lib.getName pkg) [
+      "antigravity"
+      "code-cursor"
+      "unrar"
+    ];
 
   # Do not enable System Manager's nix module on Baguette. This host already has
   # a working multi-user Determinate Nix installation, which Home Manager can

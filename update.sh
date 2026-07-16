@@ -11,6 +11,16 @@ SYSTEM_MANAGER='github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10
 NIX_DARWIN='github:nix-darwin/nix-darwin/c3e90c89649b07d1a96e4b9dd6cd0d6e44b91a74'
 TARGET_MARKER="${DOTFILES_TARGET_MARKER:-$HOME/.config/dotfiles/target}"
 
+# Match flake.nix nixConfig and Dockerfile.synology-dev so llm-agents.nix
+# substitutes from Numtide instead of building agents from source.
+NUMTIDE_SUBSTITUTER='https://cache.numtide.com'
+NUMTIDE_PUBLIC_KEY='niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g='
+NIX_CACHE_OPTS=(
+  --accept-flake-config
+  --option extra-substituters "$NUMTIDE_SUBSTITUTER"
+  --option extra-trusted-public-keys "$NUMTIDE_PUBLIC_KEY"
+)
+
 target=""
 do_pull=false
 skip_node_tools=false
@@ -113,6 +123,24 @@ require_command() {
     printf 'Required command is not available: %s\n' "$1" >&2
     exit 1
   fi
+}
+
+warn_unless_numtide_cache_trusted() {
+  local config=""
+  if config=$(nix config show 2>/dev/null) \
+    && printf '%s\n' "$config" | grep -Fq 'cache.numtide.com'; then
+    return 0
+  fi
+
+  cat >&2 <<'EOF'
+Note: cache.numtide.com is not visible in `nix config show`.
+./update.sh still passes Numtide substituter options for this run. If the Nix
+daemon ignores untrusted options, add these lines to host-owned
+/etc/nix/nix.conf and restart nix-daemon (see docs/linux-bootstrap.md):
+
+  extra-substituters = https://cache.numtide.com
+  extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
+EOF
 }
 
 is_debian_trixie() {
@@ -279,7 +307,7 @@ check_target() {
   local attr
   attr=$(flake_attr_for_target "$resolved_target")
   printf 'Checking %s (%s)\n' "$resolved_target" "$attr"
-  nix build ".#$attr" --no-link
+  nix build "${NIX_CACHE_OPTS[@]}" ".#$attr" --no-link
 }
 
 apply_target() {
@@ -287,7 +315,10 @@ apply_target() {
 
   case "$resolved_target" in
     baguette)
-      nix run "$SYSTEM_MANAGER" -- switch --flake "$repo_root#baguette" --sudo
+      # system-manager switch builds the closure; skip a separate nix build so
+      # day-to-day updates evaluate and substitute once.
+      nix run "${NIX_CACHE_OPTS[@]}" "$SYSTEM_MANAGER" -- \
+        switch --flake "$repo_root#baguette" --sudo
       run_install_node_tools
       ;;
     mini)
@@ -295,7 +326,8 @@ apply_target() {
         printf '%s\n' 'The mini profile must be applied on the Mac itself.' >&2
         exit 1
       fi
-      nix run "$NIX_DARWIN#darwin-rebuild" -- switch --flake "$repo_root#mini"
+      nix run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
+        switch --flake "$repo_root#mini"
       ensure_login_shell /bin/zsh
       run_install_node_tools
       ;;
@@ -341,9 +373,14 @@ if "$bootstrap_secrets"; then
   sync_secrets_for_target "$resolved_target"
 fi
 
-check_target "$resolved_target"
+case "$resolved_target" in
+  baguette|synology|mini)
+    warn_unless_numtide_cache_trusted
+    ;;
+esac
 
 if "$check_only"; then
+  check_target "$resolved_target"
   printf 'Check complete for %s (no activation).\n' "$resolved_target"
   exit 0
 fi

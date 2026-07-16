@@ -62,6 +62,15 @@ Passwords are not declared or placed in the Nix store. The `sudo` auxiliary
 group is explicitly retained. A failed preflight stops before privileged
 activation.
 
+## Binary cache for llm-agents
+
+The flake declares Numtide's binary cache in `nixConfig`, matching the
+Synology Docker builder. `./update.sh` also passes
+`--option extra-substituters https://cache.numtide.com` so agent packages
+substitute instead of building from source. On Baguette, trust the same
+substituter in the host-owned Determinate `/etc/nix/nix.conf` (see
+`docs/linux-bootstrap.md`); System Manager must not replace that file.
+
 ## Bootstrap
 
 Nix itself is installed outside Home Manager and System Manager. First update
@@ -75,17 +84,17 @@ nix flake check
 Then evaluate the intended profiles:
 
 ```sh
-nix build .#systemConfigs.baguette
+./update.sh --check-only
 nix build .#packages.x86_64-linux.synologyDevRoot
 nix build .#darwinConfigurations.mini.system
 ```
 
-Activate Baguette explicitly:
+Activate Baguette with the day-to-day entry point (Numtide cache options, single
+build):
 
 ```sh
 sudo apt install zsh
-nix run github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
-  switch --flake "$PWD#baguette" --sudo
+./update.sh --target baguette
 ```
 
 The Darwin configuration keeps Homebrew activation cleanup disabled. Existing

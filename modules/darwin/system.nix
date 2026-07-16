@@ -56,6 +56,7 @@
       "zed"
       "sublime-text"
       "cursor"
+      "antigravity"
       "visual-studio-code"
       "vlc"
       "google-chrome"
