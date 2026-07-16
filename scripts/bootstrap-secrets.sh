@@ -153,11 +153,21 @@ bootstrap_ssh() {
     "$secret_file" \
     "$public_key_file"
 
+  github_key_ok=true
   if "$add_github"; then
     if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-      gh auth login --hostname github.com --git-protocol ssh
+      gh auth login --hostname github.com --git-protocol ssh --scopes admin:public_key
     fi
-    gh ssh-key add "$public_key_file" --title "$deployment-$(date +%Y-%m-%d)"
+    if ! gh ssh-key add "$public_key_file" --title "$deployment-$(date +%Y-%m-%d)"; then
+      github_key_ok=false
+      cat >&2 <<EOF
+Warning: could not upload the SSH public key to GitHub (need admin:public_key).
+Secrets were still created locally. Fix with:
+
+  gh auth refresh -h github.com -s admin:public_key
+  gh ssh-key add $public_key_file --title $deployment-$(date +%Y-%m-%d)
+EOF
+    fi
   fi
 
   if "$set_origin_ssh"; then
@@ -184,6 +194,15 @@ Encrypted host secrets: $secret_file
 Public SSH key:        $public_key_file
 Public age recipient:  $repo_root/secrets/age-recipients/$deployment.txt
 Local age identity:    $(sops_age_key_file)
+EOF
+  if "$add_github"; then
+    if "$github_key_ok"; then
+      printf '%s\n' 'GitHub account SSH key: uploaded'
+    else
+      printf '%s\n' 'GitHub account SSH key: not uploaded (see warning above)'
+    fi
+  fi
+  cat <<EOF
 
 Back up the local age identity securely. Do not commit or upload it.
 Review staged files with:
