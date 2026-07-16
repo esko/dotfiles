@@ -171,31 +171,73 @@ else
   npm install --global --force --no-audit --no-fund "${packages_to_install[@]}"
 fi
 
+browser_runtime_present() {
+  # Chrome for Testing lands under ~/.agent-browser/browsers after
+  # `agent-browser install`. Existing Chrome/Brave/Puppeteer installs also work,
+  # but this is the path the managed download uses.
+  local browser_dir="${AGENT_BROWSER_HOME:-$HOME/.agent-browser}/browsers"
+  [[ -d "$browser_dir" ]] || return 1
+  # Any chrome-* tree counts as an installed managed runtime.
+  compgen -G "$browser_dir"/chrome-* >/dev/null 2>&1
+}
+
 if "$with_browser"; then
-  agent-browser install
-else
+  if browser_runtime_present; then
+    printf 'agent-browser runtime already present; skipping download.\n'
+  elif [[ "$(uname -s)" == Linux ]]; then
+    agent-browser install --with-deps
+  else
+    agent-browser install
+  fi
+elif ! browser_runtime_present; then
   cat <<'EOF'
 
-The agent-browser CLI is installed. To download its managed browser runtime:
+The agent-browser CLI is installed, but its managed browser runtime is not.
+Download it with:
   agent-browser install
-
-On a fresh Debian host, use this if browser libraries are missing:
+On a fresh Debian host with missing browser libraries:
   agent-browser install --with-deps
+Or re-run: install-node-tools --with-browser
 EOF
 fi
 
-printf '\nInstalled commands:\n'
-missing_commands=0
-for command_name in agent-browser gemini jules cmd hunk portless; do
+report_command() {
+  local command_name=$1
   if command -v "$command_name" >/dev/null 2>&1; then
     printf '  %-15s %s\n' "$command_name" "$(command -v "$command_name")"
-  else
-    printf '  %-15s %s\n' "$command_name" "not found on PATH"
+    return 0
+  fi
+  printf '  %-15s %s\n' "$command_name" "not found on PATH"
+  return 1
+}
+
+printf '\nnpm CLIs (this installer):\n'
+missing_commands=0
+# Primary bins plus alternate names published by the same packages.
+for command_name in agent-browser gemini jules cmd command-code hunk hunkdiff portless; do
+  if ! report_command "$command_name"; then
     missing_commands=$((missing_commands + 1))
   fi
 done
 
+printf '\nAgent CLIs (Home Manager / llm-agents.nix):\n'
+missing_agents=0
+for command_name in agent agy claude codex grok pi; do
+  if ! report_command "$command_name"; then
+    missing_agents=$((missing_agents + 1))
+  fi
+done
+
 if [[ $missing_commands -ne 0 ]]; then
-  printf '\nInstallation verification failed: %d command(s) are missing.\n' "$missing_commands" >&2
+  printf '\nInstallation verification failed: %d npm CLI(s) are missing.\n' "$missing_commands" >&2
   exit 1
+fi
+
+if [[ $missing_agents -ne 0 ]]; then
+  cat >&2 <<EOF
+
+Note: $missing_agents agent CLI(s) from llm-agents.nix are not on PATH.
+They are installed by Home Manager, not this npm installer. Re-run:
+  ./update.sh
+EOF
 fi
