@@ -7,11 +7,10 @@ let
 
   cursorPackage = if builtins.hasAttr "code-cursor" pkgs then pkgs.code-cursor else null;
   antigravityPackage = if builtins.hasAttr "antigravity" pkgs then pkgs.antigravity else null;
-  # Prefer the pinned 1.5-dev AppImage on Baguette; fall back to nixpkgs.
-  inkscapePackage =
-    if inkscapeBeta != null then inkscapeBeta
-    else if builtins.hasAttr "inkscape" pkgs then pkgs.inkscape
-    else null;
+  # Stable 1.4.x from nixpkgs; optional pinned 1.5-dev AppImage beside it.
+  inkscapeStable =
+    if builtins.hasAttr "inkscape" pkgs then pkgs.inkscape else null;
+  inkscapeDev = inkscapeBeta;
 in
 {
   options.dotfiles.linux = {
@@ -41,7 +40,7 @@ in
     enableGuiApps = mkOption {
       type = types.bool;
       default = hostName == "baguette";
-      description = "Install Linux GUI apps (Cursor, Antigravity, Inkscape 1.5-dev).";
+      description = "Install Linux GUI apps (Cursor, Antigravity, Inkscape 1.4 + 1.5-dev).";
     };
   };
 
@@ -59,7 +58,9 @@ in
       (optionalPackages pkgs [
         "code-cursor"
         "antigravity"
-      ]) ++ lib.optional (inkscapePackage != null) inkscapePackage
+      ])
+      ++ lib.optional (inkscapeStable != null) inkscapeStable
+      ++ lib.optional (inkscapeDev != null) inkscapeDev
     );
 
     xdg.enable = mkIf config.dotfiles.linux.enableGuiApps true;
@@ -94,12 +95,32 @@ in
           startupNotify = true;
         };
       }
-      // lib.optionalAttrs (inkscapePackage != null) {
+      // lib.optionalAttrs (inkscapeStable != null) {
         inkscape = {
+          name = "Inkscape";
+          genericName = "Vector Graphics Editor";
+          comment = "Inkscape ${inkscapeStable.version or "1.4"} (stable)";
+          exec = "${lib.getExe inkscapeStable} %F";
+          icon = "inkscape";
+          terminal = false;
+          categories = [ "Graphics" "VectorGraphics" "2DGraphics" ];
+          mimeType = [
+            "image/svg+xml"
+            "image/svg+xml-compressed"
+            "application/vnd.corel-draw"
+            "application/pdf"
+            "image/png"
+            "image/jpeg"
+          ];
+          startupNotify = true;
+        };
+      }
+      // lib.optionalAttrs (inkscapeDev != null) {
+        inkscape-beta = {
           name = "Inkscape 1.5 Beta";
           genericName = "Vector Graphics Editor";
-          comment = "Inkscape 1.5 development build";
-          exec = "${lib.getExe inkscapePackage} %F";
+          comment = "Inkscape 1.5 development AppImage";
+          exec = "${lib.getExe inkscapeDev} %F";
           icon = "inkscape";
           terminal = false;
           categories = [ "Graphics" "VectorGraphics" "2DGraphics" ];

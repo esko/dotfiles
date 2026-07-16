@@ -239,7 +239,7 @@
               backupFileExtension = "home-manager-backup";
               extraSpecialArgs = linuxArgs // {
                 hostName = "baguette";
-                # Baguette uses the pinned 1.5-dev AppImage instead of nixpkgs 1.4.x.
+                # Baguette installs nixpkgs Inkscape 1.4 plus this 1.5-dev AppImage.
                 inherit inkscapeBeta;
               };
               users.${username} = {

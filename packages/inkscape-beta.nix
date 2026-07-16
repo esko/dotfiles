@@ -7,7 +7,9 @@
 }:
 
 let
-  pname = "inkscape";
+  # Keep the binary name distinct from nixpkgs inkscape (1.4.x) so both can
+  # live on PATH: `inkscape` (stable) and `inkscape-beta` (1.5-dev).
+  pname = "inkscape-beta";
   # Inkscape 1.5 development AppImage from GitLab CI master @ e76072a (2026-07-14).
   # Upstream does not publish a stable 1.5 tarball yet; pin a successful
   # appimage:linux job and bump intentionally when refreshing.
@@ -37,6 +39,6 @@ appimageTools.wrapType2 {
     license = licenses.gpl3Plus;
     platforms = [ "x86_64-linux" ];
     sourceProvenance = with sourceProvenance; [ binaryNativeCode ];
-    mainProgram = "inkscape";
+    mainProgram = "inkscape-beta";
   };
 }

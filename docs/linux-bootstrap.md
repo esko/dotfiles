@@ -199,13 +199,12 @@ install-node-tools --with-browser
 
 The npm prefix is `~/.local`, which is already on the managed PATH.
 
-Baguette also installs Cursor and Antigravity from nixpkgs, plus a pinned
-Inkscape **1.5 development** AppImage (`packages/inkscape-beta.nix`) because
-nixpkgs still ships 1.4.x. Launch them from the application menu or with the
-`cursor`, `antigravity`, and `inkscape` commands after activation. Desktop
-entries (Inkscape as “Inkscape 1.5 Beta”) are published under
-`~/.local/share/applications/` so ChromeOS and other XDG launchers can find
-them.
+Baguette also installs Cursor and Antigravity from nixpkgs, plus both Inkscape
+**1.4** (nixpkgs, command `inkscape`) and a pinned **1.5 development** AppImage
+(`packages/inkscape-beta.nix`, command `inkscape-beta`). Launch them from the
+application menu or CLI after activation. Desktop entries “Inkscape” and
+“Inkscape 1.5 Beta” are published under `~/.local/share/applications/` so
+ChromeOS and other XDG launchers can find them.
 
 ## Display integration templates
 
