@@ -92,6 +92,13 @@ secret_file=$(sops_secret_file "$deployment")
 public_key_file="$repo_root/secrets/public/${deployment}-id_ed25519.pub"
 state_dir="$repo_root/dist/$deployment"
 hash_file="$state_dir/.secrets-source-sha256"
+repo="${DOTFILES_FLAKE:-$repo_root}"
+
+# Bootstrap must work before Home Manager puts sops on PATH. The flake app
+# bundles sops/age; prefer it over a host install.
+run_bootstrap_secrets() {
+  nix run "$repo#bootstrap-secrets" -- "$@"
+}
 
 file_sha256() {
   if command -v sha256sum >/dev/null 2>&1; then
@@ -102,8 +109,11 @@ file_sha256() {
 }
 
 ssh_secret_present() {
-  [[ -f "$secret_file" ]] || return 1
-  command -v sops >/dev/null 2>&1 || return 1
+  [[ -f "$secret_file" && -f "$public_key_file" ]] || return 1
+  if ! command -v sops >/dev/null 2>&1; then
+    # Encrypted host file + committed pubkey is enough without host sops.
+    return 0
+  fi
   sops -d --extract '["ssh"]["id_ed25519"]' "$secret_file" 2>/dev/null \
     | grep -q 'BEGIN OPENSSH PRIVATE KEY'
 }
@@ -114,7 +124,7 @@ bootstrap_ssh_if_needed() {
     return 0
   fi
 
-  if ssh_secret_present && [[ -f "$public_key_file" ]]; then
+  if ssh_secret_present; then
     printf 'Secrets: SSH material for %s is already present\n' "$deployment"
     return 0
   fi
@@ -138,16 +148,11 @@ bootstrap_ssh_if_needed() {
   fi
 
   printf 'Secrets: bootstrapping SSH for %s\n' "$deployment"
-  nix run "$repo#bootstrap-secrets" -- "${bootstrap_args[@]}"
+  run_bootstrap_secrets "${bootstrap_args[@]}"
 }
 
 bootstrap_env_if_needed() {
-  local env_keys_json env_key_count env_key env_value changed=false
-
-  if ! command -v sops >/dev/null 2>&1; then
-    printf 'Secrets: sops is not available; skipping env bootstrap\n' >&2
-    return 0
-  fi
+  local env_keys_json env_key_count env_key env_value bootstrap_args
 
   env_keys_json=$(manifest_env_keys_json)
   env_key_count=$(printf '%s' "$env_keys_json" | jq 'length')
@@ -155,31 +160,41 @@ bootstrap_env_if_needed() {
     return 0
   fi
 
+  # Without --bootstrap, only report missing keys when host sops can check.
+  if ! "$do_bootstrap"; then
+    if ! command -v sops >/dev/null 2>&1; then
+      return 0
+    fi
+    while IFS= read -r env_key; do
+      [[ -n "$env_key" ]] || continue
+      if ! sops_env_secret_present "$deployment" "$env_key"; then
+        printf 'Secrets: env.%s for %s is missing; re-run with --bootstrap-secrets\n' "$env_key" "$deployment" >&2
+      else
+        printf 'Secrets: env.%s for %s is already present\n' "$env_key" "$deployment"
+      fi
+    done < <(printf '%s' "$env_keys_json" | jq -r '.[]')
+    return 0
+  fi
+
   while IFS= read -r env_key; do
     [[ -n "$env_key" ]] || continue
 
-    if sops_env_secret_present "$deployment" "$env_key"; then
-      printf 'Secrets: env.%s for %s is already present\n' "$env_key" "$deployment"
-      continue
-    fi
+    bootstrap_args=(env "$deployment" "$env_key")
+    for env_value in "${SOPS_ENV_OVERRIDES[@]:-}"; do
+      if [[ "$env_value" == "${env_key}="* ]]; then
+        bootstrap_args+=(--value "${env_value#${env_key}=}")
+        break
+      fi
+    done
 
-    if ! "$do_bootstrap"; then
-      printf 'Secrets: env.%s for %s is missing; re-run with --bootstrap-secrets\n' "$env_key" "$deployment" >&2
-      continue
+    printf 'Secrets: ensuring env.%s for %s\n' "$env_key" "$deployment"
+    # Flake app supplies sops/age so host PATH need not include them yet.
+    # Soft-fail: SSH bootstrap should still succeed when an env value is absent.
+    if ! run_bootstrap_secrets "${bootstrap_args[@]}"; then
+      printf 'Secrets: env.%s for %s skipped; re-run with --env %s=...\n' \
+        "$env_key" "$deployment" "$env_key" >&2
     fi
-
-    if ! env_value=$(sops_resolve_env_value "$env_key"); then
-      return 1
-    fi
-
-    printf 'Secrets: storing env.%s for %s\n' "$env_key" "$deployment"
-    sops_upsert_env_secret "$deployment" "$env_key" "$env_value"
-    changed=true
   done < <(printf '%s' "$env_keys_json" | jq -r '.[]')
-
-  if "$changed"; then
-    sops_stage_deployment_secrets "$deployment"
-  fi
 }
 
 render_env_if_changed() {
@@ -241,9 +256,6 @@ require_command() {
 
 require_command nix
 require_command jq
-if "$do_bootstrap"; then
-  require_command sops
-fi
 
 bootstrap_ssh_if_needed
 bootstrap_env_if_needed

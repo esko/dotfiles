@@ -20,6 +20,12 @@ for token in bootstrap-secrets ssh env render-deployment-env sops-common; do
 done
 
 rg -q --fixed-strings 'bootstrap_env_if_needed' "$repo_root/scripts/sync-deployment-secrets.sh"
+rg -q --fixed-strings 'run_bootstrap_secrets' "$repo_root/scripts/sync-deployment-secrets.sh"
+# Bootstrap must not require a host sops install before Home Manager activates.
+if rg -q 'require_command sops' "$repo_root/scripts/sync-deployment-secrets.sh"; then
+  printf '%s\n' 'sync-deployment-secrets must use nix run .#bootstrap-secrets, not host sops' >&2
+  exit 1
+fi
 rg -q --fixed-strings 'sops_resolve_env_value' "$repo_root/scripts/lib/sops-common.sh"
 rg -q --fixed-strings 'sops_decrypt_shared_env_secret' "$repo_root/scripts/lib/sops-common.sh"
 rg -q --fixed-strings 'shared.env' "$manifest"
