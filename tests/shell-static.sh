@@ -16,6 +16,8 @@ for attr in cursor-agent antigravity-cli claude-code codex grok pi; do
   rg -q --fixed-strings "\"${attr}\"" "$llm_agents_module"
 done
 rg -q 'writeShellScriptBin "agent"' "$llm_agents_module"
+rg -q 'rm -f "\$out/bin/agent"' "$llm_agents_module"
+rg -q 'name == "grok"' "$llm_agents_module"
 
 rg -q 'llmAgentPkgs = linuxLlmAgentPkgs' "$repo_root/flake.nix"
 rg -q 'llmAgentPkgs = darwinLlmAgentPkgs' "$repo_root/flake.nix"

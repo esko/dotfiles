@@ -58,8 +58,9 @@ This installs the following packages into the user-owned npm prefix
 
 `agent` (Cursor Agent), `agy`, `claude`, `codex`, `grok` (Grok Build), and
 `pi` are installed from `llm-agents.nix` on every deployment through the shared
-Home Manager profile. Re-run `./update.sh` after the flake input updates to
-refresh them.
+Home Manager profile. Grok's upstream `agent` binary is dropped so `agent`
+stays the Cursor wrapper; invoke Grok Build as `grok`. Re-run `./update.sh`
+after the flake input updates to refresh them.
 
 The installer is explicit rather than a Home Manager activation hook: profile
 activation stays deterministic and does not perform network operations. The
