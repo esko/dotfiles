@@ -1,0 +1,14 @@
+---
+description: Always commit and push completed work in this repo
+alwaysApply: true
+---
+
+# Commit and push
+
+When finishing a change in this repository, always create a git commit and push
+it to `origin` unless the user explicitly says not to.
+
+- Follow the repository commit-message style and the usual git safety rules
+  (no force push to main, no amending pushed commits, no secrets).
+- Exclude host-local noise such as `ssh/.ssh/known_hosts` unless asked.
+- After pushing, report the commit short SHA.

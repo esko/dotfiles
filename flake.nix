@@ -89,7 +89,9 @@
           builtins.elem (nixpkgsLinux.lib.getName pkg) [
             "antigravity-cli"
             "antigravity"
+            # pkgs.code-cursor reports lib.getName "cursor"
             "code-cursor"
+            "cursor"
             "unrar"
           ];
       };

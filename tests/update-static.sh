@@ -23,6 +23,8 @@ rg -q '/etc/profiles/per-user/\$\{USER\}/bin' "$update"
 rg -q --fixed-strings 'https://cache.numtide.com' "$update"
 rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$update"
 rg -q --fixed-strings 'NIX_CACHE_OPTS' "$update"
+rg -q --fixed-strings 'configure_nix_cache_opts' "$update"
+rg -q --fixed-strings 'numtide_cache_in_nix_config' "$update"
 rg -q --fixed-strings 'accept-flake-config' "$update"
 # Apply path must not force a separate nix build before system-manager switch.
 if rg -q -U 'if "\$check_only"; then[\s\S]*check_target[\s\S]*apply_target' "$update"; then

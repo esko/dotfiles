@@ -25,6 +25,9 @@ rg -q 'xdg\.desktopEntries' "$linux_module"
 rg -q --fixed-strings 'cursor = {' "$linux_module"
 rg -q --fixed-strings 'antigravity = {' "$linux_module"
 rg -q 'modules/linux/home\.nix' "$flake"
+# allowUnfreePredicate must allow lib.getName "cursor" (pkgs.code-cursor).
+rg -q --fixed-strings '"cursor"' "$repo_root/modules/linux/system.nix"
+rg -q --fixed-strings '"cursor"' "$flake"
 
 for token in enableHostTools enableDesktopConfigs nativeBootstrap enableGuiApps \
   code-cursor antigravity xdg.desktopEntries android-tools jdk17 vulkan-tools \

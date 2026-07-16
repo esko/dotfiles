@@ -15,11 +15,8 @@ TARGET_MARKER="${DOTFILES_TARGET_MARKER:-$HOME/.config/dotfiles/target}"
 # substitutes from Numtide instead of building agents from source.
 NUMTIDE_SUBSTITUTER='https://cache.numtide.com'
 NUMTIDE_PUBLIC_KEY='niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g='
-NIX_CACHE_OPTS=(
-  --accept-flake-config
-  --option extra-substituters "$NUMTIDE_SUBSTITUTER"
-  --option extra-trusted-public-keys "$NUMTIDE_PUBLIC_KEY"
-)
+# Populated after nix is available; see configure_nix_cache_opts.
+NIX_CACHE_OPTS=(--accept-flake-config)
 
 target=""
 do_pull=false
@@ -125,18 +122,40 @@ require_command() {
   fi
 }
 
-warn_unless_numtide_cache_trusted() {
+numtide_cache_in_nix_config() {
   local config=""
-  if config=$(nix config show 2>/dev/null) \
-    && printf '%s\n' "$config" | grep -Fq 'cache.numtide.com'; then
+  config=$(nix config show 2>/dev/null) || return 1
+  printf '%s\n' "$config" | grep -Fq 'cache.numtide.com'
+}
+
+configure_nix_cache_opts() {
+  # Prefer the daemon-trusted /etc/nix/nix.conf entries. Client --option
+  # trusted-public-keys is restricted for non-trusted users and only produces
+  # noise after ./scripts/enable-numtide-cache.sh has already configured the host.
+  NIX_CACHE_OPTS=(--accept-flake-config)
+  if numtide_cache_in_nix_config; then
+    return 0
+  fi
+
+  NIX_CACHE_OPTS+=(
+    --option extra-substituters "$NUMTIDE_SUBSTITUTER"
+    --option extra-trusted-public-keys "$NUMTIDE_PUBLIC_KEY"
+  )
+}
+
+warn_unless_numtide_cache_trusted() {
+  if numtide_cache_in_nix_config; then
     return 0
   fi
 
   cat >&2 <<'EOF'
 Note: cache.numtide.com is not visible in `nix config show`.
-./update.sh still passes Numtide substituter options for this run. If the Nix
-daemon ignores untrusted options, add these lines to host-owned
-/etc/nix/nix.conf and restart nix-daemon (see docs/linux-bootstrap.md):
+./update.sh will pass Numtide substituter options for this run, but the Nix
+daemon ignores untrusted client options. On Baguette run:
+
+  ./scripts/enable-numtide-cache.sh
+
+Or add these lines to host-owned /etc/nix/nix.conf and restart nix-daemon:
 
   extra-substituters = https://cache.numtide.com
   extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
@@ -339,6 +358,7 @@ apply_target() {
 
 require_command git
 require_command nix
+configure_nix_cache_opts
 
 if "$do_pull"; then
   printf 'Pulling latest changes\n'
