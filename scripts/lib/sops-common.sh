@@ -90,10 +90,34 @@ sops_secret_file() {
   printf '%s\n' "$repo_root/secrets/hosts/$deployment.yaml"
 }
 
+sops_secret_file_rel() {
+  local deployment=$1
+  printf 'secrets/hosts/%s.yaml\n' "$deployment"
+}
+
 sops_shared_secret_file() {
   local repo_root
   repo_root=$(sops_repo_root)
   printf '%s\n' "$repo_root/secrets/shared.yaml"
+}
+
+sops_shared_secret_file_rel() {
+  printf '%s\n' 'secrets/shared.yaml'
+}
+
+# Encrypt a plaintext YAML tempfile using creation rules for the repo-relative
+# destination. Without --filename-override, sops matches /tmp paths and fails
+# with "no matching creation rules found".
+sops_encrypt_yaml_file() {
+  local filename_override=$1 age_recipients=$2 plain_file=$3 output_file=$4
+
+  sops --encrypt \
+    --age "$age_recipients" \
+    --filename-override "$filename_override" \
+    --input-type yaml \
+    --output-type yaml \
+    "$plain_file" >"$output_file"
+  chmod 600 "$output_file"
 }
 
 sops_all_age_recipients() {
@@ -271,8 +295,8 @@ sops_upsert_shared_env_secret() {
       printf '  %s: %s\n' "$env_key" "$env_value"
     } >"$plain_secret"
 
-    sops --encrypt --age "$recipients" "$plain_secret" >"$secret_file"
-    chmod 600 "$secret_file"
+    sops_encrypt_yaml_file "$(sops_shared_secret_file_rel)" "$recipients" \
+      "$plain_secret" "$secret_file"
   fi
 }
 
@@ -299,8 +323,8 @@ sops_upsert_env_secret() {
       printf '  %s: %s\n' "$env_key" "$env_value"
     } >"$plain_secret"
 
-    sops --encrypt --age "$recipient" "$plain_secret" >"$secret_file"
-    chmod 600 "$secret_file"
+    sops_encrypt_yaml_file "$(sops_secret_file_rel "$deployment")" "$recipient" \
+      "$plain_secret" "$secret_file"
   fi
 }
 

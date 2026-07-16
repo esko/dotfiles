@@ -42,6 +42,9 @@ if rg -q 'require_command sops' "$repo_root/scripts/sync-deployment-secrets.sh";
 fi
 rg -q --fixed-strings 'sops_resolve_env_value' "$repo_root/scripts/lib/sops-common.sh"
 rg -q --fixed-strings 'sops_decrypt_shared_env_secret' "$repo_root/scripts/lib/sops-common.sh"
+rg -q --fixed-strings 'sops_encrypt_yaml_file' "$repo_root/scripts/lib/sops-common.sh"
+rg -q --fixed-strings -- '--filename-override' "$repo_root/scripts/lib/sops-common.sh"
+rg -q --fixed-strings 'sops_encrypt_yaml_file' "$repo_root/scripts/bootstrap-secrets.sh"
 rg -q --fixed-strings 'shared.env' "$manifest"
 rg -q --fixed-strings 'sops_load_env_secret' "$repo_root/scripts/lib/tailscale-common.sh"
 rg -q --fixed-strings 'run_deployment_consumers_for_target' "$repo_root/update.sh" "$repo_root/modules/shared/secrets.nix"

@@ -133,21 +133,20 @@ bootstrap_ssh() {
   printf '%s\n' "Generating the $deployment Ed25519 key. Set a passphrase when prompted."
   ssh-keygen -t ed25519 -a 100 -C "esko@$deployment" -f "$private_key"
 
-  cp "$private_key.pub" "$public_key_file"
-  chmod 644 "$public_key_file"
-
   {
     printf '%s\n' 'ssh:'
     printf '%s\n' '  id_ed25519: |-'
     sed 's/^/    /' "$private_key"
   } >"$plain_secret"
 
-  sops --encrypt \
-    --age "$recipient" \
-    --input-type yaml \
-    --output-type yaml \
-    "$plain_secret" >"$secret_file"
-  chmod 600 "$secret_file"
+  # Encrypt before publishing the pubkey so a failed sops run cannot leave
+  # partial SSH material that blocks retry.
+  mkdir -p "$(dirname "$secret_file")"
+  sops_encrypt_yaml_file "$(sops_secret_file_rel "$deployment")" "$recipient" \
+    "$plain_secret" "$secret_file"
+
+  cp "$private_key.pub" "$public_key_file"
+  chmod 644 "$public_key_file"
 
   git add "$repo_root/.sops.yaml" \
     "$repo_root/secrets/age-recipients/$deployment.txt" \
