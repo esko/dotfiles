@@ -65,15 +65,16 @@ in
 
     xdg.enable = mkIf config.dotfiles.linux.enableGuiApps true;
 
-    # ChromeOS Crostini's cros-garcon only exports a short XDG_DATA_DIRS list, so
-    # Nix profile + ~/.local desktop entries never reach the ChromeOS launcher
-    # unless we extend the service. See wiki.nixos.org/wiki/Installing_Nix_on_Crostini
-    # and docs/linux-bootstrap.md.
+    # ChromeOS Crostini's cros-garcon defaults to /usr/{local,}share only for
+    # XDG_DATA_DIRS (plus ~/.local/share when HOME is set). useUserPackages puts
+    # Nix .desktop files under /etc/profiles/per-user/<user>/share, which garcon
+    # never sees unless we extend the service. Also widen PATH so TryExec=name
+    # entries from nixpkgs resolve. See wiki.nixos.org/wiki/Installing_Nix_on_Crostini.
     xdg.configFile = mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps) {
       "systemd/user/cros-garcon.service.d/override.conf".text = ''
         [Service]
-        Environment="PATH=/etc/profiles/per-user/${username}/bin:/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/local/games:/usr/sbin:/usr/bin:/usr/games:/sbin:/bin"
-        Environment="XDG_DATA_DIRS=/etc/profiles/per-user/${username}/share:${homeDirectory}/.local/share:${homeDirectory}/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share"
+        Environment="PATH=%h/.local/bin:/etc/profiles/per-user/${username}/bin:%h/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/local/games:/usr/sbin:/usr/bin:/usr/games:/sbin:/bin"
+        Environment="XDG_DATA_DIRS=/etc/profiles/per-user/${username}/share:%h/.nix-profile/share:%h/.local/share:%h/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share"
       '';
     };
 
@@ -81,6 +82,7 @@ in
     home.sessionVariables = mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps) {
       XDG_DATA_DIRS = lib.concatStringsSep ":" [
         "/etc/profiles/per-user/${username}/share"
+        "${homeDirectory}/.nix-profile/share"
         "${homeDirectory}/.local/share"
         "${homeDirectory}/.local/share/flatpak/exports/share"
         "/var/lib/flatpak/exports/share"
@@ -92,17 +94,50 @@ in
     home.activation.publishBaguetteDesktopEntries =
       mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps)
         (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          $DRY_RUN_CMD mkdir -p "${homeDirectory}/.local/share/applications"
-          # Refresh the MIME/desktop cache when update-desktop-database exists.
-          if command -v update-desktop-database >/dev/null 2>&1; then
-            $DRY_RUN_CMD update-desktop-database "${homeDirectory}/.local/share/applications" || true
+          apps_dir="${homeDirectory}/.local/share/applications"
+          profile_apps="/etc/profiles/per-user/${username}/share/applications"
+          $DRY_RUN_CMD mkdir -p "$apps_dir"
+
+          # Materialize HM/profile .desktop files as regular files. Garcon's
+          # recursive watches are flaky on some symlink farms; plain files under
+          # ~/.local/share/applications are in the default search path.
+          if [ -d "$profile_apps" ]; then
+            for desktop in "$profile_apps"/*.desktop; do
+              [ -e "$desktop" ] || continue
+              base=$(basename "$desktop")
+              case "$base" in
+                cursor.desktop|antigravity.desktop|inkscape.desktop|inkscape-beta.desktop)
+                  $DRY_RUN_CMD cp -fL "$desktop" "$apps_dir/$base"
+                  ;;
+              esac
+            done
           fi
-          # Pick up the cros-garcon drop-in without requiring a full Chromebook reboot
-          # when the user systemd instance is already running.
+          for desktop in cursor.desktop antigravity.desktop inkscape.desktop inkscape-beta.desktop; do
+            if [ -e "$apps_dir/$desktop" ] && [ -L "$apps_dir/$desktop" ]; then
+              $DRY_RUN_CMD cp -fL "$apps_dir/$desktop" "$apps_dir/$desktop.real"
+              $DRY_RUN_CMD mv -f "$apps_dir/$desktop.real" "$apps_dir/$desktop"
+            fi
+          done
+
+          if command -v update-desktop-database >/dev/null 2>&1; then
+            $DRY_RUN_CMD update-desktop-database "$apps_dir" || true
+          fi
+
+          # Nudge inotify + reload garcon so ChromeOS gets a fresh app list.
+          $DRY_RUN_CMD touch "$apps_dir"
           if command -v systemctl >/dev/null 2>&1; then
             $DRY_RUN_CMD systemctl --user daemon-reload || true
             $DRY_RUN_CMD systemctl --user restart cros-garcon.service || true
           fi
+
+          echo "Baguette ChromeOS launchers:"
+          for desktop in cursor.desktop antigravity.desktop inkscape.desktop inkscape-beta.desktop; do
+            if [ -e "$apps_dir/$desktop" ]; then
+              echo "  ok  $apps_dir/$desktop"
+            else
+              echo "  MISSING $apps_dir/$desktop" >&2
+            fi
+          done
         '');
 
     xdg.desktopEntries = mkIf config.dotfiles.linux.enableGuiApps (

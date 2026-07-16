@@ -225,18 +225,23 @@ Baguette also installs Cursor and Antigravity from nixpkgs, plus both Inkscape
 published under `~/.local/share/applications/` and the per-user Nix profile
 share directory.
 
-ChromeOS Crostini’s `cros-garcon` service does **not** search those paths by
-default, so the Chromebook launcher stays empty until the Home Manager drop-in
-extends its `XDG_DATA_DIRS` / `PATH`. Activation writes:
+ChromeOS Crostini’s `cros-garcon` defaults to `/usr/local/share` + `/usr/share`
+(and `~/.local/share` when `HOME` is set). It does **not** see
+`/etc/profiles/per-user/.../share` from Home Manager `useUserPackages`, so the
+Chromebook launcher stays empty for Nix GUI apps until the Home Manager drop-in
+extends garcon’s `XDG_DATA_DIRS` / `PATH`. Activation writes:
 
 `~/.config/systemd/user/cros-garcon.service.d/override.conf`
 
-and restarts `cros-garcon.service`. If apps still do not appear, restart the
-Linux container (or the Chromebook), then confirm:
+materializes the Cursor/Antigravity/Inkscape `.desktop` files as regular files
+under `~/.local/share/applications/`, and restarts `cros-garcon.service`.
+
+If apps still do not appear after `./update.sh`, restart the Linux container from
+ChromeOS Settings (or reboot the Chromebook). Then confirm:
 
 ```sh
-systemctl --user cat cros-garcon.service | rg XDG_DATA_DIRS
-ls ~/.local/share/applications
+systemctl --user cat cros-garcon.service | rg 'XDG_DATA_DIRS|PATH='
+ls -l ~/.local/share/applications/{cursor,antigravity,inkscape,inkscape-beta}.desktop
 ls /etc/profiles/per-user/$USER/share/applications
 ```
 
