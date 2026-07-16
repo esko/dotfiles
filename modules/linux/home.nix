@@ -1,4 +1,5 @@
-{ config, lib, pkgs, username, homeDirectory, stateVersion, hostName, ... }:
+{ config, lib, pkgs, username, homeDirectory, stateVersion, hostName
+, inkscapeBeta ? null, ... }:
 
 let
   inherit (lib) mkIf mkOption types;
@@ -6,7 +7,11 @@ let
 
   cursorPackage = if builtins.hasAttr "code-cursor" pkgs then pkgs.code-cursor else null;
   antigravityPackage = if builtins.hasAttr "antigravity" pkgs then pkgs.antigravity else null;
-  inkscapePackage = if builtins.hasAttr "inkscape" pkgs then pkgs.inkscape else null;
+  # Prefer the pinned 1.5-dev AppImage on Baguette; fall back to nixpkgs.
+  inkscapePackage =
+    if inkscapeBeta != null then inkscapeBeta
+    else if builtins.hasAttr "inkscape" pkgs then pkgs.inkscape
+    else null;
 in
 {
   options.dotfiles.linux = {
@@ -36,7 +41,7 @@ in
     enableGuiApps = mkOption {
       type = types.bool;
       default = hostName == "baguette";
-      description = "Install Linux GUI apps from nixpkgs (Cursor, Antigravity, Inkscape).";
+      description = "Install Linux GUI apps (Cursor, Antigravity, Inkscape 1.5-dev).";
     };
   };
 
@@ -50,11 +55,12 @@ in
       "libdrm" "clinfo" "ocl-icd" "vpl-gpu-rt" "nettools" "traceroute"
       "xkbcomp" "xkeyboard-config"
       "unrar" "streamlink" "qmk" "litert-lm"
-    ]) ++ lib.optionals config.dotfiles.linux.enableGuiApps (optionalPackages pkgs [
-      "code-cursor"
-      "antigravity"
-      "inkscape"
-    ]);
+    ]) ++ lib.optionals config.dotfiles.linux.enableGuiApps (
+      (optionalPackages pkgs [
+        "code-cursor"
+        "antigravity"
+      ]) ++ lib.optional (inkscapePackage != null) inkscapePackage
+    );
 
     xdg.enable = mkIf config.dotfiles.linux.enableGuiApps true;
 
@@ -90,9 +96,9 @@ in
       }
       // lib.optionalAttrs (inkscapePackage != null) {
         inkscape = {
-          name = "Inkscape";
+          name = "Inkscape 1.5 Beta";
           genericName = "Vector Graphics Editor";
-          comment = "Create and edit SVG graphics";
+          comment = "Inkscape 1.5 development build";
           exec = "${lib.getExe inkscapePackage} %F";
           icon = "inkscape";
           terminal = false;

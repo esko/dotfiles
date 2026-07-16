@@ -108,6 +108,8 @@
         system = darwinSystem;
       };
 
+      inkscapeBeta = linuxPkgs.callPackage ./packages/inkscape-beta.nix { };
+
       linuxArgs = {
         inherit username stateVersion;
         homeDirectory = linuxHome;
@@ -235,7 +237,11 @@
               useGlobalPkgs = true;
               useUserPackages = true;
               backupFileExtension = "home-manager-backup";
-              extraSpecialArgs = linuxArgs // { hostName = "baguette"; };
+              extraSpecialArgs = linuxArgs // {
+                hostName = "baguette";
+                # Baguette uses the pinned 1.5-dev AppImage instead of nixpkgs 1.4.x.
+                inherit inkscapeBeta;
+              };
               users.${username} = {
                 imports = [
                   sopsNixLinux.homeManagerModules.sops
@@ -255,7 +261,7 @@
       homeConfigurations.synologyDev = synologyDevHome;
 
       packages.${linuxSystem} = {
-        inherit bunBaseline hunkBaseline opencodeBaseline synologyDevRoot;
+        inherit bunBaseline hunkBaseline opencodeBaseline synologyDevRoot inkscapeBeta;
       };
 
       # Expose the System Manager derivations through the standard flake check
