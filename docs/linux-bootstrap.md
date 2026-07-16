@@ -216,10 +216,24 @@ The npm prefix is `~/.local`, which is already on the managed PATH.
 
 Baguette also installs Cursor and Antigravity from nixpkgs, plus both Inkscape
 **1.4** (nixpkgs, command `inkscape`) and a pinned **1.5 development** AppImage
-(`packages/inkscape-beta.nix`, command `inkscape-beta`). Launch them from the
-application menu or CLI after activation. Desktop entries “Inkscape” and
-“Inkscape 1.5 Beta” are published under `~/.local/share/applications/` so
-ChromeOS and other XDG launchers can find them.
+(`packages/inkscape-beta.nix`, command `inkscape-beta`). Desktop entries are
+published under `~/.local/share/applications/` and the per-user Nix profile
+share directory.
+
+ChromeOS Crostini’s `cros-garcon` service does **not** search those paths by
+default, so the Chromebook launcher stays empty until the Home Manager drop-in
+extends its `XDG_DATA_DIRS` / `PATH`. Activation writes:
+
+`~/.config/systemd/user/cros-garcon.service.d/override.conf`
+
+and restarts `cros-garcon.service`. If apps still do not appear, restart the
+Linux container (or the Chromebook), then confirm:
+
+```sh
+systemctl --user cat cros-garcon.service | rg XDG_DATA_DIRS
+ls ~/.local/share/applications
+ls /etc/profiles/per-user/$USER/share/applications
+```
 
 ## Display integration templates
 

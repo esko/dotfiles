@@ -65,6 +65,46 @@ in
 
     xdg.enable = mkIf config.dotfiles.linux.enableGuiApps true;
 
+    # ChromeOS Crostini's cros-garcon only exports a short XDG_DATA_DIRS list, so
+    # Nix profile + ~/.local desktop entries never reach the ChromeOS launcher
+    # unless we extend the service. See wiki.nixos.org/wiki/Installing_Nix_on_Crostini
+    # and docs/linux-bootstrap.md.
+    xdg.configFile = mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps) {
+      "systemd/user/cros-garcon.service.d/override.conf".text = ''
+        [Service]
+        Environment="PATH=/etc/profiles/per-user/${username}/bin:/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/local/games:/usr/sbin:/usr/bin:/usr/games:/sbin:/bin"
+        Environment="XDG_DATA_DIRS=/etc/profiles/per-user/${username}/share:${homeDirectory}/.local/share:${homeDirectory}/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share"
+      '';
+    };
+
+    # Keep interactive shells aligned with the garcon search path.
+    home.sessionVariables = mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps) {
+      XDG_DATA_DIRS = lib.concatStringsSep ":" [
+        "/etc/profiles/per-user/${username}/share"
+        "${homeDirectory}/.local/share"
+        "${homeDirectory}/.local/share/flatpak/exports/share"
+        "/var/lib/flatpak/exports/share"
+        "/usr/local/share"
+        "/usr/share"
+      ];
+    };
+
+    home.activation.publishBaguetteDesktopEntries =
+      mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps)
+        (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          $DRY_RUN_CMD mkdir -p "${homeDirectory}/.local/share/applications"
+          # Refresh the MIME/desktop cache when update-desktop-database exists.
+          if command -v update-desktop-database >/dev/null 2>&1; then
+            $DRY_RUN_CMD update-desktop-database "${homeDirectory}/.local/share/applications" || true
+          fi
+          # Pick up the cros-garcon drop-in without requiring a full Chromebook reboot
+          # when the user systemd instance is already running.
+          if command -v systemctl >/dev/null 2>&1; then
+            $DRY_RUN_CMD systemctl --user daemon-reload || true
+            $DRY_RUN_CMD systemctl --user restart cros-garcon.service || true
+          fi
+        '');
+
     xdg.desktopEntries = mkIf config.dotfiles.linux.enableGuiApps (
       lib.optionalAttrs (cursorPackage != null) {
         cursor = {
