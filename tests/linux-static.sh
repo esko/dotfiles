@@ -16,9 +16,16 @@ for token in "checks.\${linuxSystem}" 'baguette = self.systemConfigs.baguette' '
   rg -q --fixed-strings "$token" "$flake"
 done
 
-rg -q --fixed-strings 'https://cache.numtide.com' "$flake"
-rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$flake"
-rg -q 'nixConfig' "$flake"
+# Cache trust belongs in nix.custom.conf, not flake nixConfig (untrusted-user warnings).
+if rg -q '^[[:space:]]*nixConfig[[:space:]]*=' "$flake"; then
+  echo 'flake.nix must not set nixConfig trusted-public-keys for Determinate hosts' >&2
+  exit 1
+fi
+rg -q --fixed-strings 'https://cache.numtide.com' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' \
+  "$repo_root/scripts/enable-numtide-cache.sh"
+# apps.<system> must be one attrset (separate dynamic assignments collide).
+rg -q -U 'apps = \{[\s\S]*bootstrap-secrets[\s\S]*bootstrap-ssh' "$flake"
 
 rg -q 'hostName = "baguette"' "$flake"
 rg -q 'xdg\.desktopEntries' "$linux_module"

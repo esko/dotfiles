@@ -31,7 +31,16 @@ rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7
 rg -q --fixed-strings 'NIX_CACHE_OPTS' "$update"
 rg -q --fixed-strings 'configure_nix_cache_opts' "$update"
 rg -q --fixed-strings 'numtide_cache_in_nix_config' "$update"
-rg -q --fixed-strings 'accept-flake-config' "$update"
+rg -q --fixed-strings 'enable-numtide-cache.sh' "$update"
+# Restricted trust options only warn for unprivileged Determinate users.
+if rg -q '[[:space:]]--accept-flake-config\b' "$update"; then
+  echo 'update.sh must not pass --accept-flake-config on untrusted Determinate hosts' >&2
+  exit 1
+fi
+if rg -q '[[:space:]]--option[[:space:]]+extra-trusted-public-keys\b' "$update"; then
+  echo 'update.sh must not pass extra-trusted-public-keys client options' >&2
+  exit 1
+fi
 # Apply path must not force a separate nix build before system-manager switch.
 if rg -q -U 'if "\$check_only"; then[\s\S]*check_target[\s\S]*apply_target' "$update"; then
   :

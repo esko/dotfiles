@@ -113,8 +113,12 @@ Debian package for `tailscaled` on native Linux hosts.
 ## Numtide binary cache
 
 Baguette follows [`llm-agents.nix`](https://github.com/numtide/llm-agents.nix),
-which publishes pre-built agent CLIs to `https://cache.numtide.com`. The flake
-declares that cache in `nixConfig`.
+which publishes pre-built agent CLIs to `https://cache.numtide.com`.
+
+Do not put that cache in flake `nixConfig`: Determinate leaves unprivileged
+users untrusted (`trusted-users = root`), so flake-supplied
+`trusted-public-keys` only warn and never apply. Trust the cache once in the
+host Nix config instead.
 
 Determinate Nix owns `/etc/nix/nix.conf` and regenerates it. Custom caches must
 go in `/etc/nix/nix.custom.conf` (loaded via `!include`). Editing `nix.conf`
@@ -133,9 +137,9 @@ extra-trusted-substituters = https://cache.numtide.com
 extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 ```
 
-`trusted-substituters` matters because Determinate typically sets
-`trusted-users = root` only; without it, unprivileged builds ignore the cache
-and print `ignoring the client-specified setting 'trusted-public-keys'`.
+`extra-trusted-substituters` matters because Determinate typically sets
+`trusted-users = root` only; without it, unprivileged builds cannot use the
+cache even when the public key is present.
 
 ## Build before activation
 

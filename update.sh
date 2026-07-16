@@ -11,12 +11,12 @@ TARGET_MARKER="${DOTFILES_TARGET_MARKER:-$HOME/.config/dotfiles/target}"
 SYSTEM_MANAGER=""
 NIX_DARWIN=""
 
-# Match flake.nix nixConfig and Dockerfile.synology-dev so llm-agents.nix
-# substitutes from Numtide instead of building agents from source.
+# Numtide cache URLs (for operator messaging). Trust is host-local via
+# scripts/enable-numtide-cache.sh — not client --option flags.
 NUMTIDE_SUBSTITUTER='https://cache.numtide.com'
 NUMTIDE_PUBLIC_KEY='niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g='
-# Populated after nix is available; see configure_nix_cache_opts.
-NIX_CACHE_OPTS=(--accept-flake-config)
+# Kept empty on purpose; see configure_nix_cache_opts.
+NIX_CACHE_OPTS=()
 
 target=""
 do_pull=false
@@ -148,19 +148,10 @@ numtide_cache_in_nix_config() {
 }
 
 configure_nix_cache_opts() {
-  # When Determinate already loads Numtide from nix.custom.conf, do not pass
-  # --accept-flake-config: flake nixConfig's trusted-public-keys are ignored for
-  # non-trusted users (trusted-users = root) and only spam the console.
+  # Leave client opts empty. Unprivileged Determinate users cannot set
+  # restricted trust settings; passing them only prints warnings. Numtide must
+  # be trusted in nix.custom.conf via scripts/enable-numtide-cache.sh.
   NIX_CACHE_OPTS=()
-  if numtide_cache_in_nix_config; then
-    return 0
-  fi
-
-  NIX_CACHE_OPTS=(
-    --accept-flake-config
-    --option extra-substituters "$NUMTIDE_SUBSTITUTER"
-    --option extra-trusted-public-keys "$NUMTIDE_PUBLIC_KEY"
-  )
 }
 
 warn_unless_numtide_cache_trusted() {

@@ -1,15 +1,11 @@
 {
   description = "Cross-platform dotfiles for Baguette, the Synology dev container, and the Mac Mini";
 
-  # llm-agents.nix publishes daily builds to Numtide's cache. Without this,
-  # following the flake as an input falls back to cache.nixos.org only and can
-  # rebuild large agent closures from source on Baguette.
-  nixConfig = {
-    extra-substituters = [ "https://cache.numtide.com" ];
-    extra-trusted-public-keys = [
-      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-    ];
-  };
+  # Do not set nixConfig.extra-trusted-public-keys here. Determinate Nix leaves
+  # unprivileged users untrusted (trusted-users = root), so flake-supplied
+  # trusted-public-keys only emit "ignoring the client-specified setting"
+  # warnings and never take effect. Trust Numtide via
+  # scripts/enable-numtide-cache.sh → /etc/nix/nix.custom.conf instead.
 
   inputs = {
     # Linux follows the current unstable package set while flake.lock keeps each
@@ -218,10 +214,18 @@
           ;
       };
     in {
-      apps.${linuxSystem}.bootstrap-secrets = mkBootstrapSecretsApp linuxPkgs;
-      apps.${linuxSystem}.bootstrap-ssh = mkBootstrapSshApp linuxPkgs;
-      apps.${darwinSystem}.bootstrap-secrets = mkBootstrapSecretsApp darwinPkgs;
-      apps.${darwinSystem}.bootstrap-ssh = mkBootstrapSshApp darwinPkgs;
+      # One attrset per system: separate `apps.${system}.name = ...` assignments
+      # collide on the dynamic `apps.${system}` key under newer Nix.
+      apps = {
+        ${linuxSystem} = {
+          bootstrap-secrets = mkBootstrapSecretsApp linuxPkgs;
+          bootstrap-ssh = mkBootstrapSshApp linuxPkgs;
+        };
+        ${darwinSystem} = {
+          bootstrap-secrets = mkBootstrapSecretsApp darwinPkgs;
+          bootstrap-ssh = mkBootstrapSshApp darwinPkgs;
+        };
+      };
 
       inherit secretsManifest;
 

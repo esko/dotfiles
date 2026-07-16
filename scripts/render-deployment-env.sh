@@ -68,10 +68,7 @@ if [[ "$env_key_count" -eq 0 ]]; then
 fi
 
 if [[ -z "$output" ]]; then
-  render_name=$(nix eval --raw ".#secretsManifest.deployments.${deployment}.renderEnvFile or \"\"" 2>/dev/null || true)
-  if [[ -z "$render_name" ]]; then
-    render_name="$deployment.env"
-  fi
+  render_name=$(manifest_deployment_attr "$deployment" "renderEnvFile" "$deployment.env")
   output="$repo_root/dist/$deployment/$render_name"
 fi
 

@@ -80,14 +80,6 @@ sops_validate_deployment_name "$deployment"
 cd "$repo_root"
 SOPS_REPO_ROOT=$repo_root
 
-manifest_wants_ssh() {
-  nix eval --json ".#secretsManifest.deployments.${deployment}.ssh or false"
-}
-
-manifest_env_keys_json() {
-  nix eval --json ".#secretsManifest.deployments.${deployment}.env" 2>/dev/null || printf '[]'
-}
-
 secret_file=$(sops_secret_file "$deployment")
 public_key_file="$repo_root/secrets/public/${deployment}-id_ed25519.pub"
 state_dir="$repo_root/dist/$deployment"
@@ -119,7 +111,7 @@ ssh_secret_present() {
 }
 
 bootstrap_ssh_if_needed() {
-  if [[ "$(manifest_wants_ssh)" != true ]]; then
+  if [[ "$(manifest_deployment_wants_ssh "$deployment")" != true ]]; then
     printf 'Secrets: %s does not use SSH keys\n' "$deployment"
     return 0
   fi
@@ -154,7 +146,7 @@ bootstrap_ssh_if_needed() {
 bootstrap_env_if_needed() {
   local env_keys_json env_key_count env_key env_value bootstrap_args
 
-  env_keys_json=$(manifest_env_keys_json)
+  env_keys_json=$(manifest_deployment_env_keys_json "$deployment")
   env_key_count=$(printf '%s' "$env_keys_json" | jq 'length')
   if [[ "$env_key_count" -eq 0 ]]; then
     return 0
@@ -205,7 +197,7 @@ render_env_if_changed() {
     return 0
   fi
 
-  env_keys_json=$(manifest_env_keys_json)
+  env_keys_json=$(manifest_deployment_env_keys_json "$deployment")
   env_key_count=$(printf '%s' "$env_keys_json" | jq 'length')
   if [[ "$env_key_count" -eq 0 ]]; then
     printf 'Secrets: %s has no env secrets to render\n' "$deployment"

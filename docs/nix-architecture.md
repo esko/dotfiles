@@ -64,12 +64,12 @@ activation.
 
 ## Binary cache for llm-agents
 
-The flake declares Numtide's binary cache in `nixConfig`, matching the
-Synology Docker builder. On Baguette, trust that cache through Determinate's
-`/etc/nix/nix.custom.conf` via `./scripts/enable-numtide-cache.sh` (not
-`/etc/nix/nix.conf`, which Determinate regenerates). See
-`docs/linux-bootstrap.md`. System Manager must not replace Determinate's Nix
-configuration.
+Numtide's cache is trusted on the host, not via flake `nixConfig` (unprivileged
+Determinate users cannot apply flake `trusted-public-keys`). On Baguette run
+`./scripts/enable-numtide-cache.sh` so `/etc/nix/nix.custom.conf` lists the
+substituter and key. The Synology Docker builder still passes cache options as
+root. See `docs/linux-bootstrap.md`. System Manager must not replace
+Determinate's Nix configuration.
 
 ## Bootstrap
 

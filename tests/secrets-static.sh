@@ -21,6 +21,13 @@ done
 
 rg -q --fixed-strings 'bootstrap_env_if_needed' "$repo_root/scripts/sync-deployment-secrets.sh"
 rg -q --fixed-strings 'run_bootstrap_secrets' "$repo_root/scripts/sync-deployment-secrets.sh"
+rg -q --fixed-strings 'manifest_deployment_wants_ssh' "$repo_root/scripts/lib/manifest-common.sh"
+rg -q --fixed-strings 'manifest_deployment_wants_ssh' "$repo_root/scripts/sync-deployment-secrets.sh"
+# Flake attr paths cannot embed Nix `or`; optional fields use jq.
+if rg -q 'secretsManifest\.[^"]* or ' "$repo_root/scripts"; then
+  printf '%s\n' 'scripts must not put Nix `or` inside flake attr paths' >&2
+  exit 1
+fi
 # Bootstrap must not require a host sops install before Home Manager activates.
 if rg -q 'require_command sops' "$repo_root/scripts/sync-deployment-secrets.sh"; then
   printf '%s\n' 'sync-deployment-secrets must use nix run .#bootstrap-secrets, not host sops' >&2

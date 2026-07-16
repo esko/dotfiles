@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Nix manifest helpers shared by secret sync, render, and consumer scripts.
+#
+# Flake installable attr paths (.#foo.bar) do not accept Nix `or` operators in
+# the path. Optional fields are read via JSON + jq instead.
 
 manifest_eval_raw() {
   nix eval --raw "$1" 2>/dev/null
@@ -30,6 +33,11 @@ manifest_deployment_env_keys_json() {
   manifest_eval_json ".#secretsManifest.deployments.${deployment}.env" || printf '[]'
 }
 
+manifest_deployment_wants_ssh() {
+  local deployment=$1
+  manifest_eval_json ".#secretsManifest.deployments.${deployment}.ssh" 2>/dev/null || printf 'false'
+}
+
 manifest_deployment_consumers_json() {
   local deployment=$1
   manifest_eval_json ".#secretsManifest" \
@@ -54,14 +62,22 @@ manifest_consumer_env_key() {
 
 manifest_consumer_hostname_attr() {
   local consumer=$1
-  manifest_eval_raw ".#secretsManifest.consumers.${consumer}.hostnameAttr or \"\"" 2>/dev/null \
-    || true
+  manifest_eval_json ".#secretsManifest.consumers.${consumer}" \
+    | jq -r '.hostnameAttr // empty'
 }
 
 manifest_deployment_attr() {
   local deployment=$1 attr=$2 fallback=${3:-}
-  manifest_eval_raw ".#secretsManifest.deployments.${deployment}.${attr} or \"${fallback}\"" \
-    2>/dev/null || printf '%s\n' "$fallback"
+  local value
+  value=$(
+    manifest_eval_json ".#secretsManifest.deployments.${deployment}" \
+      | jq -r --arg attr "$attr" '.[$attr] // empty'
+  ) || true
+  if [[ -n "$value" ]]; then
+    printf '%s\n' "$value"
+  else
+    printf '%s\n' "$fallback"
+  fi
 }
 
 manifest_consumer_hostname() {
