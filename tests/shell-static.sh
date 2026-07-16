@@ -23,11 +23,29 @@ rg -q 'optional-packages\.nix' "$module"
 rg -q 'optionalFreePackages' "$module"
 rg -q 'hostPlatform.isDarwin' "$module"
 
+editors_module="$repo_root/modules/shared/editors.nix"
+rg -q 'editors\.nix' "$module"
+rg -q 'programs\.gh' "$module"
+rg -q 'git_protocol = "https"' "$module"
+rg -q 'config/editors/cursor/settings.json' "$editors_module"
+rg -q 'Application Support/Cursor' "$editors_module"
+rg -q '\.config/Cursor' "$editors_module"
+
+# Orphan Stow package trees must stay removed once HM owns them.
+for orphan in git gh cursor vscode zed sublime-text; do
+  if [[ -e "$repo_root/$orphan" ]]; then
+    echo "orphan Stow package tree must be removed: $orphan" >&2
+    exit 1
+  fi
+done
+
 stow_migration="$repo_root/modules/shared/stow-migration.nix"
 rg -q 'removeLegacyStowSymlinks' "$stow_migration"
 rg -q 'entryBefore \[ "linkGeneration" \]' "$stow_migration"
 rg -q '.config/bat' "$stow_migration"
 rg -q '.config/zellij' "$stow_migration"
+rg -q '.config/Cursor' "$stow_migration"
+rg -q '.config/gh' "$stow_migration"
 
 rg -q '.config/starship.toml' "$module"
 rg -q 'starship/.config/starship.toml' "$module"

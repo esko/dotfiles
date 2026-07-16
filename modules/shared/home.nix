@@ -13,6 +13,7 @@ let
 in
 {
   imports = [
+    ./editors.nix
     ./llm-agents.nix
     ./llm-context.nix
     ./stow-migration.nix
@@ -25,7 +26,8 @@ in
 
   home.packages = with pkgs; [
     # Shell, navigation, search, and file tools.
-    zsh starship zellij fzf zoxide git gh age bat eza fd ripgrep jq delta
+    # gh comes from programs.gh below.
+    zsh starship zellij fzf zoxide git age bat eza fd ripgrep jq delta
     btop micro yazi rsync shellcheck lefthook lazygit cmake
 
     # Language/toolchain foundations. Nix nodejs supplies the active Node/npm
@@ -50,49 +52,52 @@ in
     "athas" "herdr" "pass-cli"
   ];
 
-  # Keep existing utility configuration under declarative control. These are
-  # repository files, so edits remain reviewable and are shared by all hosts.
-  # stow-migration.nix removes legacy whole-directory stow symlinks before
-  # link activation; force replaces any remaining file-level collisions.
-  home.file.".config/bat/config" = {
-    source = ../../utilities/.config/bat/config;
-    force = true;
-  };
-  home.file.".config/bat/themes" = {
-    source = ../../utilities/.config/bat/themes;
-    force = true;
-  };
-  home.file.".config/btop/btop.conf" = {
-    source = ../../utilities/.config/btop/btop.conf;
-    force = true;
-  };
-  home.file.".config/btop/themes" = {
-    source = ../../utilities/.config/btop/themes;
-    force = true;
-  };
-  home.file.".config/micro/bindings.json" = {
-    source = ../../utilities/.config/micro/bindings.json;
-    force = true;
-  };
-  home.file.".config/micro/settings.json" = {
-    source = ../../utilities/.config/micro/settings.json;
-    force = true;
-  };
-  home.file.".config/micro/colorschemes" = {
-    source = ../../utilities/.config/micro/colorschemes;
-    force = true;
-  };
-  home.file.".config/zellij/config.kdl" = {
-    source = ../../zellij/.config/zellij/config.kdl;
-    force = true;
-  };
-  home.file.".config/starship.toml" = {
-    source = ../../starship/.config/starship.toml;
-    force = true;
-  };
-  home.file.".local/bin/install-node-tools" = {
-    source = ../../scripts/install-node-tools.sh;
-    executable = true;
+  # Utility configs are repository-owned. stow-migration.nix removes legacy
+  # whole-directory stow symlinks before linkGeneration; force replaces any
+  # remaining file-level collisions so activation stays idempotent on hosts
+  # that still have pre-HM copies. Narrow force only after every host has
+  # activated cleanly with no new *.home-manager-backup files.
+  home.file = {
+    ".config/bat/config" = {
+      source = ../../utilities/.config/bat/config;
+      force = true;
+    };
+    ".config/bat/themes" = {
+      source = ../../utilities/.config/bat/themes;
+      force = true;
+    };
+    ".config/btop/btop.conf" = {
+      source = ../../utilities/.config/btop/btop.conf;
+      force = true;
+    };
+    ".config/btop/themes" = {
+      source = ../../utilities/.config/btop/themes;
+      force = true;
+    };
+    ".config/micro/bindings.json" = {
+      source = ../../utilities/.config/micro/bindings.json;
+      force = true;
+    };
+    ".config/micro/settings.json" = {
+      source = ../../utilities/.config/micro/settings.json;
+      force = true;
+    };
+    ".config/micro/colorschemes" = {
+      source = ../../utilities/.config/micro/colorschemes;
+      force = true;
+    };
+    ".config/zellij/config.kdl" = {
+      source = ../../zellij/.config/zellij/config.kdl;
+      force = true;
+    };
+    ".config/starship.toml" = {
+      source = ../../starship/.config/starship.toml;
+      force = true;
+    };
+    ".local/bin/install-node-tools" = {
+      source = ../../scripts/install-node-tools.sh;
+      executable = true;
+    };
   };
 
   # Shared shell profiles do not install Home Manager manual pages.
@@ -127,12 +132,24 @@ in
       init.defaultBranch = "main";
       # HTTPS is the bootstrap-safe default. `gh auth login` supplies the
       # credential helper; individual remotes can opt into SSH after a host key
-      # has been enrolled with GitHub.
+      # has been enrolled with GitHub. Do not add url.insteadOf SSH rewrites.
       credential."https://github.com" = {
         helper = [ "" "!gh auth git-credential" ];
       };
       credential."https://gist.github.com" = {
         helper = [ "" "!gh auth git-credential" ];
+      };
+    };
+  };
+
+  # Align with programs.git: HTTPS until a host enrolls SSH for GitHub.
+  programs.gh = {
+    enable = true;
+    settings = {
+      git_protocol = "https";
+      prompt = "enabled";
+      aliases = {
+        co = "pr checkout";
       };
     };
   };

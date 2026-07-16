@@ -15,6 +15,12 @@ let
     ".config/btop"
     ".config/micro"
     ".config/zellij"
+    # Former Stow editor/gh packages used whole-directory symlinks on Linux.
+    ".config/Cursor"
+    ".config/Code"
+    ".config/zed"
+    ".config/sublime-text"
+    ".config/gh"
   ];
 in
 {

@@ -11,6 +11,8 @@ utilities/.config/micro/buffers/
 
 # Machine-local authentication and secrets
 gh/.config/gh/hosts.yml
+ssh/.ssh/known_hosts
+ssh/.ssh/known_hosts.old
 
 # Private LLM context is kept in a separate checkout. These rules also make
 # an accidental copy of a tool's machine state unaddable to this repository.
