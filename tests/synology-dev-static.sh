@@ -53,6 +53,8 @@ rg -q 'synologyPkgs[[:space:]]*=.*linuxPkgs\.extend' "$flake"
 rg -q 'bun[[:space:]]*=.*packages/bun-baseline\.nix' "$flake"
 rg -q 'herdr[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.herdr' "$flake"
 rg -q 'reasonixAgent[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.reasonix' "$flake"
+rg -q 'grokAgent[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.grok' "$flake"
+rg -q --fixed-strings '"grok"' "$repo_root/modules/shared/llm-agents.nix"
 rg -q --fixed-strings 'https://cache.numtide.com' "$dockerfile"
 rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$dockerfile"
 rg -q 'OPENCODE_DISABLE_AUTOUPDATE=true' "$dockerfile"
@@ -81,7 +83,7 @@ done
 
 for command_name in \
   pi herdr reasonix opencode hunk yazi flow \
-  mosh eternal-terminal tailscale tsshd antigravity-cli codex claude-code cursor-agent \
+  mosh eternal-terminal tailscale tsshd antigravity-cli grok codex claude-code cursor-agent \
   agent-workspace-linux; do
   rg -q --glob '*.nix' \
     "\\b${command_name}\\b" \

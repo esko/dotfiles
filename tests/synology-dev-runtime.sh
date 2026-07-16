@@ -46,7 +46,7 @@ docker run --rm --entrypoint /bin/zsh "$image" -lc '
 
   for command_name in \
     pi herdr reasonix opencode hunk yazi flow \
-    mosh-server etserver tailscale tailscaled tsshd agy codex bun \
+    mosh-server etserver tailscale tailscaled tsshd agy grok codex bun \
     synology-dev-start-tailscale synology-dev-start-services \
     agent-workspace-linux Xvfb xdotool chromium \
     git rg fd jq zellij starship; do
@@ -76,6 +76,7 @@ docker run --rm --entrypoint /bin/zsh "$image" -lc '
   tailscale version >/dev/null
   tsshd --version >/dev/null
   agy --version >/dev/null
+  grok --version >/dev/null
   codex --version >/dev/null
   bun --version >/dev/null
   agent-workspace-linux doctor >/dev/null

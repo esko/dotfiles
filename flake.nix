@@ -196,6 +196,7 @@
       });
       codexAgent = linuxLlmAgentPkgs.codex;
       antigravityCli = linuxLlmAgentPkgs.antigravity-cli;
+      grokAgent = linuxLlmAgentPkgs.grok;
       herdrAgent = linuxLlmAgentPkgs.herdr;
       reasonixAgent = linuxLlmAgentPkgs.reasonix;
       piAgent = linuxLlmAgentPkgs.pi;
@@ -210,6 +211,7 @@
           agentWorkspaceLinux
           antigravityCli
           codexAgent
+          grokAgent
           herdrAgent
           piAgent
           reasonixAgent

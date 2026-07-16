@@ -12,7 +12,7 @@ for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zox
   rg -q --fixed-strings "$token" "$module" "$init"
 done
 
-for attr in cursor-agent antigravity-cli claude-code codex pi; do
+for attr in cursor-agent antigravity-cli claude-code codex grok pi; do
   rg -q --fixed-strings "\"${attr}\"" "$llm_agents_module"
 done
 rg -q 'writeShellScriptBin "agent"' "$llm_agents_module"

@@ -107,7 +107,8 @@ The architecture and secret boundary are documented in
 never runs during Home Manager activation.
 
 The Synology development image packages the shared command-line environment
-plus `pi`, `herdr`, `reasonix`, `opencode`, `hunk`, `yazi`, Neurocyte Flow, `agy`, Codex,
+plus `pi`, `herdr`, `reasonix`, `opencode`, `hunk`, `yazi`, Neurocyte Flow, `agy`,
+`grok`, Codex,
 and the Mosh/ET/Tailscale/tsshd remote-session helpers. Build, test,
 archive, and copy it to the NAS with `./scripts/build-synology-dev.sh`; see
 [`docs/synology-dev-container.md`](docs/synology-dev-container.md) for the

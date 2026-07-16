@@ -6,6 +6,7 @@ let
     "antigravity-cli" # agy
     "claude-code" # claude
     "codex"
+    "grok" # Grok Build
     "pi"
   ];
 

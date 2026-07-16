@@ -51,7 +51,7 @@ in
     inetutils nmap tailscale bun cargo-binstall golangci-lint
     python3Packages.pytest croc
   ] ++ optionalPackages [
-    # Core agent CLIs (cursor-agent, agy, claude, codex, pi) come from
+    # Core agent CLIs (cursor-agent, agy, claude, codex, grok, pi) come from
     # llm-agents.nix on every deployment. Remaining native tools stay optional
     # nixpkgs attributes when available.
     "antigravity" "athas" "herdr" "pass-cli"

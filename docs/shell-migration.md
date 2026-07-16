@@ -56,9 +56,10 @@ This installs the following packages into the user-owned npm prefix
 | `hunk` | `hunkdiff` |
 | `portless` | `portless` |
 
-`agent` (Cursor Agent), `agy`, `claude`, `codex`, and `pi` are installed from
-`llm-agents.nix` on every deployment through the shared Home Manager profile.
-Re-run `./update.sh` after the flake input updates to refresh them.
+`agent` (Cursor Agent), `agy`, `claude`, `codex`, `grok` (Grok Build), and
+`pi` are installed from `llm-agents.nix` on every deployment through the shared
+Home Manager profile. Re-run `./update.sh` after the flake input updates to
+refresh them.
 
 The installer is explicit rather than a Home Manager activation hook: profile
 activation stays deterministic and does not perform network operations. The
@@ -90,7 +91,7 @@ npm installer. They remain optional nixpkgs attributes when available or
 should use their reviewed upstream binary installer. Do not build them from a
 source checkout merely to bootstrap a host.
 
-Core agent CLIs (`agent`, `agy`, `claude`, `codex`, and `pi`) are also
+Core agent CLIs (`agent`, `agy`, `claude`, `codex`, `grok`, and `pi`) are also
 outside the npm installer. They come from `llm-agents.nix` on every deployment.
 
 GUI applications, Docker, keyrings, device integration, and desktop services

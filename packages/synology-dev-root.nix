@@ -24,6 +24,7 @@
   reasonixAgent,
   codexAgent,
   antigravityCli,
+  grokAgent,
   hunkBaseline,
   opencodeBaseline,
 }:
@@ -83,6 +84,7 @@ let
       tsshd
       codexAgent
       antigravityCli
+      grokAgent
       opencodeBaseline
       hunkBaseline
       flow-control
@@ -189,6 +191,7 @@ EOF
   test -x "$out/bin/synology-dev-start-services"
   test -x "$out/bin/tsshd"
   test -x "$out/bin/agy"
+  test -x "$out/bin/grok"
   test -x "$out/bin/codex"
   test -x "$out/bin/bun"
   test -x "$out/bin/fail2ban-server"

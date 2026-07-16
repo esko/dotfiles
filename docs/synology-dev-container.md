@@ -8,8 +8,9 @@ stage receives only that closure and the prepared root filesystem. Nix is not
 installed in the final image.
 
 The image contains the shared dotfiles utilities plus `pi`, `herdr`, `reasonix`,
-`opencode`, `hunk`, `yazi`, `flow`, Google Antigravity CLI (`agy`), OpenAI
-Codex, `mosh-server`, Eternal Terminal (`et`/`etserver`), `tailscale`, and `tsshd`. It runs
+`opencode`, `hunk`, `yazi`, `flow`, Google Antigravity CLI (`agy`), Grok Build
+(`grok`), OpenAI Codex, `mosh-server`, Eternal Terminal (`et`/`etserver`),
+`tailscale`, and `tsshd`. It runs
 as the NAS user `1026:100`,
 uses `/home/esko` as `HOME`, and opens in `/workspace`. It does not contain an
 SSH server or systemd, does not request privileged mode, and should not be
