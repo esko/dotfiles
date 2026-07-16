@@ -89,24 +89,28 @@ Debian package for `tailscaled` on native Linux hosts.
 
 Baguette follows [`llm-agents.nix`](https://github.com/numtide/llm-agents.nix),
 which publishes pre-built agent CLIs to `https://cache.numtide.com`. The flake
-declares that cache in `nixConfig`, and `./update.sh` passes the same
-substituter options on every Nix invocation.
+declares that cache in `nixConfig`.
 
-Daemon builds still require the cache to be trusted by Determinate Nix. On
-Baguette, run the host helper once (safe to re-run; keeps existing Determinate
-settings):
+Determinate Nix owns `/etc/nix/nix.conf` and regenerates it. Custom caches must
+go in `/etc/nix/nix.custom.conf` (loaded via `!include`). Editing `nix.conf`
+directly does not stick. On Baguette, run the host helper once (safe to re-run):
 
 ```sh
 ./scripts/enable-numtide-cache.sh
 ```
 
-That appends these lines to the host-owned `/etc/nix/nix.conf`, restarts
-`nix-daemon`, and verifies the cache is active:
+That writes these lines to `/etc/nix/nix.custom.conf`, restarts the daemon, and
+verifies they appear in `nix config show`:
 
 ```
 extra-substituters = https://cache.numtide.com
+extra-trusted-substituters = https://cache.numtide.com
 extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 ```
+
+`trusted-substituters` matters because Determinate typically sets
+`trusted-users = root` only; without it, unprivileged builds ignore the cache
+and print `ignoring the client-specified setting 'trusted-public-keys'`.
 
 ## Build before activation
 
@@ -131,16 +135,10 @@ redundant pre-activation build:
 ./update.sh --target baguette
 ```
 
-Or activate directly with the same cache options:
-
-```sh
-nix run \
-  --accept-flake-config \
-  --option extra-substituters https://cache.numtide.com \
-  --option extra-trusted-public-keys 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' \
-  github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d -- \
-  switch --flake "$PWD#baguette" --sudo
-```
+Or activate with `./update.sh` after the custom.conf helper has run (preferred).
+Direct `nix run` of system-manager only helps if Numtide is already trusted in
+`nix.custom.conf`; client `--option trusted-public-keys` is ignored for
+non-trusted users.
 
 One System Manager activation now:
 

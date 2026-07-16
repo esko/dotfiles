@@ -65,11 +65,11 @@ activation.
 ## Binary cache for llm-agents
 
 The flake declares Numtide's binary cache in `nixConfig`, matching the
-Synology Docker builder. `./update.sh` also passes
-`--option extra-substituters https://cache.numtide.com` so agent packages
-substitute instead of building from source. On Baguette, trust the same
-substituter in the host-owned Determinate `/etc/nix/nix.conf` (see
-`docs/linux-bootstrap.md`); System Manager must not replace that file.
+Synology Docker builder. On Baguette, trust that cache through Determinate's
+`/etc/nix/nix.custom.conf` via `./scripts/enable-numtide-cache.sh` (not
+`/etc/nix/nix.conf`, which Determinate regenerates). See
+`docs/linux-bootstrap.md`. System Manager must not replace Determinate's Nix
+configuration.
 
 ## Bootstrap
 

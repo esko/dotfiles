@@ -73,5 +73,8 @@ test -x "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'https://cache.numtide.com' "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' \
   "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'nix.custom.conf' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'extra-trusted-substituters' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'nix.custom.conf' "$bootstrap"
 
 printf '%s\n' 'linux/container static checks passed'

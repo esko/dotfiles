@@ -148,15 +148,16 @@ numtide_cache_in_nix_config() {
 }
 
 configure_nix_cache_opts() {
-  # Prefer the daemon-trusted /etc/nix/nix.conf entries. Client --option
-  # trusted-public-keys is restricted for non-trusted users and only produces
-  # noise after ./scripts/enable-numtide-cache.sh has already configured the host.
-  NIX_CACHE_OPTS=(--accept-flake-config)
+  # When Determinate already loads Numtide from nix.custom.conf, do not pass
+  # --accept-flake-config: flake nixConfig's trusted-public-keys are ignored for
+  # non-trusted users (trusted-users = root) and only spam the console.
+  NIX_CACHE_OPTS=()
   if numtide_cache_in_nix_config; then
     return 0
   fi
 
-  NIX_CACHE_OPTS+=(
+  NIX_CACHE_OPTS=(
+    --accept-flake-config
     --option extra-substituters "$NUMTIDE_SUBSTITUTER"
     --option extra-trusted-public-keys "$NUMTIDE_PUBLIC_KEY"
   )
@@ -169,15 +170,14 @@ warn_unless_numtide_cache_trusted() {
 
   cat >&2 <<'EOF'
 Note: cache.numtide.com is not visible in `nix config show`.
-./update.sh will pass Numtide substituter options for this run, but the Nix
-daemon ignores untrusted client options. On Baguette run:
+Determinate Nix ignores edits to /etc/nix/nix.conf; custom caches belong in
+/etc/nix/nix.custom.conf. On Baguette run:
 
   ./scripts/enable-numtide-cache.sh
 
-Or add these lines to host-owned /etc/nix/nix.conf and restart nix-daemon:
+Then confirm:
 
-  extra-substituters = https://cache.numtide.com
-  extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
+  nix config show | grep -F cache.numtide.com
 EOF
 }
 
