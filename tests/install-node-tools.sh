@@ -21,7 +21,7 @@ assert_contains() {
   local haystack=$1
   local needle=$2
 
-  if [[ $haystack != *"$needle"* ]]; then
+  if [[ "$haystack" != *"$needle"* ]]; then
     printf 'Expected output to contain: %s\nActual output:\n%s\n' "$needle" "$haystack" >&2
     return 1
   fi
@@ -29,6 +29,7 @@ assert_contains() {
 
 output=$(PATH="/usr/bin:/bin" /bin/bash "$installer" --help 2>&1)
 assert_contains "$output" 'Usage: install-node-tools [--with-browser]'
+assert_contains "$output" 'left untouched'
 
 mkdir -p "$tmp_dir/bin" "$tmp_dir/home"
 test_path="$tmp_dir/bin:/usr/bin:/bin"
@@ -58,33 +59,112 @@ fi
 make_fake_command node <<'EOF'
 printf '%s\n' 'v24.0.0'
 EOF
+
+# Fresh install path: nothing installed, registry returns versions, npm install runs with --force.
 make_fake_command npm <<'EOF'
-for arg in "$@"; do
-  if [[ "$arg" = --force ]]; then
-    touch "$NPM_FORCE_USED"
-  fi
-done
-for command_name in agent-browser gemini jules cmd hunk portless; do
-  printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
-  chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
-done
+case "${1:-}" in
+  list)
+    printf '%s\n' '{}'
+    exit 0
+    ;;
+  view)
+    printf '%s\n' '"1.0.0"'
+    exit 0
+    ;;
+  install)
+    for arg in "$@"; do
+      if [[ "$arg" = --force ]]; then
+        touch "$NPM_FORCE_USED"
+      fi
+      if [[ "$arg" = --global ]]; then
+        touch "$NPM_INSTALL_CALLED"
+      fi
+    done
+    for command_name in agent-browser gemini jules cmd hunk portless; do
+      printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
+      chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
+    done
+    exit 0
+    ;;
+esac
+exit 0
 EOF
 
-output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" PATH="$test_path" \
+output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
+  NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" PATH="$test_path" \
   /bin/bash "$installer" 2>&1)
 assert_contains "$output" 'Installed commands:'
 assert_contains "$output" "$tmp_dir/home/.local/bin/portless"
+assert_contains "$output" 'install'
 if [[ ! -e $tmp_dir/npm-force-used ]]; then
-  printf '%s\n' 'Expected npm install to pass --force for existing global bins' >&2
+  printf '%s\n' 'Expected npm install to pass --force when packages change' >&2
+  exit 1
+fi
+if [[ ! -e $tmp_dir/npm-install-called ]]; then
+  printf '%s\n' 'Expected npm install to run for missing packages' >&2
+  exit 1
+fi
+
+# Skip path: installed versions already match registry; npm install must not run.
+rm -f "$tmp_dir/npm-force-used" "$tmp_dir/npm-install-called"
+make_fake_command npm <<'EOF'
+case "${1:-}" in
+  list)
+    pkg=""
+    for arg in "$@"; do
+      case "$arg" in
+        --*|list) ;;
+        *) pkg=$arg ;;
+      esac
+    done
+    if [[ -n "$pkg" ]]; then
+      printf '{"dependencies":{"%s":{"version":"1.0.0"}}}\n' "$pkg"
+    else
+      printf '%s\n' '{}'
+    fi
+    exit 0
+    ;;
+  view)
+    printf '%s\n' '"1.0.0"'
+    exit 0
+    ;;
+  install)
+    touch "$NPM_INSTALL_CALLED"
+    exit 0
+    ;;
+esac
+exit 0
+EOF
+
+mkdir -p "$tmp_dir/home/.local/bin"
+for command_name in agent-browser gemini jules cmd hunk portless; do
+  printf "#!/bin/bash\nexit 0\n" >"$tmp_dir/home/.local/bin/$command_name"
+  chmod +x "$tmp_dir/home/.local/bin/$command_name"
+done
+
+output=$(env -i HOME="$tmp_dir/home" NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
+  PATH="$test_path" /bin/bash "$installer" 2>&1)
+assert_contains "$output" 'already match the requested versions'
+assert_contains "$output" 'skip'
+if [[ -e $tmp_dir/npm-install-called ]]; then
+  printf '%s\n' 'npm install ran even though versions already matched' >&2
   exit 1
 fi
 
 rm -rf "$tmp_dir/home/.local"
 make_fake_command npm <<'EOF'
-for command_name in agent-browser gemini jules cmd hunk; do
-  printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
-  chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
-done
+case "${1:-}" in
+  list) printf '%s\n' '{}'; exit 0 ;;
+  view) printf '%s\n' '"1.0.0"'; exit 0 ;;
+  install)
+    for command_name in agent-browser gemini jules cmd hunk; do
+      printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
+      chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
+    done
+    exit 0
+    ;;
+esac
+exit 0
 EOF
 
 set +e
@@ -110,15 +190,23 @@ EOF
 chmod +x "$tmp_dir/home/.local/share/fnm/node-versions/v24.0.0/installation/bin/npm"
 
 make_fake_command npm <<'EOF'
-for arg in "$@"; do
-  if [[ "$arg" = --force ]]; then
-    touch "$NPM_FORCE_USED"
-  fi
-done
-for command_name in agent-browser gemini jules cmd hunk portless; do
-  printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
-  chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
-done
+case "${1:-}" in
+  list) printf '%s\n' '{}'; exit 0 ;;
+  view) printf '%s\n' '"1.0.0"'; exit 0 ;;
+  install)
+    for arg in "$@"; do
+      if [[ "$arg" = --force ]]; then
+        touch "$NPM_FORCE_USED"
+      fi
+    done
+    for command_name in agent-browser gemini jules cmd hunk portless; do
+      printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
+      chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
+    done
+    exit 0
+    ;;
+esac
+exit 0
 EOF
 
 output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \

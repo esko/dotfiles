@@ -6,8 +6,8 @@ usage() {
 Usage: install-node-tools [--with-browser]
 
 Install or update the shared Node-based CLI tools from their published npm
-packages into the user-owned npm prefix. No source checkout or local Nix build
-is used.
+packages into the user-owned npm prefix. Packages already present at the
+requested version are left untouched (no re-download).
 
 Options:
   --with-browser  Also download the browser runtime used by agent-browser.
@@ -71,8 +71,52 @@ packages=(
 
 managed_packages=()
 for package_spec in "${packages[@]}"; do
-  managed_packages+=("${package_spec%%@*}")
+  managed_packages+=("${package_spec%@*}")
 done
+
+package_name() {
+  # @scope/name@tag -> @scope/name; name@tag -> name
+  printf '%s\n' "${1%@*}"
+}
+
+package_requested_ref() {
+  local spec=$1 name
+  name=$(package_name "$spec")
+  printf '%s\n' "${spec#"${name}"@}"
+}
+
+installed_package_version() {
+  local name=$1
+  # npm list exits non-zero when the package is missing; ignore that.
+  npm list --global --depth=0 --json "$name" 2>/dev/null \
+    | python3 -c '
+import json, sys
+name = sys.argv[1]
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+dep = (data.get("dependencies") or {}).get(name) or {}
+sys.stdout.write(dep.get("version") or "")
+' "$name"
+}
+
+resolved_package_version() {
+  local name=$1 ref=$2
+  # Prefer an exact view of name@ref so tags and pinned versions both work.
+  npm view "${name}@${ref}" version --json 2>/dev/null \
+    | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if isinstance(data, str):
+    sys.stdout.write(data)
+elif isinstance(data, list) and data and isinstance(data[0], str):
+    sys.stdout.write(data[0])
+'
+}
 
 remove_legacy_fnm_globals() {
   local fnm_versions_dir="${HOME}/.local/share/fnm/node-versions"
@@ -96,7 +140,36 @@ remove_legacy_fnm_globals() {
 
 printf 'Installing Node CLI packages into %s\n' "$prefix"
 remove_legacy_fnm_globals
-npm install --global --force --no-audit --no-fund "${packages[@]}"
+
+packages_to_install=()
+for package_spec in "${packages[@]}"; do
+  name=$(package_name "$package_spec")
+  ref=$(package_requested_ref "$package_spec")
+  installed=$(installed_package_version "$name" || true)
+  desired=$(resolved_package_version "$name" "$ref" || true)
+
+  if [[ -n "$installed" && -n "$desired" && "$installed" == "$desired" ]]; then
+    printf '  skip %-28s %s (already installed)\n' "$name" "$installed"
+    continue
+  fi
+
+  if [[ -n "$installed" && -n "$desired" ]]; then
+    printf '  update %-26s %s -> %s\n' "$name" "$installed" "$desired"
+  elif [[ -n "$desired" ]]; then
+    printf '  install %-25s %s\n' "$name" "$desired"
+  else
+    # Registry lookup failed; fall back to npm install for this spec.
+    printf '  install %-25s %s (version lookup unavailable)\n' "$name" "$ref"
+  fi
+  packages_to_install+=("$package_spec")
+done
+
+if [[ ${#packages_to_install[@]} -eq 0 ]]; then
+  printf 'All Node CLI packages already match the requested versions.\n'
+else
+  # --force replaces existing global bins when a package actually changes.
+  npm install --global --force --no-audit --no-fund "${packages_to_install[@]}"
+fi
 
 if "$with_browser"; then
   agent-browser install
