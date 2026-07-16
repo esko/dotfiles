@@ -211,7 +211,20 @@ report_command() {
   return 1
 }
 
-printf '\nnpm CLIs (this installer):\n'
+printf '\nInstalled npm packages:\n'
+missing_packages=0
+for package_spec in "${packages[@]}"; do
+  name=$(package_name "$package_spec")
+  installed=$(installed_package_version "$name" || true)
+  if [[ -n "$installed" ]]; then
+    printf '  %-28s %s\n' "$name" "$installed"
+  else
+    printf '  %-28s %s\n' "$name" "not installed"
+    missing_packages=$((missing_packages + 1))
+  fi
+done
+
+printf '\nCommands on PATH:\n'
 missing_commands=0
 # Primary bins plus alternate names published by the same packages.
 for command_name in agent-browser gemini jules cmd command-code hunk hunkdiff portless; do
@@ -228,8 +241,9 @@ for command_name in agent agy claude codex grok pi; do
   fi
 done
 
-if [[ $missing_commands -ne 0 ]]; then
-  printf '\nInstallation verification failed: %d npm CLI(s) are missing.\n' "$missing_commands" >&2
+if [[ $missing_packages -ne 0 || $missing_commands -ne 0 ]]; then
+  printf '\nInstallation verification failed: %d package(s), %d command(s) missing.\n' \
+    "$missing_packages" "$missing_commands" >&2
   exit 1
 fi
 

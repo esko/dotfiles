@@ -60,11 +60,26 @@ make_fake_command node <<'EOF'
 printf '%s\n' 'v24.0.0'
 EOF
 
-# Fresh install path: nothing installed, registry returns versions, npm install runs with --force.
+# Fresh install path: nothing installed until `npm install`, then list reports versions.
 make_fake_command npm <<'EOF'
 case "${1:-}" in
   list)
-    printf '%s\n' '{}'
+    if [[ -e "${NPM_INSTALL_CALLED:-/}" ]]; then
+      pkg=""
+      for arg in "$@"; do
+        case "$arg" in
+          --*|list) ;;
+          *) pkg=$arg ;;
+        esac
+      done
+      if [[ -n "$pkg" ]]; then
+        printf '{"dependencies":{"%s":{"version":"1.0.0"}}}\n' "$pkg"
+      else
+        printf '%s\n' '{}'
+      fi
+    else
+      printf '%s\n' '{}'
+    fi
     exit 0
     ;;
   view)
@@ -93,7 +108,8 @@ EOF
 output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
   NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" PATH="$test_path" \
   /bin/bash "$installer" 2>&1)
-assert_contains "$output" 'npm CLIs (this installer):'
+assert_contains "$output" 'Installed npm packages:'
+assert_contains "$output" 'Commands on PATH:'
 assert_contains "$output" 'Agent CLIs (Home Manager / llm-agents.nix):'
 assert_contains "$output" "$tmp_dir/home/.local/bin/portless"
 assert_contains "$output" 'install'
@@ -161,9 +177,25 @@ fi
 rm -rf "$tmp_dir/home/.local" "$tmp_dir/home/.agent-browser"
 make_fake_command npm <<'EOF'
 case "${1:-}" in
-  list) printf '%s\n' '{}'; exit 0 ;;
+  list)
+    # Pretend packages installed so verification fails on the missing bin only.
+    pkg=""
+    for arg in "$@"; do
+      case "$arg" in
+        --*|list) ;;
+        *) pkg=$arg ;;
+      esac
+    done
+    if [[ -n "$pkg" ]]; then
+      printf '{"dependencies":{"%s":{"version":"1.0.0"}}}\n' "$pkg"
+    else
+      printf '%s\n' '{}'
+    fi
+    exit 0
+    ;;
   view) printf '%s\n' '"1.0.0"'; exit 0 ;;
   install)
+    touch "$NPM_INSTALL_CALLED"
     for command_name in agent-browser gemini jules cmd command-code hunk hunkdiff; do
       printf "#!/bin/bash\nexit 0\n" >"$NPM_CONFIG_PREFIX/bin/$command_name"
       chmod +x "$NPM_CONFIG_PREFIX/bin/$command_name"
@@ -175,7 +207,8 @@ exit 0
 EOF
 
 set +e
-output=$(env -i HOME="$tmp_dir/home" PATH="$test_path" /bin/bash "$installer" 2>&1)
+output=$(env -i HOME="$tmp_dir/home" NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
+  PATH="$test_path" /bin/bash "$installer" 2>&1)
 status=$?
 set -e
 
@@ -198,12 +231,33 @@ chmod +x "$tmp_dir/home/.local/share/fnm/node-versions/v24.0.0/installation/bin/
 
 make_fake_command npm <<'EOF'
 case "${1:-}" in
-  list) printf '%s\n' '{}'; exit 0 ;;
+  list)
+    if [[ -e "${NPM_INSTALL_CALLED:-/}" ]]; then
+      pkg=""
+      for arg in "$@"; do
+        case "$arg" in
+          --*|list) ;;
+          *) pkg=$arg ;;
+        esac
+      done
+      if [[ -n "$pkg" ]]; then
+        printf '{"dependencies":{"%s":{"version":"1.0.0"}}}\n' "$pkg"
+      else
+        printf '%s\n' '{}'
+      fi
+    else
+      printf '%s\n' '{}'
+    fi
+    exit 0
+    ;;
   view) printf '%s\n' '"1.0.0"'; exit 0 ;;
   install)
     for arg in "$@"; do
       if [[ "$arg" = --force ]]; then
         touch "$NPM_FORCE_USED"
+      fi
+      if [[ "$arg" = --global ]]; then
+        touch "$NPM_INSTALL_CALLED"
       fi
     done
     for command_name in agent-browser gemini jules cmd command-code hunk hunkdiff portless; do
@@ -217,6 +271,7 @@ exit 0
 EOF
 
 output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
+  NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
   FNM_NPM_CALLED="$fnm_npm_called" PATH="$test_path" \
   /bin/bash "$installer" 2>&1)
 assert_contains "$output" 'Removing legacy fnm globals from'

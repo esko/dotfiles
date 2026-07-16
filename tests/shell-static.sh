@@ -67,7 +67,8 @@ for command_name in agent agy claude codex grok pi; do
   rg -q "for command_name in .*\b${command_name}\b" "$node_tools_installer"
 done
 rg -q --fixed-strings 'browser_runtime_present' "$node_tools_installer"
-rg -q --fixed-strings 'npm CLIs (this installer)' "$node_tools_installer"
+rg -q --fixed-strings 'Installed npm packages:' "$node_tools_installer"
+rg -q --fixed-strings 'Commands on PATH:' "$node_tools_installer"
 rg -q --fixed-strings 'Agent CLIs (Home Manager / llm-agents.nix)' "$node_tools_installer"
 
 if rg -q --fixed-strings 'npx --yes' "$module" "$init"; then
