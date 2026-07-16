@@ -135,6 +135,7 @@ verifies they appear in `nix config show`:
 extra-substituters = https://cache.numtide.com
 extra-trusted-substituters = https://cache.numtide.com
 extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
+accept-flake-config = false
 ```
 
 `extra-trusted-substituters` matters because Determinate typically sets
@@ -142,9 +143,13 @@ extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc
 cache even when the public key is present.
 
 `./update.sh` runs system-manager via `nix run .#system-manager` so Numtide's
-flake `nixConfig` is not loaded during activation. Unknown-setting warnings for
-`eval-cores` / `lazy-trees` are Determinate-only options seen by older Nix
-wrappers; ignore them.
+CLI is not the top-level flake. If
+`ignoring the client-specified setting 'trusted-public-keys'` still appears,
+an older "accept flake config" approval is stuck in
+`~/.local/share/nix/trusted-settings.json` and re-injects those keys on every
+nested `nix` call. `enable-numtide-cache.sh` clears those entries. Safe to
+re-run. Unknown-setting warnings for `eval-cores` / `lazy-trees` are
+Determinate-only options; ignore them.
 
 SSH bootstrap does not require `secrets/shared.yaml`. Add Tailscale later with:
 

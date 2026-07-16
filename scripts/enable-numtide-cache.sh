@@ -90,11 +90,64 @@ append_setting() {
 
 # extra-substituters: use the cache by default.
 # extra-trusted-substituters: let non-trusted users (typical Determinate
-#   trusted-users = root) actually consume it / enable it via flake nixConfig.
+#   trusted-users = root) actually consume it.
 # extra-trusted-public-keys: verify NarInfo signatures from Numtide.
+# accept-flake-config = false: do not re-apply flake nixConfig trust keys as
+#   client settings (that is what reprints trusted-public-keys warnings).
 append_setting extra-substituters "$NUMTIDE_SUBSTITUTER"
 append_setting extra-trusted-substituters "$NUMTIDE_SUBSTITUTER"
 append_setting extra-trusted-public-keys "$NUMTIDE_PUBLIC_KEY"
+append_setting accept-flake-config false
+
+# Previously-accepted flake nixConfig (from llm-agents / system-manager, or an
+# older `nix run github:numtide/system-manager`) is stored in trusted-settings.json
+# and re-injected on every nix invocation as client-specified trusted-public-keys,
+# which unprivileged users cannot set — hence the warning spam during update.sh.
+clear_flake_trust_spam() {
+  local settings="${XDG_DATA_HOME:-$HOME/.local/share}/nix/trusted-settings.json"
+  [[ -f "$settings" ]] || return 0
+
+  python3 - "$settings" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+try:
+    data = json.loads(path.read_text())
+except Exception:
+    sys.exit(0)
+
+if not isinstance(data, dict):
+    sys.exit(0)
+
+# Restricted trust settings must live in nix.custom.conf, not as remembered
+# client flake approvals.
+removed = []
+for key in (
+    "trusted-public-keys",
+    "extra-trusted-public-keys",
+    "trusted-substituters",
+    "extra-trusted-substituters",
+    "substituters",
+    "extra-substituters",
+):
+    if key in data:
+        removed.append(key)
+        del data[key]
+
+if not removed:
+    sys.exit(0)
+
+backup = path.with_suffix(".json.bak.dotfiles")
+backup.write_text(path.read_text())
+path.write_text(json.dumps(data, indent=2) + "\n")
+print(f"Cleared flake trust spam from {path} (backup: {backup})")
+print("Removed keys: " + ", ".join(removed))
+PY
+}
+
+clear_flake_trust_spam
 
 if [[ -f "$NIX_CUSTOM_CONF" ]] && sudo cmp -s "$tmp" "$NIX_CUSTOM_CONF"; then
   printf 'Numtide cache already configured in %s\n' "$NIX_CUSTOM_CONF"

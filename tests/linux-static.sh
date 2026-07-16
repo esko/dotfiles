@@ -7,6 +7,7 @@ secrets_module="$repo_root/modules/shared/secrets.nix"
 container_module="$repo_root/modules/container/home.nix"
 bootstrap="$repo_root/docs/linux-bootstrap.md"
 flake="$repo_root/flake.nix"
+update="$repo_root/update.sh"
 
 for token in 'systemConfigs.baguette' 'homeConfigurations.synologyDev'; do
   rg -q --fixed-strings "$token" "$flake"
@@ -97,6 +98,10 @@ rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7
   "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'nix.custom.conf' "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'extra-trusted-substituters' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'accept-flake-config' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'clear_flake_trust_spam' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'trusted-settings.json' "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'nix.custom.conf' "$bootstrap"
+rg -q --fixed-strings 'trusted-settings.json' "$update"
 
 printf '%s\n' 'linux/container static checks passed'

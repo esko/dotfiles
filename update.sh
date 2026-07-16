@@ -158,6 +158,17 @@ configure_nix_cache_opts() {
 }
 
 warn_unless_numtide_cache_trusted() {
+  local settings="${XDG_DATA_HOME:-$HOME/.local/share}/nix/trusted-settings.json"
+  if [[ -f "$settings" ]] && grep -Eq 'trusted-public-keys|extra-trusted-public-keys' "$settings"; then
+    cat >&2 <<EOF
+Note: $settings still remembers flake trust keys. That re-injects
+trusted-public-keys on every nix call and prints ignore-warnings for
+unprivileged Determinate users. Re-run:
+
+  ./scripts/enable-numtide-cache.sh
+EOF
+  fi
+
   if numtide_cache_in_nix_config; then
     return 0
   fi
