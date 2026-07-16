@@ -94,50 +94,26 @@ in
     home.activation.publishBaguetteDesktopEntries =
       mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps)
         (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          apps_dir="${homeDirectory}/.local/share/applications"
-          profile_apps="/etc/profiles/per-user/${username}/share/applications"
-          $DRY_RUN_CMD mkdir -p "$apps_dir"
-
-          # Materialize HM/profile .desktop files as regular files. Garcon's
-          # recursive watches are flaky on some symlink farms; plain files under
-          # ~/.local/share/applications are in the default search path.
-          if [ -d "$profile_apps" ]; then
-            for desktop in "$profile_apps"/*.desktop; do
-              [ -e "$desktop" ] || continue
-              base=$(basename "$desktop")
-              case "$base" in
-                cursor.desktop|antigravity.desktop|inkscape.desktop|inkscape-beta.desktop)
-                  $DRY_RUN_CMD cp -fL "$desktop" "$apps_dir/$base"
-                  ;;
-              esac
+          # Prefer the repo helper when present (writes /usr/local + ~/.local and
+          # restarts garcon). Fall back to a minimal local materialize otherwise.
+          if [ -x "${homeDirectory}/dotfiles/scripts/publish-crostini-apps.sh" ]; then
+            $DRY_RUN_CMD "${homeDirectory}/dotfiles/scripts/publish-crostini-apps.sh" || true
+          elif [ -x "$HOME/dotfiles/scripts/publish-crostini-apps.sh" ]; then
+            $DRY_RUN_CMD "$HOME/dotfiles/scripts/publish-crostini-apps.sh" || true
+          else
+            apps_dir="${homeDirectory}/.local/share/applications"
+            $DRY_RUN_CMD mkdir -p "$apps_dir"
+            for desktop in cursor.desktop antigravity.desktop inkscape.desktop inkscape-beta.desktop; do
+              if [ -e "$apps_dir/$desktop" ] && [ -L "$apps_dir/$desktop" ]; then
+                $DRY_RUN_CMD cp -fL "$apps_dir/$desktop" "$apps_dir/$desktop.real"
+                $DRY_RUN_CMD mv -f "$apps_dir/$desktop.real" "$apps_dir/$desktop"
+              fi
             done
-          fi
-          for desktop in cursor.desktop antigravity.desktop inkscape.desktop inkscape-beta.desktop; do
-            if [ -e "$apps_dir/$desktop" ] && [ -L "$apps_dir/$desktop" ]; then
-              $DRY_RUN_CMD cp -fL "$apps_dir/$desktop" "$apps_dir/$desktop.real"
-              $DRY_RUN_CMD mv -f "$apps_dir/$desktop.real" "$apps_dir/$desktop"
+            if command -v systemctl >/dev/null 2>&1; then
+              $DRY_RUN_CMD systemctl --user daemon-reload || true
+              $DRY_RUN_CMD systemctl --user restart cros-garcon.service || true
             fi
-          done
-
-          if command -v update-desktop-database >/dev/null 2>&1; then
-            $DRY_RUN_CMD update-desktop-database "$apps_dir" || true
           fi
-
-          # Nudge inotify + reload garcon so ChromeOS gets a fresh app list.
-          $DRY_RUN_CMD touch "$apps_dir"
-          if command -v systemctl >/dev/null 2>&1; then
-            $DRY_RUN_CMD systemctl --user daemon-reload || true
-            $DRY_RUN_CMD systemctl --user restart cros-garcon.service || true
-          fi
-
-          echo "Baguette ChromeOS launchers:"
-          for desktop in cursor.desktop antigravity.desktop inkscape.desktop inkscape-beta.desktop; do
-            if [ -e "$apps_dir/$desktop" ]; then
-              echo "  ok  $apps_dir/$desktop"
-            else
-              echo "  MISSING $apps_dir/$desktop" >&2
-            fi
-          done
         '');
 
     xdg.desktopEntries = mkIf config.dotfiles.linux.enableGuiApps (

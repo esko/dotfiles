@@ -8,9 +8,13 @@ node_tools_installer="$repo_root/scripts/install-node-tools.sh"
 
 llm_agents_module="$repo_root/modules/shared/llm-agents.nix"
 
-for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'tailscale' 'bun' 'home.sessionPath'; do
+for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'programs.carapace' \
+  'ripgrep' 'zoxide' 'lazygit' 'lefthook' 'delta' 'mosh' 'tailscale' 'bun' 'home.sessionPath'; do
   rg -q --fixed-strings "$token" "$module" "$init"
 done
+rg -q --fixed-strings "zstyle ':completion:*' menu select" "$init"
+rg -q --fixed-strings 'enableZshIntegration' "$module"
+rg -q --fixed-strings 'ignoreCase' "$module"
 
 for attr in cursor-agent antigravity-cli claude-code codex grok pi; do
   rg -q --fixed-strings "\"${attr}\"" "$llm_agents_module"

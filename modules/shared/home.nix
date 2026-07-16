@@ -154,6 +154,13 @@ in
     };
   };
 
+  # Fish-like flag/argument completions across many CLIs.
+  programs.carapace = {
+    enable = true;
+    enableZshIntegration = true;
+    ignoreCase = true;
+  };
+
   programs.zsh = {
     enable = true;
     enableCompletion = true;

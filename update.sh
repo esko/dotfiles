@@ -345,6 +345,11 @@ apply_target() {
       # day-to-day updates evaluate and substitute once.
       nix run "${NIX_CACHE_OPTS[@]}" "$SYSTEM_MANAGER" -- \
         switch --flake "$repo_root#baguette" --sudo
+      # Ensure ChromeOS sees GUI launchers even if HM activation could not sudo
+      # into /usr/local/share/applications during the switch.
+      if [[ -x "$repo_root/scripts/publish-crostini-apps.sh" ]]; then
+        "$repo_root/scripts/publish-crostini-apps.sh" || true
+      fi
       run_install_node_tools
       ;;
     mini)

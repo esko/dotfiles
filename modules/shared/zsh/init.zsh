@@ -11,6 +11,17 @@ setopt interactivecomments
 
 # Keep the prompt and fzf integrations lazy enough for non-interactive shells.
 if [[ -o interactive ]]; then
+  # Menu-driven completions (Tab cycles; arrows select) closer to Fish UX.
+  zmodload zsh/complist 2>/dev/null || true
+  setopt auto_menu complete_in_word always_to_end
+  zstyle ':completion:*' menu select
+  zstyle ':completion:*' matcher-list 'm:{[:lower:][:upper:]}={[:upper:][:lower:]}' 'r:|[._-]=* r:|=*'
+  zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+  zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+  zstyle ':completion:*' group-name ''
+  zstyle ':completion:*' verbose yes
+  bindkey -M menuselect '^[[Z' reverse-menu-complete
+
   if (( $+commands[fzf] )); then
     source <(fzf --zsh 2>/dev/null)
   fi

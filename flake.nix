@@ -249,10 +249,15 @@
       # Native Debian/Trixie host. System Manager owns the reviewed root-level
       # boundary and activates Home Manager for the existing esko account.
       systemConfigs.baguette = system-manager.lib.makeSystemConfig {
-        specialArgs = linuxArgs // { hostName = "baguette"; };
+        specialArgs = linuxArgs // {
+          hostName = "baguette";
+          # Used by crostini-launchers.nix for the 1.5-dev desktop entry.
+          inherit inkscapeBeta;
+        };
         modules = [
           homeManagerLinux.nixosModules.home-manager
           ./modules/linux/system.nix
+          ./modules/linux/crostini-launchers.nix
           {
             home-manager = {
               useGlobalPkgs = true;
