@@ -10,7 +10,6 @@
     builtins.elem (lib.getName pkg) [
       "antigravity"
       # pkgs.code-cursor reports lib.getName "cursor"
-      "code-cursor"
       "cursor"
       "unrar"
     ];

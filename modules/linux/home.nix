@@ -2,14 +2,7 @@
 
 let
   inherit (lib) mkIf mkOption types;
-
-  # Linux package names move occasionally between nixpkgs channels. Optional
-  # lookup keeps the profile evaluable while the Debian bootstrap remains the
-  # authoritative path for daemon, driver, and device packages.
-  optionalPackages = names:
-    builtins.concatLists (map
-      (name: lib.optional (builtins.hasAttr name pkgs) (builtins.getAttr name pkgs))
-      names);
+  inherit (import ../lib/optional-packages.nix { inherit lib; }) optionalPackages;
 
   cursorPackage = if builtins.hasAttr "code-cursor" pkgs then pkgs.code-cursor else null;
   antigravityPackage = if builtins.hasAttr "antigravity" pkgs then pkgs.antigravity else null;
@@ -19,7 +12,12 @@ in
     enableHostTools = mkOption {
       type = types.bool;
       default = true;
-      description = "Install Linux workstation CLI and graphics diagnostics in Home Manager.";
+      description = ''
+        Install Linux workstation diagnostics and Nix-owned utilities in Home
+        Manager. Daemon/keyring/clipboard packages remain apt-owned on Baguette
+        (see docs/linux-bootstrap.md); this list is the Nix supplement, not a
+        second copy of the Debian integration set.
+      '';
     };
 
     enableDesktopConfigs = mkOption {
@@ -43,15 +41,15 @@ in
 
   config = {
     home.packages =
-      lib.optionals config.dotfiles.linux.enableHostTools (optionalPackages [
-      # Approved Linux-only tools and runtime integration.
-      "android-tools" "adb" "jdk17" "openjdk17" "vulkan-tools"
+      lib.optionals config.dotfiles.linux.enableHostTools (optionalPackages pkgs [
+      # Nix-owned Linux workstation tools. Prefer Debian packages listed in
+      # docs/linux-bootstrap.md for keyring, clipboard, and device daemons.
+      "android-tools" "jdk17" "vulkan-tools"
       "libva-utils" "intel-gpu-tools" "intel-media-driver" "mesa"
       "libdrm" "clinfo" "ocl-icd" "vpl-gpu-rt" "nettools" "traceroute"
-      "wl-clipboard" "xclip" "xdotool" "xkbcomp" "xkeyboard-config"
-      "fontconfig" "gnome-keyring" "libsecret" "libsecret-tools"
-      "p7zip" "unrar" "streamlink" "qmk" "litert-lm"
-    ]) ++ lib.optionals config.dotfiles.linux.enableGuiApps (optionalPackages [
+      "xkbcomp" "xkeyboard-config"
+      "unrar" "streamlink" "qmk" "litert-lm"
+    ]) ++ lib.optionals config.dotfiles.linux.enableGuiApps (optionalPackages pkgs [
       "code-cursor"
       "antigravity"
       "inkscape"
@@ -91,10 +89,9 @@ in
       }
     );
 
-    # System Manager builds users.users.<name>.packages into
-    # /etc/profiles/per-user/<name>, but unlike NixOS it does not currently add
-    # that profile to login PATH. Baguette also keeps Determinate Nix host-owned,
-    # so expose its stable multi-user profile explicitly before shell hooks run.
+    # Home Manager useUserPackages installs into /etc/profiles/per-user/<name>.
+    # System Manager does not put that path on login PATH the way NixOS does.
+    # Determinate Nix owns /nix/var/nix/profiles/default; expose both explicitly.
     home.sessionPath = lib.optionals (hostName == "baguette") [
       "/nix/var/nix/profiles/default/bin"
       "/etc/profiles/per-user/${username}/bin"
@@ -140,10 +137,5 @@ in
       };
     };
 
-    home.activation.dotfilesLinuxNotice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if [ "${lib.boolToString (hostName == "baguette")}" = true ] && [ "${lib.boolToString config.dotfiles.linux.nativeBootstrap}" = true ]; then
-        $DRY_RUN_CMD printf '%s\\n' "Linux host integration: see docs/linux-bootstrap.md"
-      fi
-    '';
   };
 }

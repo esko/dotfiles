@@ -28,18 +28,21 @@ activation CLI on the same pinned revision as `flake.nix`.
 
 System Manager does not replace apt, the kernel, drivers, or the display stack.
 Install and maintain the host-owned packages through reviewed Debian/vendor
-repositories:
+repositories. Home Manager may still ship Nix copies of some diagnostics (for
+example `vulkan-tools`); prefer the Debian package for anything that must
+integrate with the host display, keyring, or device stack:
 
 - base integration: `openssh-client`, `ca-certificates`, `curl`, `git`, `zsh`
 - Docker host: `docker-ce`, `docker-ce-cli`, `containerd.io`,
   `docker-buildx-plugin`, `docker-compose-plugin`
-- desktop/device integration: `gnome-keyring`, `libsecret-tools`, `adb`,
-  `wl-clipboard`, `xclip`, `xdotool`, `x11-xkb-utils`, `fontconfig`
+- desktop/device integration (apt-owned; not reinstalled by Home Manager):
+  `gnome-keyring`, `libsecret-tools`, `adb`, `wl-clipboard`, `xclip`,
+  `xdotool`, `x11-xkb-utils`, `fontconfig`
 - graphics/runtime support: `vulkan-tools`, `intel-gpu-tools`, and appropriate
   VA-API/OpenCL packages
-- optional utilities not suitable for the shared Nix profile: `unrar`,
-  `streamlink`, and `qmk`
-- VPN mesh: `tailscale` from Tailscale's Debian repository
+- optional utilities: `unrar`, `streamlink`, and `qmk` (also available via Nix
+  when useful offline from apt)
+- VPN mesh: `tailscale` from Tailscale's Debian repository for `tailscaled`
 
 Use Debian's OpenSSH client. A second Nix OpenSSH build can read Debian's
 `/etc/ssh/ssh_config` with a different compiled feature set, producing warnings

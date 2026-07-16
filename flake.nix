@@ -48,7 +48,9 @@
       inputs.nixpkgs.follows = "nixpkgsLinux";
     };
     sopsNixDarwin = {
-      url = "github:Mic92/sops-nix";
+      # Keep the same reviewed revision as Linux so secret decryption behavior
+      # does not diverge across hosts on the next flake update.
+      url = "github:Mic92/sops-nix/8eaee5c45428b28b8c47a83e4c09dccec5f279b5";
       inputs.nixpkgs.follows = "nixpkgsDarwin";
     };
 
@@ -90,7 +92,6 @@
             "antigravity-cli"
             "antigravity"
             # pkgs.code-cursor reports lib.getName "cursor"
-            "code-cursor"
             "cursor"
             "unrar"
           ];
@@ -196,12 +197,9 @@
         # exact baseline payload is exercised directly on the target DS918+.
         doInstallCheck = false;
       });
-      codexAgent = linuxLlmAgentPkgs.codex;
-      antigravityCli = linuxLlmAgentPkgs.antigravity-cli;
-      grokAgent = linuxLlmAgentPkgs.grok;
-      herdrAgent = linuxLlmAgentPkgs.herdr;
+      # Agents already in the Synology Home Manager profile come from
+      # home.path. Only packages outside that profile are passed explicitly.
       reasonixAgent = linuxLlmAgentPkgs.reasonix;
-      piAgent = linuxLlmAgentPkgs.pi;
       hunkBaseline = synologyPkgs.callPackage ./packages/hunk-baseline.nix {
         inherit bunBaseline;
       };
@@ -211,11 +209,6 @@
         homeConfiguration = synologyDevHome;
         inherit
           agentWorkspaceLinux
-          antigravityCli
-          codexAgent
-          grokAgent
-          herdrAgent
-          piAgent
           reasonixAgent
           hunkBaseline
           opencodeBaseline

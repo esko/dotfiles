@@ -19,6 +19,9 @@ rg -q 'writeShellScriptBin "agent"' "$llm_agents_module"
 
 rg -q 'llmAgentPkgs = linuxLlmAgentPkgs' "$repo_root/flake.nix"
 rg -q 'llmAgentPkgs = darwinLlmAgentPkgs' "$repo_root/flake.nix"
+rg -q 'optional-packages\.nix' "$module"
+rg -q 'optionalFreePackages' "$module"
+rg -q 'hostPlatform.isDarwin' "$module"
 
 stow_migration="$repo_root/modules/shared/stow-migration.nix"
 rg -q 'removeLegacyStowSymlinks' "$stow_migration"

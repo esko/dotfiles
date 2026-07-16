@@ -1,6 +1,8 @@
 { config, lib, pkgs, username, homeDirectory, stateVersion, hostName, ... }:
 
 let
+  inherit (import ../lib/optional-packages.nix { inherit lib; }) optionalFreePackages;
+
   # nixpkgs' pipx test suite currently fails on Darwin because its expected
   # package-specifier spacing is out of sync with the bundled parser. Keep the
   # tool in the shared profile while bypassing that upstream-only check.
@@ -8,19 +10,6 @@ let
     doCheck = false;
     pytestCheckPhase = ":";
   });
-
-  # A few fast-moving CLIs are not consistently packaged in every nixpkgs
-  # revision. Keep them optional so the shared profile remains evaluable while
-  # documenting the external install path in docs/shell-migration.md.
-  optionalPackages = names:
-    builtins.concatLists (map
-      (name:
-        if builtins.hasAttr name pkgs then
-          let package = builtins.getAttr name pkgs;
-          in lib.optional (lib.attrByPath [ "meta" "license" "free" ] true package) package
-        else
-          [ ])
-      names);
 in
 {
   imports = [
@@ -37,7 +26,7 @@ in
   home.packages = with pkgs; [
     # Shell, navigation, search, and file tools.
     zsh starship zellij fzf zoxide git gh age bat eza fd ripgrep jq delta
-    btop micro yazi rsync mosh shellcheck lefthook lazygit cmake
+    btop micro yazi rsync shellcheck lefthook lazygit cmake
 
     # Language/toolchain foundations. Nix nodejs supplies the active Node/npm
     # runtime; install-node-tools publishes fast-moving CLIs into ~/.local.
@@ -48,13 +37,17 @@ in
     # Native hosts use their OS-provided OpenSSH client so its feature set
     # matches /etc/ssh/ssh_config. The container module adds Nix OpenSSH.
     curl wget fastfetch p7zip unzip dos2unix dnsutils
-    inetutils nmap tailscale bun cargo-binstall golangci-lint
+    inetutils nmap bun cargo-binstall golangci-lint
     python3Packages.pytest croc
-  ] ++ optionalPackages [
-    # Core agent CLIs (cursor-agent, agy, claude, codex, grok, pi) come from
-    # llm-agents.nix on every deployment. Remaining native tools stay optional
-    # nixpkgs attributes when available.
-    "antigravity" "athas" "herdr" "pass-cli"
+    # Linux/Synology: Nix mosh + tailscale CLI. Mini installs both via Homebrew.
+  ] ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
+    mosh
+    tailscale
+  ] ++ optionalFreePackages pkgs [
+    # Core agent CLIs come from llm-agents.nix. Remaining native tools stay
+    # optional nixpkgs attributes when available (see docs/shell-migration.md).
+    # Unfree GUI apps (e.g. antigravity) belong in host modules, not here.
+    "athas" "herdr" "pass-cli"
   ];
 
   # Keep existing utility configuration under declarative control. These are

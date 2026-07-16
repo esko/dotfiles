@@ -53,8 +53,12 @@ rg -q 'synologyPkgs[[:space:]]*=.*linuxPkgs\.extend' "$flake"
 rg -q 'bun[[:space:]]*=.*packages/bun-baseline\.nix' "$flake"
 rg -q 'herdr[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.herdr' "$flake"
 rg -q 'reasonixAgent[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.reasonix' "$flake"
-rg -q 'grokAgent[[:space:]]*=[[:space:]]*linuxLlmAgentPkgs\.grok' "$flake"
 rg -q --fixed-strings '"grok"' "$repo_root/modules/shared/llm-agents.nix"
+# Agents ship via home.path; do not re-pass them into the image buildEnv.
+if rg -q 'antigravityCli|codexAgent|grokAgent|piAgent|herdrAgent' "$repo_root/packages/synology-dev-root.nix"; then
+  echo 'synology-dev-root must not re-add agents already provided by home.path' >&2
+  exit 1
+fi
 rg -q --fixed-strings 'https://cache.numtide.com' "$dockerfile"
 rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' "$dockerfile"
 rg -q 'OPENCODE_DISABLE_AUTOUPDATE=true' "$dockerfile"

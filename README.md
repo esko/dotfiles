@@ -29,8 +29,8 @@ From the repository checkout, apply the matching profile on any host:
 ```
 
 `update.sh` detects the platform (or reads `~/.config/dotfiles/target`), runs
-the right `home-manager` / `darwin-rebuild` / System Manager activation, installs
-Node CLIs where appropriate, and can hand off the Synology image:
+the matching System Manager / `darwin-rebuild` activation from flake.lock pins,
+installs Node CLIs where appropriate, and can hand off the Synology image:
 
 ```bash
 ./update.sh --pull                  # git pull, then update

@@ -17,7 +17,13 @@ done
 
 rg -q --fixed-strings 'run_deployment_consumers_for_target' "$update"
 rg -q --fixed-strings 'NIX_DARWIN#darwin-rebuild' "$update"
-rg -q -U 'NIX_DARWIN#darwin-rebuild[\s\S]*ensure_login_shell[\s\S]*run_install_node_tools' "$update"
+rg -q --fixed-strings 'resolve_activation_pins' "$update"
+rg -q --fixed-strings 'github_uri_from_lock' "$update"
+rg -q -U 'NIX_DARWIN#darwin-rebuild[\s\S]*run_install_node_tools' "$update"
+if rg -q 'ensure_login_shell' "$update"; then
+  echo 'update.sh must not duplicate nix-darwin login-shell activation' >&2
+  exit 1
+fi
 rg -q '/etc/profiles/per-user/\$\{USER\}/bin' "$update"
 
 rg -q --fixed-strings 'https://cache.numtide.com' "$update"

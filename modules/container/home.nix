@@ -2,11 +2,7 @@
 
 let
   inherit (lib) mkIf mkOption types;
-
-  optionalPackages = names:
-    builtins.concatLists (map
-      (name: lib.optional (builtins.hasAttr name pkgs) (builtins.getAttr name pkgs))
-      names);
+  inherit (import ../lib/optional-packages.nix { inherit lib; }) optionalPackages;
 in
 {
   options.dotfiles.container = {
@@ -33,15 +29,8 @@ in
     # Shared Home Manager already supplies the approved CLI/toolchain set.
     # Containers cannot assume a host-provided SSH client, so keep Nix OpenSSH
     # here. Native Debian and macOS profiles use their system clients instead.
-    home.packages = lib.optionals config.dotfiles.container.enableSharedTools (optionalPackages [
+    home.packages = lib.optionals config.dotfiles.container.enableSharedTools (optionalPackages pkgs [
       "ca-certificates" "openssh" "procps" "which"
     ]) ++ lib.optionals config.dotfiles.container.allowGuiPackages config.dotfiles.container.guiPackages;
-
-    # GUI packages are intentionally opt-in and empty by default. This option
-    # exists to make the headless limitation explicit without pulling desktop
-    # dependencies into every container image.
-    home.activation.dotfilesContainerNotice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD printf '%s\\n' "Container profile: host services/devices/GUI remain outside Home Manager"
-    '';
   };
 }

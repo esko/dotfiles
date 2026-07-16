@@ -7,9 +7,9 @@ set -euo pipefail
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$repo_root"
 
-SYSTEM_MANAGER='github:numtide/system-manager/96f724be6f1411286e8ad0202e3e624c10116a6d'
-NIX_DARWIN='github:nix-darwin/nix-darwin/c3e90c89649b07d1a96e4b9dd6cd0d6e44b91a74'
 TARGET_MARKER="${DOTFILES_TARGET_MARKER:-$HOME/.config/dotfiles/target}"
+SYSTEM_MANAGER=""
+NIX_DARWIN=""
 
 # Match flake.nix nixConfig and Dockerfile.synology-dev so llm-agents.nix
 # substitutes from Numtide instead of building agents from source.
@@ -120,6 +120,25 @@ require_command() {
     printf 'Required command is not available: %s\n' "$1" >&2
     exit 1
   fi
+}
+
+# Resolve activation CLIs from flake.lock so update.sh cannot drift from the
+# reviewed flake pins.
+github_uri_from_lock() {
+  local input=$1
+  python3 - "$repo_root/flake.lock" "$input" <<'PY'
+import json
+import sys
+
+lock_path, input_name = sys.argv[1], sys.argv[2]
+node = json.load(open(lock_path))["nodes"][input_name]["locked"]
+print(f"github:{node['owner']}/{node['repo']}/{node['rev']}")
+PY
+}
+
+resolve_activation_pins() {
+  SYSTEM_MANAGER=$(github_uri_from_lock system-manager)
+  NIX_DARWIN=$(github_uri_from_lock nix-darwin)
 }
 
 numtide_cache_in_nix_config() {
@@ -256,23 +275,6 @@ run_install_node_tools() {
   "$installer"
 }
 
-ensure_login_shell() {
-  local target_shell=$1
-  local current_shell=""
-
-  if ! current_shell=$(/usr/bin/dscl . -read "/Users/${USER}" UserShell 2>/dev/null \
-    | /usr/bin/awk 'NF { print $NF }'); then
-    return 0
-  fi
-
-  if [[ "$current_shell" == "$target_shell" ]]; then
-    return 0
-  fi
-
-  printf 'Setting login shell to %s (was %s)\n' "$target_shell" "$current_shell"
-  sudo /usr/bin/chsh -s "$target_shell" "$USER"
-}
-
 flake_attr_for_target() {
   case "$1" in
     baguette) printf '%s\n' systemConfigs.baguette ;;
@@ -345,9 +347,9 @@ apply_target() {
         printf '%s\n' 'The mini profile must be applied on the Mac itself.' >&2
         exit 1
       fi
+      # Login shell is set by nix-darwin system.activationScripts.postActivation.
       nix run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
         switch --flake "$repo_root#mini"
-      ensure_login_shell /bin/zsh
       run_install_node_tools
       ;;
     synology)
@@ -358,6 +360,8 @@ apply_target() {
 
 require_command git
 require_command nix
+require_command python3
+resolve_activation_pins
 configure_nix_cache_opts
 
 if "$do_pull"; then

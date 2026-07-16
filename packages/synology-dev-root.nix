@@ -12,19 +12,13 @@
   ipset,
   agentWorkspaceLinux,
   synologyDevGui,
-  piAgent,
-  mosh,
   eternal-terminal,
   openssh,
   tailscale,
   tsshd,
   flow-control,
   homeConfiguration,
-  herdrAgent,
   reasonixAgent,
-  codexAgent,
-  antigravityCli,
-  grokAgent,
   hunkBaseline,
   opencodeBaseline,
 }:
@@ -64,6 +58,8 @@ let
     text = builtins.readFile ../scripts/synology-dev-start-services.sh;
   };
 
+  # home.path already includes shared CLI/agent packages (mosh, tailscale,
+  # pi, codex, grok, agy, herdr, …). Only add image-only tools here.
   runtime = buildEnv {
     name = "synology-dev-environment";
     paths = [
@@ -75,16 +71,9 @@ let
       ipset
       agentWorkspaceLinux
       synologyDevGui
-      piAgent
-      herdrAgent
       reasonixAgent
-      mosh
       eternal-terminal
-      tailscale
       tsshd
-      codexAgent
-      antigravityCli
-      grokAgent
       opencodeBaseline
       hunkBaseline
       flow-control
@@ -97,6 +86,7 @@ let
       "/bin"
       "/share"
     ];
+    # home.path and image helpers can still share common store paths.
     ignoreCollisions = true;
   };
 in
@@ -177,7 +167,6 @@ EOF
 
   test -x "$out/bin/pi"
   test -x "$out/bin/herdr"
-  test "$(readlink -f "$out/bin/herdr")" = "${herdrAgent}/bin/herdr"
   test -x "$out/bin/reasonix"
   test -x "$out/bin/opencode"
   test -x "$out/bin/hunk"

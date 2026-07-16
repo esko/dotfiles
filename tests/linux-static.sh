@@ -31,9 +31,19 @@ rg -q --fixed-strings '"cursor"' "$flake"
 
 for token in enableHostTools enableDesktopConfigs nativeBootstrap enableGuiApps \
   code-cursor antigravity inkscape xdg.desktopEntries android-tools jdk17 vulkan-tools \
-  intel-media-driver wl-clipboard xclip xdotool gnome-keyring streamlink qmk; do
+  intel-media-driver streamlink qmk; do
   rg -q --fixed-strings "$token" "$linux_module"
 done
+
+# Apt owns keyring/clipboard integration; HM must not reinstall those.
+for token in wl-clipboard xclip xdotool gnome-keyring libsecret-tools p7zip; do
+  if rg -q --fixed-strings "\"$token\"" "$linux_module"; then
+    echo "linux module must not duplicate apt/shared package: $token" >&2
+    exit 1
+  fi
+done
+
+rg -q 'optional-packages\.nix' "$linux_module"
 
 for token in dotfiles.secrets sops.secrets ssh/id_ed25519; do
   rg -q --fixed-strings "$token" "$secrets_module"

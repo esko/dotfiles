@@ -9,7 +9,7 @@ them:
 - Bash and Fish package trees (`bash/`, `fish/`, `fish-linux/`, and
   `fish-macos/`)
 - the unused Tabby seed (`templates/tabby/config.yaml`)
-- Stow-only ignore files and the obsolete Zellij backup
+- Stow-only ignore files and the obsolete Zellij backup (`config.kdl.bak.1`)
 
 The following files are intentionally retained:
 
