@@ -51,6 +51,8 @@ rg -q --fixed-strings 'run_deployment_consumers_for_target' "$repo_root/update.s
 rg -q --fixed-strings '90-dotfiles-peers.conf' "$secrets_module"
 rg -q --fixed-strings 'peerAuthorizedKeys' "$secrets_module"
 rg -q --fixed-strings 'sshHostName' "$manifest"
+rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module"
+rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module"
 rg -q --fixed-strings 'Include ~/.ssh/config.d' "$repo_root/ssh/.ssh/config"
 
 if [[ -f "$repo_root/modules/shared/ssh.nix" || -f "$repo_root/modules/linux/ssh.nix" ]]; then

@@ -15,11 +15,18 @@ let
   hasDefaultSecret = builtins.pathExists defaultSecretFile;
   hasDefaultPublicKey = builtins.pathExists defaultPublicKeyFile;
 
-  envKeys = cfg.env.keys;
-
   sharedEnvKeys = manifest.shared.env or [];
   sharedSecretFile = ../../secrets/shared.yaml;
   hasSharedSecretFile = builtins.pathExists sharedSecretFile;
+
+  # Shared env keys are optional until secrets/shared.yaml exists. SSH-only
+  # bootstrap must not require Tailscale (or other shared) material.
+  declaredEnvKeys = deploymentCfg.env or [ ];
+  defaultEnvKeys = lib.filter (
+    key: !(lib.elem key sharedEnvKeys) || hasSharedSecretFile
+  ) declaredEnvKeys;
+
+  envKeys = cfg.env.keys;
 
   deploymentOnlyEnvKeys = lib.filter (key: !lib.elem key sharedEnvKeys) envKeys;
   sharedDeployedEnvKeys = lib.filter (key: lib.elem key sharedEnvKeys) envKeys;
@@ -141,8 +148,12 @@ in
     env = {
       keys = lib.mkOption {
         type = lib.types.listOf lib.types.str;
-        default = deploymentCfg.env or [ ];
-        description = "Environment secret keys to deploy from the env: section.";
+        default = defaultEnvKeys;
+        description = ''
+          Environment secret keys to deploy. Shared keys from
+          secrets/manifest.nix are omitted until secrets/shared.yaml exists so
+          SSH-only hosts can activate without Tailscale material.
+        '';
       };
 
       directory = lib.mkOption {
@@ -180,18 +191,16 @@ in
         }
         {
           assertion =
-            !secretsEnabled
-            || sharedDeployedEnvKeys == [ ]
-            || hasSharedSecretFile;
-          message =
-            "Shared env secrets are declared for ${hostName} but secrets/shared.yaml is missing. Run: nix run .#bootstrap-secrets -- shared-env <key>";
-        }
-        {
-          assertion =
             builtins.all
               (name: builtins.hasAttr name manifest.consumers)
               enabledConsumers;
           message = "Every enabled consumer must be declared in secrets/manifest.nix.";
+        }
+        {
+          assertion =
+            sharedDeployedEnvKeys == [ ] || hasSharedSecretFile;
+          message =
+            "Shared env keys are enabled for ${hostName} but secrets/shared.yaml is missing. Run: nix run .#bootstrap-secrets -- shared-env <key>";
         }
       ];
     }

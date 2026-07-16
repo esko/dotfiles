@@ -141,6 +141,18 @@ extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc
 `trusted-users = root` only; without it, unprivileged builds cannot use the
 cache even when the public key is present.
 
+Residual `ignoring the client-specified setting 'trusted-public-keys'` lines
+come from the `llm-agents.nix` input's own `nixConfig` and are harmless once
+the daemon trusts Numtide. Unknown-setting warnings for `eval-cores` /
+`lazy-trees` are Determinate-only options seen by older Nix wrappers; ignore
+them.
+
+SSH bootstrap does not require `secrets/shared.yaml`. Add Tailscale later with:
+
+```sh
+nix run .#bootstrap-secrets -- shared-env tailscale_auth_key
+```
+
 ## Build before activation
 
 From the repository checkout:
