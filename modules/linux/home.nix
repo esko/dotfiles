@@ -6,6 +6,7 @@ let
 
   cursorPackage = if builtins.hasAttr "code-cursor" pkgs then pkgs.code-cursor else null;
   antigravityPackage = if builtins.hasAttr "antigravity" pkgs then pkgs.antigravity else null;
+  inkscapePackage = if builtins.hasAttr "inkscape" pkgs then pkgs.inkscape else null;
 in
 {
   options.dotfiles.linux = {
@@ -84,6 +85,26 @@ in
           icon = "antigravity";
           terminal = false;
           categories = [ "Development" "IDE" ];
+          startupNotify = true;
+        };
+      }
+      // lib.optionalAttrs (inkscapePackage != null) {
+        inkscape = {
+          name = "Inkscape";
+          genericName = "Vector Graphics Editor";
+          comment = "Create and edit SVG graphics";
+          exec = "${lib.getExe inkscapePackage} %F";
+          icon = "inkscape";
+          terminal = false;
+          categories = [ "Graphics" "VectorGraphics" "2DGraphics" ];
+          mimeType = [
+            "image/svg+xml"
+            "image/svg+xml-compressed"
+            "application/vnd.corel-draw"
+            "application/pdf"
+            "image/png"
+            "image/jpeg"
+          ];
           startupNotify = true;
         };
       }

@@ -70,6 +70,31 @@ GitHub uses HTTPS as the bootstrap-safe default. Authenticate with
 `gh auth login`; change an individual remote to SSH only after that host has an
 SSH key enrolled with GitHub.
 
+## SSH keys (Baguette ↔ Mini)
+
+Home Manager only writes `~/.ssh/id_ed25519` after SOPS SSH material exists.
+If `~/.ssh` is empty, bootstrap on each host (creates age identity + keypair),
+commit the public key and encrypted host secret, then activate both sides:
+
+```sh
+# On Baguette
+cd ~/dotfiles
+./update.sh --target baguette --bootstrap-secrets --github
+# Review + commit secrets/public/baguette-id_ed25519.pub and secrets/hosts/baguette.yaml
+
+# On Mini
+cd ~/dotfiles && git pull --ff-only
+./update.sh --target mini --bootstrap-secrets --github
+# Commit secrets/public/mini-id_ed25519.pub and secrets/hosts/mini.yaml
+
+# Activate again on both hosts so authorized_keys + peer Host blocks apply
+./update.sh
+```
+
+After both public keys are committed, Mini's `authorized_keys` includes
+Baguette, and Baguette gets `Host mini macmini …` using `IdentityFile
+~/.ssh/id_ed25519`. Then `ssh mini` should not ask for a password.
+
 Install Tailscale for the host daemon and systemd integration:
 
 ```sh
@@ -177,9 +202,9 @@ The npm prefix is `~/.local`, which is already on the managed PATH.
 Baguette also installs Cursor, Antigravity, and Inkscape from nixpkgs through
 Home Manager (`code-cursor`, `antigravity`, and `inkscape`). Launch them from
 the application menu or with the `cursor`, `antigravity`, and `inkscape`
-commands after activation. Cursor and Antigravity desktop entries are published
-under `~/.local/share/applications/` so ChromeOS and other XDG launchers can
-find them.
+commands after activation. Desktop entries for all three are published under
+`~/.local/share/applications/` so ChromeOS and other XDG launchers can find
+them.
 
 ## Display integration templates
 

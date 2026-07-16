@@ -24,6 +24,7 @@ rg -q 'hostName = "baguette"' "$flake"
 rg -q 'xdg\.desktopEntries' "$linux_module"
 rg -q --fixed-strings 'cursor = {' "$linux_module"
 rg -q --fixed-strings 'antigravity = {' "$linux_module"
+rg -q --fixed-strings 'inkscape = {' "$linux_module"
 rg -q 'modules/linux/home\.nix' "$flake"
 # allowUnfreePredicate must allow lib.getName "cursor" (pkgs.code-cursor).
 rg -q --fixed-strings '"cursor"' "$repo_root/modules/linux/system.nix"

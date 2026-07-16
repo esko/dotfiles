@@ -29,11 +29,16 @@
   deployments = {
     baguette = {
       ssh = true;
+      # How other hosts address this machine over SSH / Tailscale MagicDNS.
+      sshHostName = "baguette";
+      sshAliases = [ "baguette.local" ];
       env = [ "tailscale_auth_key" ];
       tailscaleHostname = "baguette";
     };
     mini = {
       ssh = true;
+      sshHostName = "mini";
+      sshAliases = [ "macmini" "mini.local" ];
       env = [ "tailscale_auth_key" ];
       tailscaleHostname = "mini";
     };

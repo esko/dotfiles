@@ -25,9 +25,18 @@ rg -q --fixed-strings 'sops_decrypt_shared_env_secret' "$repo_root/scripts/lib/s
 rg -q --fixed-strings 'shared.env' "$manifest"
 rg -q --fixed-strings 'sops_load_env_secret' "$repo_root/scripts/lib/tailscale-common.sh"
 rg -q --fixed-strings 'run_deployment_consumers_for_target' "$repo_root/update.sh" "$repo_root/modules/shared/secrets.nix"
+rg -q --fixed-strings '90-dotfiles-peers.conf' "$secrets_module"
+rg -q --fixed-strings 'peerAuthorizedKeys' "$secrets_module"
+rg -q --fixed-strings 'sshHostName' "$manifest"
+rg -q --fixed-strings 'Include ~/.ssh/config.d' "$repo_root/ssh/.ssh/config"
 
 if [[ -f "$repo_root/modules/shared/ssh.nix" || -f "$repo_root/modules/linux/ssh.nix" ]]; then
   printf '%s\n' 'legacy ssh modules must be removed in favor of modules/shared/secrets.nix' >&2
+  exit 1
+fi
+
+if rg -q 'IdentityFile ~/.ssh/id_rsa' "$repo_root/ssh/.ssh/config"; then
+  printf '%s\n' 'hand SSH config must not point at legacy id_rsa' >&2
   exit 1
 fi
 

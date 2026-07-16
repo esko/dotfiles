@@ -39,6 +39,8 @@ grep -q 'target_shell=/bin/zsh' "$root_dir/modules/darwin/system.nix"
 ! grep -q 'environment.shells' "$root_dir/modules/darwin/system.nix"
 grep -q '"cursor"' "$root_dir/modules/darwin/system.nix"
 grep -q '"antigravity"' "$root_dir/modules/darwin/system.nix"
+# Peer SSH Host blocks live in shared secrets.nix, not darwin/home.nix.
+! grep -q '90-dotfiles-mini.conf' "$root_dir/modules/darwin/home.nix"
 ! grep -q 'launchagents-templates' "$root_dir/modules/darwin/home.nix"
 for plist in "$root_dir"/templates/launchagents/*.plist; do
   grep -q '<key>Disabled</key>' "$plist"
