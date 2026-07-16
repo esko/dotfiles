@@ -137,7 +137,10 @@ PY
 }
 
 resolve_activation_pins() {
-  SYSTEM_MANAGER=$(github_uri_from_lock system-manager)
+  # Run the locked system-manager package through this flake. A direct
+  # `nix run github:numtide/system-manager/...` loads that flake's nixConfig and
+  # spams trusted-public-keys warnings for unprivileged Determinate users.
+  SYSTEM_MANAGER="$repo_root#system-manager"
   NIX_DARWIN=$(github_uri_from_lock nix-darwin)
 }
 
@@ -156,9 +159,6 @@ configure_nix_cache_opts() {
 
 warn_unless_numtide_cache_trusted() {
   if numtide_cache_in_nix_config; then
-    # llm-agents.nix still ships flake nixConfig.extra-trusted-public-keys.
-    # Unprivileged Determinate users always see "ignoring ... trusted-public-keys"
-    # for that input even when the daemon already trusts Numtide; harmless.
     return 0
   fi
 
@@ -172,9 +172,6 @@ Determinate Nix ignores edits to /etc/nix/nix.conf; custom caches belong in
 Then confirm:
 
   nix config show | grep -F cache.numtide.com
-
-Until then, builds may recompile llm-agents and spam trusted-public-keys warnings
-(from the llm-agents.nix flake input; our flake does not set nixConfig).
 EOF
 }
 

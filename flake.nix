@@ -231,6 +231,12 @@
         ${linuxSystem} = {
           bootstrap-secrets = mkBootstrapSecretsApp linuxPkgs;
           bootstrap-ssh = mkBootstrapSshApp linuxPkgs;
+          # Prefer `nix run .#system-manager` over github:numtide/system-manager
+          # so activation does not load that flake's nixConfig trust settings.
+          system-manager = {
+            type = "app";
+            program = "${system-manager.packages.${linuxSystem}.default}/bin/system-manager";
+          };
         };
         ${darwinSystem} = {
           bootstrap-secrets = mkBootstrapSecretsApp darwinPkgs;
@@ -277,6 +283,8 @@
 
       packages.${linuxSystem} = {
         inherit bunBaseline hunkBaseline opencodeBaseline synologyDevRoot inkscapeBeta;
+        # Same derivation as apps.system-manager; exposed for `nix build`/`nix shell`.
+        system-manager = system-manager.packages.${linuxSystem}.default;
       };
 
       # Expose the System Manager derivations through the standard flake check

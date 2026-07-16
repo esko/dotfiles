@@ -19,6 +19,13 @@ rg -q --fixed-strings 'run_deployment_consumers_for_target' "$update"
 rg -q --fixed-strings 'NIX_DARWIN#darwin-rebuild' "$update"
 rg -q --fixed-strings 'resolve_activation_pins' "$update"
 rg -q --fixed-strings 'github_uri_from_lock' "$update"
+rg -q --fixed-strings '#system-manager' "$update"
+rg -q --fixed-strings 'SYSTEM_MANAGER="$repo_root#system-manager"' "$update"
+# Must not resolve system-manager to a github: URI (loads their nixConfig warnings).
+if rg -q 'github_uri_from_lock system-manager' "$update"; then
+  echo 'update.sh must run system-manager via the local flake app' >&2
+  exit 1
+fi
 rg -q -U 'NIX_DARWIN#darwin-rebuild[\s\S]*run_install_node_tools' "$update"
 if rg -q 'ensure_login_shell' "$update"; then
   echo 'update.sh must not duplicate nix-darwin login-shell activation' >&2

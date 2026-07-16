@@ -26,6 +26,8 @@ rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7
   "$repo_root/scripts/enable-numtide-cache.sh"
 # apps.<system> must be one attrset (separate dynamic assignments collide).
 rg -q -U 'apps = \{[\s\S]*bootstrap-secrets[\s\S]*bootstrap-ssh' "$flake"
+rg -q --fixed-strings 'system-manager = {' "$flake"
+rg -q --fixed-strings 'system-manager.packages.${linuxSystem}.default' "$flake"
 
 rg -q 'hostName = "baguette"' "$flake"
 rg -q 'xdg\.desktopEntries' "$linux_module"
