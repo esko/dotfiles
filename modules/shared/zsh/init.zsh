@@ -12,18 +12,34 @@ setopt interactivecomments
 # Keep the prompt and fzf integrations lazy enough for non-interactive shells.
 if [[ -o interactive ]]; then
   # Menu-driven completions (Tab cycles; arrows select) closer to Fish UX.
-  zmodload zsh/complist 2>/dev/null || true
-  setopt auto_menu complete_in_word always_to_end
-  zstyle ':completion:*' menu select
-  zstyle ':completion:*' matcher-list 'm:{[:lower:][:upper:]}={[:upper:][:lower:]}' 'r:|[._-]=* r:|=*'
-  zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
-  zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
-  zstyle ':completion:*' group-name ''
-  zstyle ':completion:*' verbose yes
-  bindkey -M menuselect '^[[Z' reverse-menu-complete
+  if zmodload zsh/complist 2>/dev/null; then
+    setopt auto_menu complete_in_word always_to_end
+    zstyle ':completion:*' menu select
+    zstyle ':completion:*' matcher-list 'm:{[:lower:][:upper:]}={[:upper:][:lower:]}' 'r:|[._-]=* r:|=*'
+    zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+    zstyle ':completion:*' group-name ''
+    if [[ -n ${LS_COLORS:-} ]]; then
+      zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+    fi
+    bindkey -M menuselect '^[[Z' reverse-menu-complete 2>/dev/null || true
+  fi
+
+  # Optional carapace bridge. Cached once — never `source <(carapace …)` at
+  # startup (that process substitution has crashed Crostini terminals).
+  if [[ ${DOTFILES_CARAPACE:-0} == 1 ]] && (( $+commands[carapace] )); then
+    _dotfiles_carapace_init="${XDG_CACHE_HOME:-$HOME/.cache}/carapace/init.zsh"
+    if [[ ! -r $_dotfiles_carapace_init ]]; then
+      mkdir -p "${_dotfiles_carapace_init:h}"
+      if ! carapace _carapace zsh >"$_dotfiles_carapace_init" 2>/dev/null; then
+        rm -f "$_dotfiles_carapace_init"
+      fi
+    fi
+    [[ -r $_dotfiles_carapace_init ]] && source "$_dotfiles_carapace_init"
+    unset _dotfiles_carapace_init
+  fi
 
   if (( $+commands[fzf] )); then
-    source <(fzf --zsh 2>/dev/null)
+    source <(fzf --zsh 2>/dev/null) || true
   fi
 
   # Alt-Up mirrors Fish's directory navigation binding.

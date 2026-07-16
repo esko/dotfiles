@@ -78,18 +78,9 @@ in
       '';
     };
 
-    # Keep interactive shells aligned with the garcon search path.
-    home.sessionVariables = mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps) {
-      XDG_DATA_DIRS = lib.concatStringsSep ":" [
-        "/etc/profiles/per-user/${username}/share"
-        "${homeDirectory}/.nix-profile/share"
-        "${homeDirectory}/.local/share"
-        "${homeDirectory}/.local/share/flatpak/exports/share"
-        "/var/lib/flatpak/exports/share"
-        "/usr/local/share"
-        "/usr/share"
-      ];
-    };
+    # Do not set home.sessionVariables.XDG_DATA_DIRS here: replacing the session
+    # value can break Crostini/GTK terminals. Garcon gets its paths from the
+    # systemd drop-in above; shells already see HM/profile shares via PATH.
 
     home.activation.publishBaguetteDesktopEntries =
       mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps)

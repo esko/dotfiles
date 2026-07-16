@@ -37,6 +37,11 @@ rg -q --fixed-strings 'XDG_DATA_DIRS' "$linux_module"
 rg -q --fixed-strings 'publishBaguetteDesktopEntries' "$linux_module"
 rg -q --fixed-strings '%h/.nix-profile/share' "$linux_module"
 rg -q --fixed-strings 'publish-crostini-apps.sh' "$linux_module"
+# Session-wide XDG_DATA_DIRS replacement breaks Crostini terminals.
+if rg -q --fixed-strings 'XDG_DATA_DIRS =' "$linux_module"; then
+  echo 'linux home.nix must not set home.sessionVariables.XDG_DATA_DIRS' >&2
+  exit 1
+fi
 rg -q --fixed-strings 'crostini-launchers.nix' "$flake"
 rg -q --fixed-strings '/usr/local/share/applications' \
   "$repo_root/modules/linux/crostini-launchers.nix"

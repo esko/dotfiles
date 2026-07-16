@@ -3,9 +3,11 @@
 The shared Home Manager profile uses zsh on every target. Baguette is the
 primary Linux workstation; lightweight containers use the same shared modules.
 
-- Home Manager enables zsh completion, [carapace](https://carapace.sh)
-  (fish-like flag/argument completions), menu-select completion UX,
+- Home Manager enables zsh completion, menu-select completion UX,
   autosuggestions, syntax highlighting, shared history, and Starship.
+  [carapace](https://carapace.sh) is installed but not auto-sourced (its
+  `source <(carapace _carapace zsh)` bridge hung Crostini terminals). Opt in
+  with `export DOTFILES_CARAPACE=1` (cached under `~/.cache/carapace/`).
 - Fish abbreviations become zsh aliases for safe file operations, `eza`, `bat`,
   `fd`, `rg`, Git, Lefthook, and Zellij.
 - `backup`, `extract`, `mkcd`, and `rfv` are zsh functions with argument checks.

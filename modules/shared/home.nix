@@ -154,11 +154,13 @@ in
     };
   };
 
-  # Fish-like flag/argument completions across many CLIs.
+  # Install carapace for optional fish-like flag completions. Do NOT enable
+  # HM's `source <(carapace _carapace zsh)` integration: regenerating that
+  # bridge on every startup has hung/crashed Crostini terminals. Opt in from
+  # init.zsh via DOTFILES_CARAPACE=1 (cached file).
   programs.carapace = {
     enable = true;
-    enableZshIntegration = true;
-    ignoreCase = true;
+    enableZshIntegration = false;
   };
 
   programs.zsh = {

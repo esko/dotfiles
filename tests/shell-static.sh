@@ -13,8 +13,14 @@ for token in 'programs.zsh' 'programs.starship' 'programs.zellij' 'programs.cara
   rg -q --fixed-strings "$token" "$module" "$init"
 done
 rg -q --fixed-strings "zstyle ':completion:*' menu select" "$init"
-rg -q --fixed-strings 'enableZshIntegration' "$module"
-rg -q --fixed-strings 'ignoreCase' "$module"
+rg -q --fixed-strings 'enableZshIntegration = false' "$module"
+rg -q --fixed-strings 'DOTFILES_CARAPACE' "$init"
+rg -q --fixed-strings 'DOTFILES_CARAPACE' "$repo_root/docs/shell-migration.md"
+# Never reintroduce process-substitution carapace init in HM (ignore comments).
+if rg -q '^\s*source <\(.*carapace.*_carapace' "$module" "$init"; then
+  echo 'programs.carapace must not process-substitute _carapace into zshrc' >&2
+  exit 1
+fi
 
 for attr in cursor-agent antigravity-cli claude-code codex grok pi; do
   rg -q --fixed-strings "\"${attr}\"" "$llm_agents_module"
