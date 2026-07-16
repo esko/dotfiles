@@ -30,7 +30,7 @@ rg -q --fixed-strings '"cursor"' "$repo_root/modules/linux/system.nix"
 rg -q --fixed-strings '"cursor"' "$flake"
 
 for token in enableHostTools enableDesktopConfigs nativeBootstrap enableGuiApps \
-  code-cursor antigravity xdg.desktopEntries android-tools jdk17 vulkan-tools \
+  code-cursor antigravity inkscape xdg.desktopEntries android-tools jdk17 vulkan-tools \
   intel-media-driver wl-clipboard xclip xdotool gnome-keyring streamlink qmk; do
   rg -q --fixed-strings "$token" "$linux_module"
 done

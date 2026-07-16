@@ -37,7 +37,7 @@ in
     enableGuiApps = mkOption {
       type = types.bool;
       default = hostName == "baguette";
-      description = "Install Cursor and Antigravity GUI editors from nixpkgs.";
+      description = "Install Linux GUI apps from nixpkgs (Cursor, Antigravity, Inkscape).";
     };
   };
 
@@ -54,6 +54,7 @@ in
     ]) ++ lib.optionals config.dotfiles.linux.enableGuiApps (optionalPackages [
       "code-cursor"
       "antigravity"
+      "inkscape"
     ]);
 
     xdg.enable = mkIf config.dotfiles.linux.enableGuiApps true;

@@ -173,11 +173,12 @@ install-node-tools --with-browser
 
 The npm prefix is `~/.local`, which is already on the managed PATH.
 
-Baguette also installs the Cursor and Antigravity GUI editors from nixpkgs
-through Home Manager (`code-cursor` and `antigravity`). Launch them from the
-application menu or with the `cursor` and `antigravity` commands after
-activation. Desktop entries are published under `~/.local/share/applications/`
-so ChromeOS and other XDG launchers can find them.
+Baguette also installs Cursor, Antigravity, and Inkscape from nixpkgs through
+Home Manager (`code-cursor`, `antigravity`, and `inkscape`). Launch them from
+the application menu or with the `cursor`, `antigravity`, and `inkscape`
+commands after activation. Cursor and Antigravity desktop entries are published
+under `~/.local/share/applications/` so ChromeOS and other XDG launchers can
+find them.
 
 ## Display integration templates
 
