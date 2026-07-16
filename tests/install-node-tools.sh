@@ -56,6 +56,13 @@ seed_managed_npm_tree() {
 fake_npm_script() {
   cat <<'EOF'
 case "${1:-}" in
+  config)
+    # install-node-tools persists allow-scripts in the user npmrc.
+    if [[ "${2:-}" == set && "${3:-}" == allow-scripts ]]; then
+      touch "$NPM_CONFIG_SET_ALLOW_SCRIPTS"
+    fi
+    exit 0
+    ;;
   list)
     if [[ -e "${NPM_INSTALL_CALLED:-/}" || -d "$NPM_CONFIG_PREFIX/lib/node_modules" ]]; then
       pkg=""
@@ -99,19 +106,27 @@ case "${1:-}" in
         *) printf '{"%s":"./cli.js"}\n' "$name" ;;
       esac
     else
-      printf '%s\n' '"1.0.0"'
+      # Optional override for update tests (installed 1.0.0, desired 2.0.0).
+      printf '%s\n' "\"${NPM_VIEW_VERSION:-1.0.0}\""
     fi
     exit 0
     ;;
   install)
+    saw_allow_scripts=false
     for arg in "$@"; do
-      if [[ "$arg" = --force ]]; then
-        touch "$NPM_FORCE_USED"
-      fi
-      if [[ "$arg" = --global ]]; then
-        touch "$NPM_INSTALL_CALLED"
-      fi
+      case "$arg" in
+        --force) touch "$NPM_FORCE_USED" ;;
+        --global) touch "$NPM_INSTALL_CALLED" ;;
+        --allow-scripts=*)
+          saw_allow_scripts=true
+          touch "$NPM_ALLOW_SCRIPTS_USED"
+          ;;
+      esac
     done
+    if ! "$saw_allow_scripts"; then
+      printf '%s\n' 'expected --allow-scripts on npm install' >&2
+      exit 1
+    fi
     # shellcheck disable=SC1090
     source "$SEED_MANAGED_NPM"
     seed_managed_npm_tree "$NPM_CONFIG_PREFIX"
@@ -168,6 +183,8 @@ EOF
 
 output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
   NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
+  NPM_ALLOW_SCRIPTS_USED="$tmp_dir/npm-allow-scripts-used" \
+  NPM_CONFIG_SET_ALLOW_SCRIPTS="$tmp_dir/npm-config-set-allow-scripts" \
   SEED_MANAGED_NPM="$seed_helper" PATH="$test_path" \
   /bin/bash "$installer" 2>&1)
 assert_contains "$output" 'Installed npm packages:'
@@ -177,12 +194,42 @@ assert_contains "$output" "$tmp_dir/home/.local/bin/portless"
 assert_contains "$output" 'command-code'
 assert_contains "$output" 'hunkdiff'
 assert_contains "$output" 'install'
-if [[ ! -e $tmp_dir/npm-force-used ]]; then
-  printf '%s\n' 'Expected npm install to pass --force when packages change' >&2
+if [[ -e $tmp_dir/npm-force-used ]]; then
+  printf '%s\n' 'Fresh installs must not pass --force' >&2
+  exit 1
+fi
+if [[ ! -e $tmp_dir/npm-allow-scripts-used ]]; then
+  printf '%s\n' 'Expected npm install to pass --allow-scripts' >&2
+  exit 1
+fi
+if [[ ! -e $tmp_dir/npm-config-set-allow-scripts ]]; then
+  printf '%s\n' 'Expected npm config set allow-scripts for the user npmrc' >&2
   exit 1
 fi
 if [[ ! -e $tmp_dir/npm-install-called ]]; then
   printf '%s\n' 'Expected npm install to run for missing packages' >&2
+  exit 1
+fi
+
+# Update path: installed 1.0.0, registry 2.0.0 → --force is required for global bins.
+rm -f "$tmp_dir/npm-force-used" "$tmp_dir/npm-install-called" "$tmp_dir/npm-allow-scripts-used"
+make_fake_command npm <<EOF
+$(fake_npm_script)
+EOF
+output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
+  NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
+  NPM_ALLOW_SCRIPTS_USED="$tmp_dir/npm-allow-scripts-used" \
+  NPM_CONFIG_SET_ALLOW_SCRIPTS="$tmp_dir/npm-config-set-allow-scripts" \
+  NPM_VIEW_VERSION=2.0.0 \
+  SEED_MANAGED_NPM="$seed_helper" PATH="$test_path" \
+  /bin/bash "$installer" 2>&1)
+assert_contains "$output" 'update'
+if [[ ! -e $tmp_dir/npm-force-used ]]; then
+  printf '%s\n' 'Expected npm install to pass --force when updating existing packages' >&2
+  exit 1
+fi
+if [[ ! -e $tmp_dir/npm-allow-scripts-used ]]; then
+  printf '%s\n' 'Expected npm install to pass --allow-scripts on update' >&2
   exit 1
 fi
 
@@ -196,6 +243,7 @@ seed_managed_npm_tree "$tmp_dir/home/.local"
 mkdir -p "$tmp_dir/home/.agent-browser/browsers/chrome-1.0.0"
 
 output=$(env -i HOME="$tmp_dir/home" NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
+  NPM_CONFIG_SET_ALLOW_SCRIPTS="$tmp_dir/npm-config-set-allow-scripts" \
   SEED_MANAGED_NPM="$seed_helper" PATH="$test_path" /bin/bash "$installer" 2>&1)
 assert_contains "$output" 'already match the requested versions'
 assert_contains "$output" 'skip'
@@ -259,6 +307,9 @@ case "${1:-}" in
     fi
     exit 0
     ;;
+  config)
+    exit 0
+    ;;
   install)
     touch "$NPM_INSTALL_CALLED"
     mkdir -p "$NPM_CONFIG_PREFIX/bin" \
@@ -320,6 +371,8 @@ EOF
 
 output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
   NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
+  NPM_ALLOW_SCRIPTS_USED="$tmp_dir/npm-allow-scripts-used" \
+  NPM_CONFIG_SET_ALLOW_SCRIPTS="$tmp_dir/npm-config-set-allow-scripts" \
   SEED_MANAGED_NPM="$seed_helper" \
   FNM_NPM_CALLED="$fnm_npm_called" PATH="$test_path" \
   /bin/bash "$installer" 2>&1)

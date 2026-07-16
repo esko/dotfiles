@@ -69,10 +69,34 @@ packages=(
   "portless@latest"
 )
 
+# Global installs have no package.json allowScripts field. npm 11.16+ warns
+# (and npm 12 will block) unless these are allowed via --allow-scripts / user
+# config. Includes direct packages plus transitive native/postinstall deps.
+allow_scripts=(
+  agent-browser
+  @google/jules
+  @google/gemini-cli
+  @github/keytar
+  node-pty
+  bun
+  protobufjs
+)
+
 managed_packages=()
 for package_spec in "${packages[@]}"; do
   managed_packages+=("${package_spec%@*}")
 done
+
+allow_scripts_csv() {
+  local IFS=,
+  printf '%s\n' "${allow_scripts[*]}"
+}
+
+# Persist allow-scripts in the user npmrc so later global installs see the same
+# policy without a project package.json (approve-scripts cannot target -g).
+ensure_user_allow_scripts() {
+  npm config set allow-scripts "$(allow_scripts_csv)" --location=user >/dev/null
+}
 
 package_name() {
   # @scope/name@tag -> @scope/name; name@tag -> name
@@ -184,6 +208,7 @@ printf 'Installing Node CLI packages into %s\n' "$prefix"
 remove_legacy_fnm_globals
 
 packages_to_install=()
+needs_force=false
 for package_spec in "${packages[@]}"; do
   name=$(package_name "$package_spec")
   ref=$(package_requested_ref "$package_spec")
@@ -197,20 +222,37 @@ for package_spec in "${packages[@]}"; do
 
   if [[ -n "$installed" && -n "$desired" ]]; then
     printf '  update %-26s %s -> %s\n' "$name" "$installed" "$desired"
+    needs_force=true
   elif [[ -n "$desired" ]]; then
     printf '  install %-25s %s\n' "$name" "$desired"
   else
     # Registry lookup failed; fall back to npm install for this spec.
     printf '  install %-25s %s (version lookup unavailable)\n' "$name" "$ref"
+    # Be conservative when we cannot tell update vs fresh install.
+    if [[ -n "$installed" ]]; then
+      needs_force=true
+    fi
   fi
   packages_to_install+=("$package_spec")
 done
 
+ensure_user_allow_scripts
+
 if [[ ${#packages_to_install[@]} -eq 0 ]]; then
   printf 'All Node CLI packages already match the requested versions.\n'
 else
-  # --force replaces existing global bins when a package actually changes.
-  npm install --global --force --no-audit --no-fund "${packages_to_install[@]}"
+  npm_install_opts=(
+    --global
+    --no-audit
+    --no-fund
+    --allow-scripts="$(allow_scripts_csv)"
+  )
+  # --force only when replacing an already-installed package's global bins.
+  # Fresh installs do not need it and npm warns when it is used.
+  if "$needs_force"; then
+    npm_install_opts+=(--force)
+  fi
+  npm install "${npm_install_opts[@]}" "${packages_to_install[@]}"
 fi
 
 browser_runtime_present() {
