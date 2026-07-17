@@ -45,10 +45,16 @@ approved set with the active `node` runtime set to Node.js 24 or newer:
 
 ```sh
 install-node-tools
+install-umans
 ```
 
-This installs the following packages into the user-owned npm prefix
-`~/.local`, which is already on `PATH`:
+`install-umans` installs the [Umans](https://code.umans.ai/docs) CLI
+(`umans`) into `~/.local/bin` from the same upstream artifact as
+`curl -fsSL https://api.code.umans.ai/cli/install.sh | bash`. `./update.sh`
+runs it after activation on Baguette and Mini (`--skip-umans` to skip).
+
+`install-node-tools` installs the following packages into the user-owned npm
+prefix `~/.local`, which is already on `PATH`:
 
 | Command | npm package |
 | --- | --- |

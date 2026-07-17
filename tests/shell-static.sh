@@ -70,6 +70,12 @@ for package in agent-browser @google/gemini-cli @google/jules command-code hunkd
   rg -q --fixed-strings "${package}@latest" "$node_tools_installer"
 done
 
+umans_installer="$repo_root/scripts/install-umans.sh"
+test -x "$umans_installer"
+rg -q --fixed-strings 'https://api.code.umans.ai/cli/umans' "$umans_installer"
+rg -q --fixed-strings 'install-umans' "$module"
+rg -q --fixed-strings 'install-umans.sh' "$module"
+
 rg -q --fixed-strings 'package_bin_commands' "$node_tools_installer"
 rg -q --fixed-strings 'Installed commands:' "$node_tools_installer"
 rg -q --fixed-strings 'allow_scripts' "$node_tools_installer"

@@ -27,6 +27,9 @@ if rg -q 'github_uri_from_lock system-manager' "$update"; then
   exit 1
 fi
 rg -q -U 'NIX_DARWIN#darwin-rebuild[\s\S]*run_install_node_tools' "$update"
+rg -q --fixed-strings 'run_install_umans' "$update"
+rg -q --fixed-strings -- '--skip-umans' "$update"
+rg -q --fixed-strings 'install-umans.sh' "$update"
 if rg -q 'ensure_login_shell' "$update"; then
   echo 'update.sh must not duplicate nix-darwin login-shell activation' >&2
   exit 1

@@ -215,9 +215,11 @@ be Node.js 24 or newer:
 install-node-tools
 # Or include the agent-browser managed browser download:
 install-node-tools --with-browser
+install-umans
 ```
 
-The npm prefix is `~/.local`, which is already on the managed PATH.
+The npm prefix and Umans CLI land in `~/.local`, already on the managed PATH.
+`./update.sh` runs both installers after activation.
 
 Baguette also installs Cursor and Antigravity from nixpkgs, plus both Inkscape
 **1.4** (nixpkgs, command `inkscape`) and a pinned **1.5 development** AppImage

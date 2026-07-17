@@ -98,6 +98,10 @@ in
       source = ../../scripts/install-node-tools.sh;
       executable = true;
     };
+    ".local/bin/install-umans" = {
+      source = ../../scripts/install-umans.sh;
+      executable = true;
+    };
   };
 
   # Shared shell profiles do not install Home Manager manual pages.

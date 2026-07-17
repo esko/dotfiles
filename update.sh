@@ -21,6 +21,7 @@ NIX_CACHE_OPTS=()
 target=""
 do_pull=false
 skip_node_tools=false
+skip_umans=false
 check_only=false
 synology_handoff=false
 bootstrap_secrets=false
@@ -42,6 +43,7 @@ Options:
   --pull            Run git pull --ff-only before updating
   --check-only      Run nix flake check for the current target, do not activate
   --skip-node-tools Skip install-node-tools after Home Manager activation
+  --skip-umans      Skip install-umans after Home Manager activation
   --bootstrap-secrets
                     Bootstrap missing SSH/env secrets and render env files when
                     the encrypted source changed. Existing values are kept.
@@ -85,6 +87,10 @@ while (($#)); do
       ;;
     --skip-node-tools)
       skip_node_tools=true
+      shift
+      ;;
+    --skip-umans)
+      skip_umans=true
       shift
       ;;
     --bootstrap-secrets)
@@ -280,6 +286,33 @@ run_install_node_tools() {
   "$installer"
 }
 
+run_install_umans() {
+  if "$skip_umans"; then
+    return 0
+  fi
+
+  local installer=""
+  if command -v install-umans >/dev/null 2>&1; then
+    installer=$(command -v install-umans)
+  elif [[ -x "${HOME:?}/.local/bin/install-umans" ]]; then
+    installer="${HOME}/.local/bin/install-umans"
+  elif [[ -x "$repo_root/scripts/install-umans.sh" ]]; then
+    installer="$repo_root/scripts/install-umans.sh"
+  fi
+
+  if [[ -z "$installer" ]]; then
+    printf '%s\n' 'install-umans not found; open a new shell after activation.' >&2
+    return 0
+  fi
+
+  if ! command -v curl >/dev/null 2>&1; then
+    printf '%s\n' 'curl is not available; skipping install-umans.' >&2
+    return 0
+  fi
+
+  "$installer" || printf '%s\n' 'install-umans failed; retry with install-umans.' >&2
+}
+
 flake_attr_for_target() {
   case "$1" in
     baguette) printf '%s\n' systemConfigs.baguette ;;
@@ -351,6 +384,7 @@ apply_target() {
         "$repo_root/scripts/publish-crostini-apps.sh" || true
       fi
       run_install_node_tools
+      run_install_umans
       ;;
     mini)
       if [[ "$(uname -s)" != Darwin ]]; then
@@ -361,6 +395,7 @@ apply_target() {
       nix run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
         switch --flake "$repo_root#mini"
       run_install_node_tools
+      run_install_umans
       ;;
     synology)
       "$repo_root/scripts/build-synology-dev.sh"
