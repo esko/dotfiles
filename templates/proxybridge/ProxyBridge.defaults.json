@@ -4,7 +4,7 @@
   "proxyPort": 8889,
   "proxyRules": [
     {
-      "processNames": "com.openai.codex; com.openai.codex.helper; Codex; codex; Codex Helper; Codex Helper (Renderer); app-server; bare-modifier-monitor",
+      "processNames": "com.openai.codex; com.openai.codex.helper; Codex; codex; Codex Helper; Codex Helper (Renderer); app-server; bare-modifier-monitor; grok; grok-macos-aarch64; Grok",
       "targetHosts": "*",
       "targetPorts": "*",
       "protocol": "TCP",

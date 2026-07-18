@@ -3,9 +3,11 @@
 This records the reviewed non-secret settings for the Mac Mini's ProxyBridge
 installation:
 
-- HTTP proxy at `synology.local:8889`
-- TCP proxying for the verified Codex process names (including the app and
-  helper processes listed in the JSON template)
+- HTTP proxy at `synology.local:8889` (VPN container on the Synology)
+- TCP proxying for verified agent process names:
+  - Codex app/helper names listed in the JSON template
+  - Grok Build CLI: `grok`, binary basename `grok-macos-aarch64`, and `Grok`
+    (do not add bare `agent`; that name is reserved for Cursor Agent)
 
 The `protocol` and `action` values use ProxyBridge's observed enum casing
 (`TCP` and `PROXY`). The process, host, and port selectors are semicolon-
