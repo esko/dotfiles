@@ -279,7 +279,8 @@ if [[ ! -e $tmp_dir/npm-install-called ]]; then
 fi
 
 # Skip path: installed versions already match registry; npm install must not run.
-rm -f "$tmp_dir/npm-force-used" "$tmp_dir/npm-install-called"
+rm -f "$tmp_dir/npm-force-used" "$tmp_dir/npm-install-called" \
+  "$tmp_dir/npm-allow-scripts-used" "$tmp_dir/npm-config-set-allow-scripts"
 make_fake_command npm <<EOF
 $(fake_npm_script)
 EOF
@@ -398,7 +399,9 @@ if [[ $status -eq 0 ]]; then
 fi
 assert_contains "$output" 'portless        not found on PATH'
 
-rm -rf "$tmp_dir/home/.local"
+rm -rf "$tmp_dir/home/.local" "$tmp_dir/home/.agent-browser"
+rm -f "$tmp_dir/npm-force-used" "$tmp_dir/npm-install-called" \
+  "$tmp_dir/npm-allow-scripts-used" "$tmp_dir/npm-config-set-allow-scripts"
 mkdir -p "$tmp_dir/home/.local/share/fnm/node-versions/v24.0.0/installation/bin"
 fnm_npm_called="$tmp_dir/fnm-npm-called"
 cat >"$tmp_dir/home/.local/share/fnm/node-versions/v24.0.0/installation/bin/npm" <<'EOF'
