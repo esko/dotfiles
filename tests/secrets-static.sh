@@ -75,9 +75,13 @@ fi
 # force avoids stale *.home-manager-backup blocking switch on Mini/Baguette.
 rg -q 'authorized_keys".*force = true|force = true' "$secrets_module"
 rg -q --fixed-strings 'home.file.".ssh/authorized_keys"' "$secrets_module"
-# Private key may be absent until Darwin sops-nix launchd runs; chmod must be gated.
-rg -q --fixed-strings 'if [[ -e "$HOME/.ssh/id_ed25519" ]]' "$secrets_module"
+# Private key chmod must skip symlinks; never chmod HM-managed *.pub.
+rg -q --fixed-strings 'if [[ -f "$HOME/.ssh/id_ed25519" && ! -L "$HOME/.ssh/id_ed25519" ]]' "$secrets_module"
 rg -q --fixed-strings 'entryAfter [ "writeBoundary" "sops-nix" ]' "$secrets_module"
+if rg -q 'chmod 644.*id_ed25519\.pub' "$secrets_module"; then
+  echo 'secrets.nix must not chmod HM-managed id_ed25519.pub' >&2
+  exit 1
+fi
 # Darwin sops-nix must not race setupLaunchAgents (Mic92/sops-nix#910).
 rg -q --fixed-strings 'setupLaunchAgents' "$secrets_module"
 rg -q --fixed-strings 'org.nix-community.home.sops-nix.plist' "$secrets_module"

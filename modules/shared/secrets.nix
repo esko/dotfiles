@@ -264,17 +264,16 @@ in
         '';
       };
 
-      # After sops-nix (Darwin workaround installs secrets synchronously). Still
-      # gate chmod: Linux may restart systemd async; sops already sets 0600.
+      # After sops-nix (Darwin workaround installs secrets synchronously).
+      # Do not chmod HM-managed *.pub / authorized_keys: they are Nix-store
+      # symlinks (Operation not permitted on Darwin). Private key is a real
+      # file from sops-install-secrets with mode 0600 already applied.
       home.activation.dotfilesSshPermissions =
         lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] ''
           $DRY_RUN_CMD mkdir -p "$HOME/.ssh" "$HOME/.ssh/config.d"
           $DRY_RUN_CMD chmod 700 "$HOME/.ssh"
-          if [[ -e "$HOME/.ssh/id_ed25519" ]]; then
+          if [[ -f "$HOME/.ssh/id_ed25519" && ! -L "$HOME/.ssh/id_ed25519" ]]; then
             $DRY_RUN_CMD chmod 600 "$HOME/.ssh/id_ed25519"
-          fi
-          if [[ -e "$HOME/.ssh/id_ed25519.pub" ]]; then
-            $DRY_RUN_CMD chmod 644 "$HOME/.ssh/id_ed25519.pub"
           fi
 
           # Ensure the main client config loads Home Manager fragments.
