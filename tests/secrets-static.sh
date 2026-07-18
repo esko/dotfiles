@@ -75,6 +75,9 @@ fi
 # force avoids stale *.home-manager-backup blocking switch on Mini/Baguette.
 rg -q 'authorized_keys".*force = true|force = true' "$secrets_module"
 rg -q --fixed-strings 'home.file.".ssh/authorized_keys"' "$secrets_module"
+# Private key may be absent until Darwin sops-nix launchd runs; chmod must be gated.
+rg -q --fixed-strings 'if [[ -e "$HOME/.ssh/id_ed25519" ]]' "$secrets_module"
+rg -q --fixed-strings 'entryAfter [ "writeBoundary" "sops-nix" ]' "$secrets_module"
 rg -q --fixed-strings 'sshHostName' "$manifest"
 rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module"
 rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module"

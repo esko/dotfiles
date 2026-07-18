@@ -241,21 +241,29 @@ in
         '';
       };
 
-      home.activation.dotfilesSshPermissions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        $DRY_RUN_CMD mkdir -p "$HOME/.ssh" "$HOME/.ssh/config.d"
-        $DRY_RUN_CMD chmod 700 "$HOME/.ssh"
-        $DRY_RUN_CMD chmod 600 "$HOME/.ssh/id_ed25519"
-        $DRY_RUN_CMD chmod 644 "$HOME/.ssh/id_ed25519.pub"
+      # After sops-nix: on Darwin secrets are loaded via launchd (async), so the
+      # private key may not exist yet during this hook. Only chmod paths that
+      # are present; sops-install-secrets already applies mode = "0600".
+      home.activation.dotfilesSshPermissions =
+        lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] ''
+          $DRY_RUN_CMD mkdir -p "$HOME/.ssh" "$HOME/.ssh/config.d"
+          $DRY_RUN_CMD chmod 700 "$HOME/.ssh"
+          if [[ -e "$HOME/.ssh/id_ed25519" ]]; then
+            $DRY_RUN_CMD chmod 600 "$HOME/.ssh/id_ed25519"
+          fi
+          if [[ -e "$HOME/.ssh/id_ed25519.pub" ]]; then
+            $DRY_RUN_CMD chmod 644 "$HOME/.ssh/id_ed25519.pub"
+          fi
 
-        # Ensure the main client config loads Home Manager fragments.
-        if [[ ! -e "$HOME/.ssh/config" ]]; then
-          $DRY_RUN_CMD printf '%s\n' 'Include ~/.ssh/config.d/*.conf' >"$HOME/.ssh/config"
-          $DRY_RUN_CMD chmod 600 "$HOME/.ssh/config"
-        elif ! grep -Eq '^[[:space:]]*Include[[:space:]]+(~/|\$HOME/)?\.ssh/config\.d/' "$HOME/.ssh/config"; then
-          $DRY_RUN_CMD printf '%s\n%s\n' 'Include ~/.ssh/config.d/*.conf' "$(cat "$HOME/.ssh/config")" >"$HOME/.ssh/config"
-          $DRY_RUN_CMD chmod 600 "$HOME/.ssh/config"
-        fi
-      '';
+          # Ensure the main client config loads Home Manager fragments.
+          if [[ ! -e "$HOME/.ssh/config" ]]; then
+            $DRY_RUN_CMD printf '%s\n' 'Include ~/.ssh/config.d/*.conf' >"$HOME/.ssh/config"
+            $DRY_RUN_CMD chmod 600 "$HOME/.ssh/config"
+          elif ! grep -Eq '^[[:space:]]*Include[[:space:]]+(~/|\$HOME/)?\.ssh/config\.d/' "$HOME/.ssh/config"; then
+            $DRY_RUN_CMD printf '%s\n%s\n' 'Include ~/.ssh/config.d/*.conf' "$(cat "$HOME/.ssh/config")" >"$HOME/.ssh/config"
+            $DRY_RUN_CMD chmod 600 "$HOME/.ssh/config"
+          fi
+        '';
     })
 
     (lib.mkIf (secretsEnabled && envKeys != [ ]) {
