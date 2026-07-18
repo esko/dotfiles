@@ -1,4 +1,4 @@
-{ config, lib, homeDirectory, hostName, username, ... }:
+{ config, lib, pkgs, homeDirectory, hostName, username, ... }:
 
 let
   cfg = config.dotfiles.secrets;
@@ -220,6 +220,29 @@ in
         };
     })
 
+    # Workaround Mic92/sops-nix#910: stock Darwin activation races ahead of
+    # setupLaunchAgents, so launchctl bootstrap fails with I/O error when the
+    # plist is missing (typical on first Mini switch). Order after the plist is
+    # linked, install secrets synchronously, and never fail the switch on a
+    # flaky launchctl bounce (upstream PR #911 is not in our pin yet).
+    (lib.mkIf (secretsEnabled && pkgs.stdenv.hostPlatform.isDarwin) {
+      home.activation.sops-nix = lib.mkForce (
+        lib.hm.dag.entryAfter [ "setupLaunchAgents" ] ''
+          domain_target="gui/$(/usr/bin/id -u ${lib.escapeShellArg username})"
+          plist=${lib.escapeShellArg "${homeDirectory}/Library/LaunchAgents/org.nix-community.home.sops-nix.plist"}
+          /bin/launchctl bootout "$domain_target/org.nix-community.home.sops-nix" 2>/dev/null || true
+          if [[ -f "$plist" ]]; then
+            program=$(/usr/bin/plutil -extract Program raw "$plist" 2>/dev/null || true)
+            if [[ -n "$program" && -x "$program" ]]; then
+              "$program" || true
+            fi
+            /bin/launchctl bootstrap "$domain_target" "$plist" 2>/dev/null || true
+            /bin/launchctl kickstart -k "$domain_target/org.nix-community.home.sops-nix" 2>/dev/null || true
+          fi
+        ''
+      );
+    })
+
     (lib.mkIf (secretsEnabled && sshEnabled) {
       home.file.".ssh/id_ed25519.pub".source = cfg.ssh.publicKeyFile;
 
@@ -241,9 +264,8 @@ in
         '';
       };
 
-      # After sops-nix: on Darwin secrets are loaded via launchd (async), so the
-      # private key may not exist yet during this hook. Only chmod paths that
-      # are present; sops-install-secrets already applies mode = "0600".
+      # After sops-nix (Darwin workaround installs secrets synchronously). Still
+      # gate chmod: Linux may restart systemd async; sops already sets 0600.
       home.activation.dotfilesSshPermissions =
         lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] ''
           $DRY_RUN_CMD mkdir -p "$HOME/.ssh" "$HOME/.ssh/config.d"

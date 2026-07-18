@@ -78,6 +78,10 @@ rg -q --fixed-strings 'home.file.".ssh/authorized_keys"' "$secrets_module"
 # Private key may be absent until Darwin sops-nix launchd runs; chmod must be gated.
 rg -q --fixed-strings 'if [[ -e "$HOME/.ssh/id_ed25519" ]]' "$secrets_module"
 rg -q --fixed-strings 'entryAfter [ "writeBoundary" "sops-nix" ]' "$secrets_module"
+# Darwin sops-nix must not race setupLaunchAgents (Mic92/sops-nix#910).
+rg -q --fixed-strings 'setupLaunchAgents' "$secrets_module"
+rg -q --fixed-strings 'org.nix-community.home.sops-nix.plist' "$secrets_module"
+rg -q --fixed-strings 'Mic92/sops-nix#910' "$secrets_module"
 rg -q --fixed-strings 'sshHostName' "$manifest"
 rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module"
 rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module"

@@ -49,6 +49,9 @@ grep -q '"antigravity"' "$root_dir/modules/darwin/system.nix"
 # Peer SSH Host blocks live in shared secrets.nix, not darwin/home.nix.
 ! grep -q '90-dotfiles-mini.conf' "$root_dir/modules/darwin/home.nix"
 ! grep -q 'launchagents-templates' "$root_dir/modules/darwin/home.nix"
+# Darwin sops-nix activation workaround lives in shared secrets.nix.
+rg -q --fixed-strings 'setupLaunchAgents' "$root_dir/modules/shared/secrets.nix"
+rg -q --fixed-strings 'Mic92/sops-nix#910' "$root_dir/modules/shared/secrets.nix"
 for plist in "$root_dir"/templates/launchagents/*.plist; do
   grep -q '<key>Disabled</key>' "$plist"
   grep -q '<true/>' "$plist"
