@@ -315,8 +315,12 @@ in
       # immutable, and on Darwin `sudo darwin-rebuild` cannot chmod files under
       # the user home (Operation not permitted). OpenSSH accepts a symlink to a
       # non-group-writable store file when ~/.ssh itself has safe mode.
-      home.file.".ssh/authorized_keys".text =
-        "${lib.concatStringsSep "\n" cfg.ssh.authorizedKeys}\n";
+      # force: replace a pre-HM plaintext authorized_keys without requiring a
+      # free *.home-manager-backup slot (stale backups otherwise block switch).
+      home.file.".ssh/authorized_keys" = {
+        force = true;
+        text = "${lib.concatStringsSep "\n" cfg.ssh.authorizedKeys}\n";
+      };
     })
 
   ];

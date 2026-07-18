@@ -72,6 +72,9 @@ if rg -q 'chmod 600.*authorized_keys' "$secrets_module"; then
   echo 'secrets.nix must not chmod HM-managed authorized_keys' >&2
   exit 1
 fi
+# force avoids stale *.home-manager-backup blocking switch on Mini/Baguette.
+rg -q 'authorized_keys".*force = true|force = true' "$secrets_module"
+rg -q --fixed-strings 'home.file.".ssh/authorized_keys"' "$secrets_module"
 rg -q --fixed-strings 'sshHostName' "$manifest"
 rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module"
 rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module"
