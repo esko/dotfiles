@@ -80,6 +80,7 @@ rg -q --fixed-strings 'package_bin_commands' "$node_tools_installer"
 rg -q --fixed-strings 'Installed commands:' "$node_tools_installer"
 rg -q --fixed-strings 'allow_scripts' "$node_tools_installer"
 rg -q --fixed-strings -- '--allow-scripts=' "$node_tools_installer"
+rg -q --fixed-strings 'npm_supports_allow_scripts' "$node_tools_installer"
 rg -q --fixed-strings 'ensure_user_allow_scripts' "$node_tools_installer"
 for command_name in agent agy claude codex grok pi; do
   rg -q "for command_name in .*\b${command_name}\b" "$node_tools_installer"

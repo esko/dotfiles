@@ -56,11 +56,49 @@ seed_managed_npm_tree() {
 fake_npm_script() {
   cat <<'EOF'
 case "${1:-}" in
+  --version)
+    printf '%s\n' "${NPM_FAKE_VERSION:-11.16.0}"
+    exit 0
+    ;;
   config)
     # install-node-tools persists allow-scripts in the user npmrc.
     if [[ "${2:-}" == set && "${3:-}" == allow-scripts ]]; then
       touch "$NPM_CONFIG_SET_ALLOW_SCRIPTS"
     fi
+    exit 0
+    ;;
+  install)
+    # `npm install --help` is used to detect --allow-scripts support.
+    if [[ "${2:-}" == --help || "${2:-}" == -h ]]; then
+      if [[ "${NPM_SUPPORTS_ALLOW_SCRIPTS:-1}" == 1 ]]; then
+        printf '%s\n' '  --allow-scripts=<list>  Allow listed packages to run scripts'
+      else
+        printf '%s\n' '  --global                Install packages globally'
+      fi
+      exit 0
+    fi
+    saw_allow_scripts=false
+    for arg in "$@"; do
+      case "$arg" in
+        --force) touch "$NPM_FORCE_USED" ;;
+        --global) touch "$NPM_INSTALL_CALLED" ;;
+        --allow-scripts=*)
+          saw_allow_scripts=true
+          touch "$NPM_ALLOW_SCRIPTS_USED"
+          ;;
+      esac
+    done
+    if [[ "${NPM_SUPPORTS_ALLOW_SCRIPTS:-1}" == 1 ]] && ! "$saw_allow_scripts"; then
+      printf '%s\n' 'expected --allow-scripts on npm install' >&2
+      exit 1
+    fi
+    if [[ "${NPM_SUPPORTS_ALLOW_SCRIPTS:-1}" != 1 ]] && "$saw_allow_scripts"; then
+      printf '%s\n' 'npm error `allow-scripts` is not a valid npm option' >&2
+      exit 1
+    fi
+    # shellcheck disable=SC1090
+    source "$SEED_MANAGED_NPM"
+    seed_managed_npm_tree "$NPM_CONFIG_PREFIX"
     exit 0
     ;;
   list)
@@ -109,27 +147,6 @@ case "${1:-}" in
       # Optional override for update tests (installed 1.0.0, desired 2.0.0).
       printf '%s\n' "\"${NPM_VIEW_VERSION:-1.0.0}\""
     fi
-    exit 0
-    ;;
-  install)
-    saw_allow_scripts=false
-    for arg in "$@"; do
-      case "$arg" in
-        --force) touch "$NPM_FORCE_USED" ;;
-        --global) touch "$NPM_INSTALL_CALLED" ;;
-        --allow-scripts=*)
-          saw_allow_scripts=true
-          touch "$NPM_ALLOW_SCRIPTS_USED"
-          ;;
-      esac
-    done
-    if ! "$saw_allow_scripts"; then
-      printf '%s\n' 'expected --allow-scripts on npm install' >&2
-      exit 1
-    fi
-    # shellcheck disable=SC1090
-    source "$SEED_MANAGED_NPM"
-    seed_managed_npm_tree "$NPM_CONFIG_PREFIX"
     exit 0
     ;;
 esac
@@ -230,6 +247,34 @@ if [[ ! -e $tmp_dir/npm-force-used ]]; then
 fi
 if [[ ! -e $tmp_dir/npm-allow-scripts-used ]]; then
   printf '%s\n' 'Expected npm install to pass --allow-scripts on update' >&2
+  exit 1
+fi
+
+# Older npm (e.g. Home Manager nodejs with npm 11.13): omit --allow-scripts.
+rm -rf "$tmp_dir/home/.local"
+rm -f "$tmp_dir/npm-force-used" "$tmp_dir/npm-install-called" \
+  "$tmp_dir/npm-allow-scripts-used" "$tmp_dir/npm-config-set-allow-scripts"
+make_fake_command npm <<EOF
+$(fake_npm_script)
+EOF
+output=$(env -i HOME="$tmp_dir/home" NPM_FORCE_USED="$tmp_dir/npm-force-used" \
+  NPM_INSTALL_CALLED="$tmp_dir/npm-install-called" \
+  NPM_ALLOW_SCRIPTS_USED="$tmp_dir/npm-allow-scripts-used" \
+  NPM_CONFIG_SET_ALLOW_SCRIPTS="$tmp_dir/npm-config-set-allow-scripts" \
+  NPM_SUPPORTS_ALLOW_SCRIPTS=0 \
+  SEED_MANAGED_NPM="$seed_helper" PATH="$test_path" \
+  /bin/bash "$installer" 2>&1)
+assert_contains "$output" 'has no --allow-scripts'
+if [[ -e $tmp_dir/npm-allow-scripts-used ]]; then
+  printf '%s\n' 'Older npm must not receive --allow-scripts' >&2
+  exit 1
+fi
+if [[ -e $tmp_dir/npm-config-set-allow-scripts ]]; then
+  printf '%s\n' 'Older npm must not run npm config set allow-scripts' >&2
+  exit 1
+fi
+if [[ ! -e $tmp_dir/npm-install-called ]]; then
+  printf '%s\n' 'Expected npm install to run without --allow-scripts' >&2
   exit 1
 fi
 

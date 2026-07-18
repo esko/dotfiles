@@ -92,10 +92,18 @@ allow_scripts_csv() {
   printf '%s\n' "${allow_scripts[*]}"
 }
 
+# npm 11.16+ added --allow-scripts; Home Manager's current nodejs may ship an
+# older npm (e.g. 11.13) that rejects the flag. Detect support before using it.
+npm_supports_allow_scripts() {
+  npm install --help 2>/dev/null | grep -Fq -- '--allow-scripts'
+}
+
 # Persist allow-scripts in the user npmrc so later global installs see the same
 # policy without a project package.json (approve-scripts cannot target -g).
 ensure_user_allow_scripts() {
-  npm config set allow-scripts "$(allow_scripts_csv)" --location=user >/dev/null
+  if npm_supports_allow_scripts; then
+    npm config set allow-scripts "$(allow_scripts_csv)" --location=user >/dev/null
+  fi
 }
 
 package_name() {
@@ -245,8 +253,13 @@ else
     --global
     --no-audit
     --no-fund
-    --allow-scripts="$(allow_scripts_csv)"
   )
+  if npm_supports_allow_scripts; then
+    npm_install_opts+=(--allow-scripts="$(allow_scripts_csv)")
+  else
+    printf 'Note: this npm (%s) has no --allow-scripts; installing without it.\n' \
+      "$(npm --version 2>/dev/null || printf unknown)"
+  fi
   # --force only when replacing an already-installed package's global bins.
   # Fresh installs do not need it and npm warns when it is used.
   if "$needs_force"; then
