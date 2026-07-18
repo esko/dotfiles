@@ -164,10 +164,6 @@ configure_nix_cache_opts() {
 }
 
 warn_unless_numtide_cache_trusted() {
-  # Linux/Baguette only. Mini uses the same Determinate seam but this helper
-  # and its docs are the Debian enable script; do not spam Darwin updates.
-  [[ "$(uname -s)" == Linux ]] || return 0
-
   local settings="${XDG_DATA_HOME:-$HOME/.local/share}/nix/trusted-settings.json"
   if [[ -f "$settings" ]] && grep -Eq 'trusted-public-keys|extra-trusted-public-keys' "$settings"; then
     cat >&2 <<EOF
@@ -185,8 +181,8 @@ EOF
 
   cat >&2 <<'EOF'
 Note: cache.numtide.com is not visible in `nix config show`.
-Determinate Nix ignores edits to /etc/nix/nix.conf; custom caches belong in
-/etc/nix/nix.custom.conf. On Baguette run:
+Without it, llm-agents CLIs (codex, claude, cursor-agent, …) rebuild from
+source. Determinate ignores edits to /etc/nix/nix.conf — run once:
 
   ./scripts/enable-numtide-cache.sh
 
@@ -451,7 +447,7 @@ if "$bootstrap_secrets"; then
 fi
 
 case "$resolved_target" in
-  baguette|synology)
+  baguette|synology|mini)
     warn_unless_numtide_cache_trusted
     ;;
 esac

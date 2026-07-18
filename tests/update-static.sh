@@ -27,9 +27,8 @@ if rg -q 'github_uri_from_lock system-manager' "$update"; then
   exit 1
 fi
 rg -q -U 'sudo "\$nix_bin" run[\s\S]*NIX_DARWIN#darwin-rebuild[\s\S]*run_install_node_tools' "$update"
-# Numtide host-cache nag is Linux/Baguette-only; Mini must not get that note.
-rg -q --fixed-strings 'uname -s' "$update"
-rg -q --fixed-strings 'baguette|synology)' "$update"
+rg -q --fixed-strings 'baguette|synology|mini)' "$update"
+rg -q --fixed-strings 'llm-agents CLIs' "$update"
 rg -q --fixed-strings 'run_install_umans' "$update"
 rg -q --fixed-strings -- '--skip-umans' "$update"
 rg -q --fixed-strings 'install-umans.sh' "$update"

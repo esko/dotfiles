@@ -117,6 +117,8 @@ rg -q --fixed-strings 'extra-trusted-substituters' "$repo_root/scripts/enable-nu
 rg -q --fixed-strings 'accept-flake-config' "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'clear_flake_trust_spam' "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'trusted-settings.json' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'Darwin' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'launchctl kickstart' "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'nix.custom.conf' "$bootstrap"
 rg -q --fixed-strings 'trusted-settings.json' "$update"
 

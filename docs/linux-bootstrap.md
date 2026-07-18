@@ -112,8 +112,10 @@ Debian package for `tailscaled` on native Linux hosts.
 
 ## Numtide binary cache
 
-Baguette follows [`llm-agents.nix`](https://github.com/numtide/llm-agents.nix),
-which publishes pre-built agent CLIs to `https://cache.numtide.com`.
+Baguette and Mini follow [`llm-agents.nix`](https://github.com/numtide/llm-agents.nix),
+which publishes pre-built agent CLIs (`codex`, `claude`, …) to
+`https://cache.numtide.com`. Without that cache trusted on the host, Nix
+rebuilds those packages from source.
 
 Do not put that cache in flake `nixConfig`: Determinate leaves unprivileged
 users untrusted (`trusted-users = root`), so flake-supplied
@@ -122,7 +124,8 @@ host Nix config instead.
 
 Determinate Nix owns `/etc/nix/nix.conf` and regenerates it. Custom caches must
 go in `/etc/nix/nix.custom.conf` (loaded via `!include`). Editing `nix.conf`
-directly does not stick. On Baguette, run the host helper once (safe to re-run):
+directly does not stick. On Baguette or Mini, run the host helper once (safe to
+re-run):
 
 ```sh
 ./scripts/enable-numtide-cache.sh

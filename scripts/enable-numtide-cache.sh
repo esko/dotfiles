@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Trust Numtide's binary cache in the host-owned Determinate Nix config.
-# Safe to re-run. Requires sudo. Intended for Baguette (Chromebook Debian).
+# Safe to re-run. Requires sudo. Works on Baguette (Linux) and Mini (Darwin).
+#
+# llm-agents.nix (codex, claude-code, cursor-agent, …) publishes to
+# cache.numtide.com. Without that cache trusted here, those CLIs rebuild from
+# source.
 #
 # Determinate Nix regenerates /etc/nix/nix.conf. Custom settings must go in
 # /etc/nix/nix.custom.conf (included via !include). Writing to nix.conf alone
@@ -13,11 +17,15 @@ NIX_DIR="${NIX_DIR:-/etc/nix}"
 NIX_CONF="${NIX_CONF:-$NIX_DIR/nix.conf}"
 # Determinate's supported customization seam.
 NIX_CUSTOM_CONF="${NIX_CUSTOM_CONF:-$NIX_DIR/nix.custom.conf}"
+OS="$(uname -s)"
 
-if [[ "$(uname -s)" != Linux ]]; then
-  printf 'This script is for Linux (Baguette). On Darwin, add the same lines to %s manually.\n' "$NIX_CUSTOM_CONF" >&2
-  exit 1
-fi
+case "$OS" in
+  Linux|Darwin) ;;
+  *)
+    printf 'Unsupported OS: %s (need Linux or Darwin).\n' "$OS" >&2
+    exit 1
+    ;;
+esac
 
 if ! command -v nix >/dev/null 2>&1; then
   printf 'nix is not installed. Run scripts/bootstrap-nix.sh first.\n' >&2
@@ -170,20 +178,41 @@ if [[ -f "$NIX_CONF" ]] && sudo grep -Fq 'cache.numtide.com' "$NIX_CONF"; then
   printf 'Backup: %s.bak.dotfiles\n' "$NIX_CONF"
 fi
 
-if command -v systemctl >/dev/null 2>&1; then
-  printf 'Restarting nix-daemon\n'
-  if systemctl list-unit-files nix-daemon.service >/dev/null 2>&1; then
-    sudo systemctl restart nix-daemon
-  elif systemctl list-unit-files determinate-nixd.socket >/dev/null 2>&1; then
-    sudo systemctl restart determinate-nixd.socket
-  else
-    sudo systemctl restart nix-daemon 2>/dev/null \
-      || sudo systemctl restart determinate-nixd 2>/dev/null \
-      || printf 'Could not restart a known Nix daemon unit; restart it manually.\n' >&2
-  fi
-else
-  printf 'systemctl not found; restart the Nix daemon manually.\n' >&2
-fi
+restart_nix_daemon() {
+  case "$OS" in
+    Linux)
+      if ! command -v systemctl >/dev/null 2>&1; then
+        printf 'systemctl not found; restart the Nix daemon manually.\n' >&2
+        return 0
+      fi
+      printf 'Restarting nix-daemon\n'
+      if systemctl list-unit-files nix-daemon.service >/dev/null 2>&1; then
+        sudo systemctl restart nix-daemon
+      elif systemctl list-unit-files determinate-nixd.socket >/dev/null 2>&1; then
+        sudo systemctl restart determinate-nixd.socket
+      else
+        sudo systemctl restart nix-daemon 2>/dev/null \
+          || sudo systemctl restart determinate-nixd 2>/dev/null \
+          || printf 'Could not restart a known Nix daemon unit; restart it manually.\n' >&2
+      fi
+      ;;
+    Darwin)
+      printf 'Restarting Determinate nix-daemon\n'
+      if [[ -f /Library/LaunchDaemons/systems.determinate.nix-daemon.plist ]]; then
+        sudo launchctl kickstart -k system/systems.determinate.nix-daemon \
+          || sudo launchctl kickstart -k system/org.nixos.nix-daemon \
+          || printf 'Could not restart Determinate nix-daemon; reboot or retry later.\n' >&2
+      elif [[ -f /Library/LaunchDaemons/org.nixos.nix-daemon.plist ]]; then
+        sudo launchctl kickstart -k system/org.nixos.nix-daemon \
+          || printf 'Could not restart nix-daemon; reboot or retry later.\n' >&2
+      else
+        printf 'No known nix-daemon LaunchDaemon; reboot to pick up %s.\n' "$NIX_CUSTOM_CONF" >&2
+      fi
+      ;;
+  esac
+}
+
+restart_nix_daemon
 
 config=$(nix config show 2>/dev/null || true)
 ok=true
