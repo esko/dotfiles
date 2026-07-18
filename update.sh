@@ -164,6 +164,10 @@ configure_nix_cache_opts() {
 }
 
 warn_unless_numtide_cache_trusted() {
+  # Linux/Baguette only. Mini uses the same Determinate seam but this helper
+  # and its docs are the Debian enable script; do not spam Darwin updates.
+  [[ "$(uname -s)" == Linux ]] || return 0
+
   local settings="${XDG_DATA_HOME:-$HOME/.local/share}/nix/trusted-settings.json"
   if [[ -f "$settings" ]] && grep -Eq 'trusted-public-keys|extra-trusted-public-keys' "$settings"; then
     cat >&2 <<EOF
@@ -391,8 +395,12 @@ apply_target() {
         printf '%s\n' 'The mini profile must be applied on the Mac itself.' >&2
         exit 1
       fi
+      # nix-darwin requires root for system activation (system.primaryUser era).
+      # Prefer the caller's `nix` absolute path so sudo's secure_path still works.
+      local nix_bin
+      nix_bin=$(command -v nix)
       # Login shell is set by nix-darwin system.activationScripts.postActivation.
-      nix run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
+      sudo "$nix_bin" run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
         switch --flake "$repo_root#mini"
       run_install_node_tools
       run_install_umans
@@ -443,7 +451,7 @@ if "$bootstrap_secrets"; then
 fi
 
 case "$resolved_target" in
-  baguette|synology|mini)
+  baguette|synology)
     warn_unless_numtide_cache_trusted
     ;;
 esac

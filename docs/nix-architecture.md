@@ -104,7 +104,8 @@ The Mini uses Determinate Nix, so `nix.enable = false` in
 `modules/darwin/system.nix`. nix-darwin must not replace `/etc/nix` on a host
 where Determinate already manages the daemon and settings. Activation also sets
 the `esko` login shell from Homebrew Fish to `/bin/zsh` without replacing
-`/etc/shells`.
+`/etc/shells`. Recent nix-darwin requires root for `darwin-rebuild switch`;
+`./update.sh --target mini` runs it under `sudo` (`system.primaryUser = esko`).
 
 The Mac host module owns approved host applications (including the Codex,
 ChatGPT, Claude, Mos, Hyper, Godot, editor, browser, VLC, and JetBrains Mono
