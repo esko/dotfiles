@@ -113,8 +113,9 @@ the `esko` login shell from Homebrew Fish to `/bin/zsh` without replacing
 
 The Mac host module owns approved host applications (including the Codex,
 ChatGPT, Claude, Mos, Hyper, Godot, editor, browser, VLC, and JetBrains Mono
-casks). `mosh`, `et` (Eternal Terminal), `tailscale`, and `tsshd` are declared
-as Homebrew formulae. Homebrew never auto-updates, upgrades, or removes
+casks). `et` (Eternal Terminal), `tailscale`, and `tsshd` are declared as
+Homebrew formulae; `mosh` comes from Home Manager so remote non-login shells
+find `mosh-server` on PATH. Homebrew never auto-updates, upgrades, or removes
 existing packages.
 
 Mac App Store apps such as Xcode and KeepSolid VPN Unlimited are intentionally
