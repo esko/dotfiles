@@ -27,8 +27,12 @@ if rg -q 'github_uri_from_lock system-manager' "$update"; then
   exit 1
 fi
 rg -q -U 'sudo "\$nix_bin" run[\s\S]*NIX_DARWIN#darwin-rebuild[\s\S]*run_install_node_tools' "$update"
-rg -q --fixed-strings 'baguette|synology|mini)' "$update"
+rg -q --fixed-strings 'require_numtide_cache_for_binaries' "$update"
+rg -q --fixed-strings -- '--allow-builds' "$update"
 rg -q --fixed-strings 'llm-agents CLIs' "$update"
+rg -q --fixed-strings 'append_setting fallback false' "$repo_root/scripts/enable-numtide-cache.sh"
+rg -q --fixed-strings 'append_setting builders-use-substitutes true' \
+  "$repo_root/scripts/enable-numtide-cache.sh"
 rg -q --fixed-strings 'run_install_umans' "$update"
 rg -q --fixed-strings -- '--skip-umans' "$update"
 rg -q --fixed-strings 'install-umans.sh' "$update"

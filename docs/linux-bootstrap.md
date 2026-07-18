@@ -139,7 +139,12 @@ extra-substituters = https://cache.numtide.com
 extra-trusted-substituters = https://cache.numtide.com
 extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
 accept-flake-config = false
+builders-use-substitutes = true
+fallback = false
 ```
+
+`./update.sh` on Baguette/Mini requires this cache (binary-first). Pass
+`--allow-builds` only if you intentionally want source builds.
 
 `extra-trusted-substituters` matters because Determinate typically sets
 `trusted-users = root` only; without it, unprivileged builds cannot use the

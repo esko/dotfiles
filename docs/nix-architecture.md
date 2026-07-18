@@ -69,9 +69,11 @@ Determinate users cannot apply flake `trusted-public-keys`). On Baguette and
 Mini run `./scripts/enable-numtide-cache.sh` so `/etc/nix/nix.custom.conf`
 lists the substituter and key — that is what lets `codex` and the other
 `llm-agents.nix` CLIs download prebuilt binaries instead of compiling. The
-Synology Docker builder still passes cache options as root. See
-`docs/linux-bootstrap.md`. System Manager must not replace Determinate's Nix
-configuration.
+helper also sets `fallback = false` and `builders-use-substitutes = true`.
+`./update.sh` refuses baguette/mini activation until that cache is trusted
+(override with `--allow-builds`). The Synology Docker builder still passes
+cache options as root. See `docs/linux-bootstrap.md`. System Manager must not
+replace Determinate's Nix configuration.
 
 ## Bootstrap
 

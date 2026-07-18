@@ -23,6 +23,7 @@ do_pull=false
 skip_node_tools=false
 skip_umans=false
 check_only=false
+allow_builds=false
 synology_handoff=false
 bootstrap_secrets=false
 bootstrap_github=false
@@ -44,6 +45,8 @@ Options:
   --check-only      Run nix flake check for the current target, do not activate
   --skip-node-tools Skip install-node-tools after Home Manager activation
   --skip-umans      Skip install-umans after Home Manager activation
+  --allow-builds    Allow compiling when substitutes are missing (default: refuse
+                    baguette/mini updates unless cache.numtide.com is trusted)
   --bootstrap-secrets
                     Bootstrap missing SSH/env secrets and render env files when
                     the encrypted source changed. Existing values are kept.
@@ -91,6 +94,10 @@ while (($#)); do
       ;;
     --skip-umans)
       skip_umans=true
+      shift
+      ;;
+    --allow-builds)
+      allow_builds=true
       shift
       ;;
     --bootstrap-secrets)
@@ -163,7 +170,7 @@ configure_nix_cache_opts() {
   NIX_CACHE_OPTS=()
 }
 
-warn_unless_numtide_cache_trusted() {
+warn_flake_trust_spam() {
   local settings="${XDG_DATA_HOME:-$HOME/.local/share}/nix/trusted-settings.json"
   if [[ -f "$settings" ]] && grep -Eq 'trusted-public-keys|extra-trusted-public-keys' "$settings"; then
     cat >&2 <<EOF
@@ -174,22 +181,48 @@ unprivileged Determinate users. Re-run:
   ./scripts/enable-numtide-cache.sh
 EOF
   fi
+}
+
+# Binary-first policy for baguette/mini: llm-agents (codex, …) must come from
+# cache.numtide.com. Refuse to proceed unless that cache is trusted, unless the
+# operator explicitly passes --allow-builds.
+require_numtide_cache_for_binaries() {
+  local resolved_target=$1
+
+  case "$resolved_target" in
+    baguette|mini) ;;
+    *) return 0 ;;
+  esac
+
+  warn_flake_trust_spam
 
   if numtide_cache_in_nix_config; then
+    printf 'Binary cache: cache.numtide.com is trusted (llm-agents will substitute).\n'
+    return 0
+  fi
+
+  if "$allow_builds"; then
+    cat >&2 <<'EOF'
+Warning: cache.numtide.com is not trusted; --allow-builds was set, so Nix may
+compile llm-agents CLIs (codex, claude, …) from source. Prefer:
+
+  ./scripts/enable-numtide-cache.sh
+EOF
     return 0
   fi
 
   cat >&2 <<'EOF'
-Note: cache.numtide.com is not visible in `nix config show`.
-Without it, llm-agents CLIs (codex, claude, cursor-agent, …) rebuild from
-source. Determinate ignores edits to /etc/nix/nix.conf — run once:
+Refusing to update: cache.numtide.com is not trusted, so llm-agents CLIs
+(codex, claude, cursor-agent, …) cannot download prebuilt binaries.
+
+Run once (sudo):
 
   ./scripts/enable-numtide-cache.sh
-
-Then confirm:
-
   nix config show | grep -F cache.numtide.com
+
+Then re-run ./update.sh. To override and allow compiling, pass --allow-builds.
 EOF
+  exit 1
 }
 
 is_debian_trixie() {
@@ -446,11 +479,7 @@ if "$bootstrap_secrets"; then
   sync_secrets_for_target "$resolved_target"
 fi
 
-case "$resolved_target" in
-  baguette|synology|mini)
-    warn_unless_numtide_cache_trusted
-    ;;
-esac
+require_numtide_cache_for_binaries "$resolved_target"
 
 if "$check_only"; then
   check_target "$resolved_target"

@@ -102,10 +102,14 @@ append_setting() {
 # extra-trusted-public-keys: verify NarInfo signatures from Numtide.
 # accept-flake-config = false: do not re-apply flake nixConfig trust keys as
 #   client settings (that is what reprints trusted-public-keys warnings).
+# builders-use-substitutes / fallback: prefer (and for missing paths, require)
+#   substitutes so llm-agents CLIs download instead of compiling.
 append_setting extra-substituters "$NUMTIDE_SUBSTITUTER"
 append_setting extra-trusted-substituters "$NUMTIDE_SUBSTITUTER"
 append_setting extra-trusted-public-keys "$NUMTIDE_PUBLIC_KEY"
 append_setting accept-flake-config false
+append_setting builders-use-substitutes true
+append_setting fallback false
 
 # Previously-accepted flake nixConfig (from llm-agents / system-manager, or an
 # older `nix run github:numtide/system-manager`) is stored in trusted-settings.json
