@@ -41,9 +41,11 @@ in
     curl wget fastfetch p7zip unzip dos2unix dnsutils
     inetutils nmap bun cargo-binstall golangci-lint
     python3Packages.pytest croc
-    # Linux/Synology: Nix mosh + tailscale CLI. Mini installs both via Homebrew.
-  ] ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
+    # mosh-server must live on the Nix profile PATH: remote mosh uses a
+    # non-login shell that sees hm-session-vars but not Homebrew's .zprofile.
     mosh
+    # Linux/Synology: Nix tailscale CLI. Mini uses the Homebrew formula/app.
+  ] ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
     tailscale
   ] ++ optionalFreePackages pkgs [
     # Core agent CLIs come from llm-agents.nix. Remaining native tools stay

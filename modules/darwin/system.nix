@@ -40,7 +40,7 @@
     # Home Manager profile. Existing applications are never removed.
     brews = [
       "et"
-      "mosh"
+      # mosh comes from Home Manager (non-login PATH for remote mosh-server).
       "tailscale"
       "tsshd"
     ];
