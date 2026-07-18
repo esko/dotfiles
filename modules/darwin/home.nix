@@ -35,7 +35,12 @@ in
 
     # nix-darwin exposes Home Manager packages under /etc/profiles/per-user.
     # Add the profile explicitly so node/npm are available before shell hooks run.
+    # Homebrew belongs here too: remote mosh/ssh run a non-login shell that
+    # sources hm-session-vars (.zshenv) but not .zprofile (brew shellenv), so
+    # brew-only tools like mosh-server / et / tsshd were invisible to mosh.
     home.sessionPath = [
+      "/opt/homebrew/bin"
+      "/opt/homebrew/sbin"
       "/etc/profiles/per-user/${username}/bin"
       "/nix/var/nix/profiles/default/bin"
     ];

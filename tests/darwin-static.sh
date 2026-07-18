@@ -52,6 +52,9 @@ grep -q '"antigravity"' "$root_dir/modules/darwin/system.nix"
 # Darwin sops-nix activation workaround lives in shared secrets.nix.
 rg -q --fixed-strings 'setupLaunchAgents' "$root_dir/modules/shared/secrets.nix"
 rg -q --fixed-strings 'Mic92/sops-nix#910' "$root_dir/modules/shared/secrets.nix"
+# Homebrew must be on HM sessionPath so non-login mosh finds mosh-server.
+rg -q --fixed-strings '/opt/homebrew/bin' "$root_dir/modules/darwin/home.nix"
+rg -q --fixed-strings 'mosh-server' "$root_dir/modules/darwin/home.nix"
 for plist in "$root_dir"/templates/launchagents/*.plist; do
   grep -q '<key>Disabled</key>' "$plist"
   grep -q '<true/>' "$plist"
