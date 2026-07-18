@@ -38,7 +38,7 @@ grep -q 'documentation.enable = false' "$root_dir/modules/darwin/system.nix"
 rg -q '4c11a945f40cdd2c74307048204b71305dffd562' "$root_dir/flake.nix"
 grep -q 'postActivation.text' "$root_dir/modules/darwin/system.nix"
 # nix-darwin now requires root for switch (system.primaryUser migration).
-rg -q --fixed-strings 'sudo "$nix_bin" run' "$root_dir/update.sh"
+rg -q --fixed-strings 'sudo -H "$nix_bin" run' "$root_dir/update.sh"
 rg -q --fixed-strings 'NIX_DARWIN#darwin-rebuild' "$root_dir/update.sh"
 rg -q --fixed-strings 'system.primaryUser' "$root_dir/modules/darwin/system.nix"
 grep -q '/usr/bin/chsh' "$root_dir/modules/darwin/system.nix"

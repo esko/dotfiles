@@ -426,10 +426,12 @@ apply_target() {
       fi
       # nix-darwin requires root for system activation (system.primaryUser era).
       # Prefer the caller's `nix` absolute path so sudo's secure_path still works.
+      # -H resets HOME to /var/root; without it macOS sudo keeps HOME=/Users/...
+      # and Nix warns that the directory is not owned by root.
       local nix_bin
       nix_bin=$(command -v nix)
       # Login shell is set by nix-darwin system.activationScripts.postActivation.
-      sudo "$nix_bin" run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
+      sudo -H "$nix_bin" run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
         switch --flake "$repo_root#mini"
       run_install_node_tools
       run_install_umans
