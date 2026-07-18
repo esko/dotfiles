@@ -44,6 +44,23 @@ rg -q --fixed-strings 'sops_resolve_env_value' "$repo_root/scripts/lib/sops-comm
 rg -q --fixed-strings 'sops_decrypt_shared_env_secret' "$repo_root/scripts/lib/sops-common.sh"
 rg -q --fixed-strings 'sops_encrypt_yaml_file' "$repo_root/scripts/lib/sops-common.sh"
 rg -q --fixed-strings -- '--filename-override' "$repo_root/scripts/lib/sops-common.sh"
+# Status text must not pollute captured age recipients.
+rg -q --fixed-strings 'Creating the local age identity' "$repo_root/scripts/lib/sops-common.sh"
+rg -q 'Creating the local age identity.*>&2' "$repo_root/scripts/lib/sops-common.sh"
+# Committed recipients must be bare age1… keys.
+for recipient_file in "$repo_root"/secrets/age-recipients/*.txt; do
+  [[ -f "$recipient_file" ]] || continue
+  content=$(tr -d '[:space:]' <"$recipient_file")
+  if [[ "$content" != age1* ]]; then
+    printf 'invalid age recipient in %s\n' "$recipient_file" >&2
+    exit 1
+  fi
+done
+if rg -q 'Creatingthelocalageidentity' "$repo_root/.sops.yaml" \
+  "$repo_root"/secrets/age-recipients/*.txt 2>/dev/null; then
+  printf 'polluted age recipient text found in sops config or recipients\n' >&2
+  exit 1
+fi
 rg -q --fixed-strings 'sops_encrypt_yaml_file' "$repo_root/scripts/bootstrap-secrets.sh"
 rg -q --fixed-strings 'shared.env' "$manifest"
 rg -q --fixed-strings 'sops_load_env_secret' "$repo_root/scripts/lib/tailscale-common.sh"

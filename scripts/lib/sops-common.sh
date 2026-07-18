@@ -21,13 +21,15 @@ sops_ensure_age_identity() {
   chmod 700 "$(dirname "$age_key_file")"
 
   if [[ ! -f "$age_key_file" ]]; then
-    printf 'Creating the local age identity at %s\n' "$age_key_file"
+    # Status must go to stderr: callers capture stdout as the age recipient.
+    printf 'Creating the local age identity at %s\n' "$age_key_file" >&2
     age-keygen -o "$age_key_file"
     chmod 600 "$age_key_file"
   fi
 
   recipient=$(age-keygen -y "$age_key_file")
-  if [[ -z "$recipient" ]]; then
+  recipient=$(printf '%s' "$recipient" | tr -d '[:space:]')
+  if [[ -z "$recipient" || "$recipient" != age1* ]]; then
     printf 'Could not derive an age recipient from %s\n' "$age_key_file" >&2
     return 1
   fi
@@ -47,15 +49,17 @@ sops_render_config() {
     host=$(basename "$path" .txt)
     host_regex=${host//./\\.}
     host_recipient=$(tr -d '[:space:]' <"$path")
+    [[ "$host_recipient" == age1* ]] || continue
     printf '  - path_regex: ^secrets/hosts/%s\\.yaml$\n' "$host_regex"
     printf '%s\n' '    age:'
     printf '      - %s\n' "$host_recipient"
   done
 
-  printf '%s\n' '  - path_regex: ^secrets/shared\\.yaml$'
+  printf '%s\n' '  - path_regex: ^secrets/shared\.yaml$'
   printf '%s\n' '    age:'
   for path in "$recipient_dir"/*.txt; do
     host_recipient=$(tr -d '[:space:]' <"$path")
+    [[ "$host_recipient" == age1* ]] || continue
     printf '      - %s\n' "$host_recipient"
   done
 }
@@ -76,6 +80,10 @@ sops_ensure_recipient() {
   recipient_file="$recipient_dir/$deployment.txt"
 
   recipient=$(sops_ensure_age_identity) || return 1
+  if [[ "$recipient" != age1* ]]; then
+    printf 'Refusing to write invalid age recipient for %s\n' "$deployment" >&2
+    return 1
+  fi
   mkdir -p "$recipient_dir"
   printf '%s\n' "$recipient" >"$recipient_file"
   chmod 644 "$recipient_file"
