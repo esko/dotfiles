@@ -311,11 +311,12 @@ in
     })
 
     (lib.mkIf cfg.ssh.manageAuthorizedKeys {
+      # HM links this into the Nix store. Do not chmod it: store paths are
+      # immutable, and on Darwin `sudo darwin-rebuild` cannot chmod files under
+      # the user home (Operation not permitted). OpenSSH accepts a symlink to a
+      # non-group-writable store file when ~/.ssh itself has safe mode.
       home.file.".ssh/authorized_keys".text =
         "${lib.concatStringsSep "\n" cfg.ssh.authorizedKeys}\n";
-      home.activation.dotfilesAuthorizedKeysMode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        $DRY_RUN_CMD chmod 600 "$HOME/.ssh/authorized_keys"
-      '';
     })
 
   ];

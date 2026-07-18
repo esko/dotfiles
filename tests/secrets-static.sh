@@ -50,6 +50,11 @@ rg -q --fixed-strings 'sops_load_env_secret' "$repo_root/scripts/lib/tailscale-c
 rg -q --fixed-strings 'run_deployment_consumers_for_target' "$repo_root/update.sh" "$repo_root/modules/shared/secrets.nix"
 rg -q --fixed-strings '90-dotfiles-peers.conf' "$secrets_module"
 rg -q --fixed-strings 'peerAuthorizedKeys' "$secrets_module"
+# Must not chmod the HM nix-store symlink (breaks Darwin activation as root).
+if rg -q 'chmod 600.*authorized_keys' "$secrets_module"; then
+  echo 'secrets.nix must not chmod HM-managed authorized_keys' >&2
+  exit 1
+fi
 rg -q --fixed-strings 'sshHostName' "$manifest"
 rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module"
 rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module"
