@@ -21,6 +21,7 @@ systemManager.lib.makeSystemConfig {
         useGlobalPkgs = true;
         useUserPackages = true;
         backupFileExtension = "home-manager-backup";
+        overwriteBackup = true;
         extraSpecialArgs = linuxArgs // {
           hostName = "baguette";
           inherit inkscapeBeta;
