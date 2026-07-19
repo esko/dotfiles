@@ -1,11 +1,7 @@
 {
-  config,
   lib,
-  pkgs,
   username,
   homeDirectory,
-  stateVersion,
-  hostName,
   ...
 }:
 
@@ -31,7 +27,7 @@
       | /usr/bin/awk 'NF { print $NF }')
     if [ "$current_shell" != "$target_shell" ]; then
       echo "Setting login shell for ${username} to $target_shell (was ''${current_shell:-unknown})"
-      /usr/bin/chsh -s "$target_shell" ${username}
+      /usr/bin/chsh -s "$target_shell" ${lib.escapeShellArg username}
     fi
   '';
 
