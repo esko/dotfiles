@@ -66,6 +66,16 @@ done
 ! rg -q --fixed-strings '/usr/bin/plutil' "$darwin_sops"
 # Homebrew remains on HM sessionPath for brew-only tools (et, tsshd, …).
 rg -q --fixed-strings '/opt/homebrew/bin' "$root_dir/modules/darwin/home.nix"
+# The pinned HM revision predates its macOS path_helper fix. The Darwin module
+# must reapply the final merged sessionPath in .zprofile, including ~/.local/bin.
+for token in \
+  'programs.zsh.profileExtra' \
+  'config.home.sessionPath' \
+  'typeset -U path' \
+  'path=('; do
+  rg -q --fixed-strings "$token" "$root_dir/modules/darwin/home.nix"
+done
+rg -q --fixed-strings '$HOME/.local/bin' "$root_dir/modules/shared/home.nix"
 # mosh-server is Nix-managed on Mini so non-login remote mosh always finds it.
 rg -q --fixed-strings 'mosh-server' "$root_dir/modules/darwin/home.nix"
 rg -q --fixed-strings 'mosh' "$root_dir/modules/shared/home.nix"
