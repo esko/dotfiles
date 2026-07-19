@@ -9,6 +9,7 @@ container_module="$repo_root/modules/container/home.nix"
 bootstrap="$repo_root/docs/linux-bootstrap.md"
 flake="$repo_root/flake.nix"
 update="$repo_root/update.sh"
+baguette_host="$repo_root/nix/flake/hosts/baguette.nix"
 
 for token in 'systemConfigs.baguette' 'homeConfigurations.synologyDevbox'; do
   rg -q --fixed-strings "$token" "$flake" "$repo_root/nix"
@@ -41,6 +42,8 @@ if rg -q --fixed-strings 'system-manager.allowAnyDistro' "$repo_root/modules" "$
 fi
 
 rg -q 'hostName = "baguette"' "$flake" "$repo_root/nix"
+rg -q --fixed-strings 'backupFileExtension = "home-manager-backup"' "$baguette_host"
+rg -q --fixed-strings 'overwriteBackup = true' "$baguette_host"
 rg -q 'xdg\.desktopEntries' "$linux_module"
 rg -q --fixed-strings 'cros-garcon.service.d/override.conf' "$linux_module"
 rg -q --fixed-strings 'XDG_DATA_DIRS' "$linux_module"
