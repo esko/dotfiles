@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   # Idempotent migration for hosts that still have whole-directory Stow
@@ -82,7 +82,10 @@ in
         verboseEcho "Migrating legacy stow symlink $HOME/.ssh -> $sshLinkTarget"
         run rm $VERBOSE_ARG "$HOME/.ssh"
         run mkdir -p $VERBOSE_ARG "$HOME/.ssh"
-        run cp -a $VERBOSE_ARG "$sshLinkTarget/." "$HOME/.ssh/"
+        # Agent sockets and other special files are ephemeral runtime state and
+        # cannot be recreated by an unprivileged activation on macOS.
+        run ${pkgs.rsync}/bin/rsync -a --no-specials --no-devices $VERBOSE_ARG \
+          --exclude '/agent/' "$sshLinkTarget/" "$HOME/.ssh/"
         run chmod 700 "$HOME/.ssh"
       else
         verboseEcho "Skipping non-stow symlink at $HOME/.ssh -> ''${sshLinkTarget:-<unresolvable>}"
