@@ -1,17 +1,10 @@
 {
   config,
   lib,
-  pkgs,
   username,
-  homeDirectory,
-  stateVersion,
-  hostName,
   ...
 }:
 
-let
-  cfg = config.dotfiles.darwin;
-in
 {
   options.dotfiles.darwin = {
     proxyBridgePackage = lib.mkOption {
