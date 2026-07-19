@@ -60,16 +60,20 @@ let
       '';
 in
 {
-  assertions = [
+  config = lib.mkMerge [
     {
-      assertion = llmAgentPkgs == null || missingAgentAttrs == [ ];
-      message = "llm-agents package set is missing required attributes: ${
-        lib.concatStringsSep ", " missingAgentAttrs
-      }";
+      assertions = [
+        {
+          assertion = llmAgentPkgs == null || missingAgentAttrs == [ ];
+          message = "llm-agents package set is missing required attributes: ${
+            lib.concatStringsSep ", " missingAgentAttrs
+          }";
+        }
+      ];
     }
-  ];
 
-  config = lib.mkIf (agentPackages != [ ]) {
-    home.packages = agentPackages ++ lib.optional (agentCommand != null) agentCommand;
-  };
+    (lib.mkIf (agentPackages != [ ]) {
+      home.packages = agentPackages ++ lib.optional (agentCommand != null) agentCommand;
+    })
+  ];
 }
