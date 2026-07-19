@@ -33,7 +33,7 @@ fi
 rg -q --fixed-strings 'manifest_deployment_wants_ssh' "$repo_root/scripts/lib/manifest-common.sh"
 rg -q --fixed-strings 'manifest_deployment_wants_ssh' "$repo_root/scripts/sync-deployment-secrets.sh"
 # Flake attr paths cannot embed Nix `or`; optional fields use jq.
-if rg -q 'secretsManifest\.[^"]* or ' "$repo_root/scripts"; then
+if rg -q 'secretsManifest\.[^\"]* or ' "$repo_root/scripts"; then
   printf '%s\n' 'scripts must not put Nix `or` inside flake attr paths' >&2
   exit 1
 fi
@@ -75,7 +75,7 @@ if rg -q 'chmod 600.*authorized_keys' "$secrets_module" "$secrets_modules"; then
   exit 1
 fi
 # force avoids stale *.home-manager-backup blocking switch on Mini/Baguette.
-rg -q 'authorized_keys".*force = true|force = true' "$secrets_module" "$secrets_modules"
+rg -q 'authorized_keys\".*force = true|force = true' "$secrets_module" "$secrets_modules"
 rg -q --fixed-strings 'home.file.".ssh/authorized_keys"' "$secrets_module" "$secrets_modules"
 # Private key chmod must skip symlinks; never chmod HM-managed *.pub.
 rg -q --fixed-strings 'if [[ -f "$HOME/.ssh/id_ed25519" && ! -L "$HOME/.ssh/id_ed25519" ]]' "$secrets_module" "$secrets_modules"
@@ -87,6 +87,8 @@ fi
 # Darwin sops-nix must not race setupLaunchAgents and must execute the original
 # declarative Program with its launchd EnvironmentVariables. The installer uses
 # getconf DARWIN_USER_TEMP_DIR, so native macOS paths must remain available.
+# Keep that minimal launchd environment in a subshell so it cannot remove
+# gettext or other Nix tools from the remaining Home Manager activation.
 darwin_activation="$secrets_modules/darwin-activation.nix"
 for token in \
   'setupLaunchAgents' \
@@ -95,11 +97,18 @@ for token in \
   'config.launchd.agents."sops-nix".config' \
   'EnvironmentVariables' \
   'DARWIN_USER_TEMP_DIR' \
+  'activation_path="$PATH"' \
+  'export PATH="$activation_path' \
+  'bootout --wait' \
   '/usr/bin:/bin:/usr/sbin:/sbin'; do
   rg -q --fixed-strings "$token" "$darwin_activation"
 done
 if rg -q --fixed-strings '/usr/bin/plutil' "$darwin_activation"; then
   echo 'Darwin sops activation must use declarative launchd config, not parse generated plists' >&2
+  exit 1
+fi
+if rg -q --fixed-strings 'launchctl kickstart' "$darwin_activation"; then
+  echo 'Darwin sops activation must not immediately run the installer twice' >&2
   exit 1
 fi
 rg -q --fixed-strings 'sshHostName' "$manifest"
