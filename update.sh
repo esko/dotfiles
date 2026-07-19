@@ -135,6 +135,31 @@ require_command() {
   fi
 }
 
+# zsh (Cursor, SSH, non-login) often inherits
+# __NIX_DARWIN_SET_ENVIRONMENT_DONE without a usable PATH, so nix-darwin's
+# /etc/zshenv skips set-environment and Determinate's nix binary is invisible.
+# Prepend the usual profile bins before any require_command / nix calls.
+ensure_managed_path() {
+  local path_prefix=""
+  local dir
+  for dir in \
+    "${HOME:?}/.local/bin" \
+    "${HOME}/.nix-profile/bin" \
+    "/etc/profiles/per-user/${USER}/bin" \
+    /run/current-system/sw/bin \
+    /nix/var/nix/profiles/default/bin; do
+    if [[ -d "$dir" ]]; then
+      case ":${PATH}:" in
+        *":${dir}:"*) ;;
+        *) path_prefix+="${dir}:" ;;
+      esac
+    fi
+  done
+  if [[ -n "$path_prefix" ]]; then
+    export PATH="${path_prefix}${PATH}"
+  fi
+}
+
 # Resolve activation CLIs from flake.lock so update.sh cannot drift from the
 # reviewed flake pins.
 github_uri_from_lock() {
@@ -296,20 +321,8 @@ run_install_node_tools() {
     return 0
   fi
 
-  # Home Manager and nix-darwin update PATH in login shells; the update script
-  # keeps running in the pre-activation environment.
-  local path_prefix=""
-  for dir in \
-    "/etc/profiles/per-user/${USER}/bin" \
-    /run/current-system/sw/bin \
-    /nix/var/nix/profiles/default/bin \
-    "${HOME}/.local/bin" \
-    "${HOME}/.nix-profile/bin"; do
-    if [[ -d "$dir" ]]; then
-      path_prefix+="${dir}:"
-    fi
-  done
-  export PATH="${path_prefix}${PATH}"
+  # Activation may have refreshed profile bins; refresh PATH in this shell.
+  ensure_managed_path
 
   if ! command -v node >/dev/null 2>&1; then
     printf '%s\n' 'node is not available; skipping install-node-tools.' >&2
@@ -397,9 +410,18 @@ run_deployment_consumers_for_target() {
 check_target() {
   local resolved_target=$1
   local attr
+
+  if [[ "$resolved_target" = synology ]]; then
+    printf '%s\n' 'Checking Synology remote-build context and Docker access'
+    "$repo_root/scripts/build-synology-dev.sh" --check-only
+    return 0
+  fi
+
   attr=$(flake_attr_for_target "$resolved_target")
   printf 'Checking %s (%s)\n' "$resolved_target" "$attr"
-  nix build "${NIX_CACHE_OPTS[@]}" ".#$attr" --no-link
+  # ${arr[@]+...} keeps bash 3.2 + set -u happy when the array is empty
+  # (macOS /bin/bash when PATH has not picked up a Nix bash yet).
+  nix build ${NIX_CACHE_OPTS[@]+"${NIX_CACHE_OPTS[@]}"} ".#$attr" --no-link
 }
 
 apply_target() {
@@ -409,7 +431,7 @@ apply_target() {
     baguette)
       # system-manager switch builds the closure; skip a separate nix build so
       # day-to-day updates evaluate and substitute once.
-      nix run "${NIX_CACHE_OPTS[@]}" "$SYSTEM_MANAGER" -- \
+      nix run ${NIX_CACHE_OPTS[@]+"${NIX_CACHE_OPTS[@]}"} "$SYSTEM_MANAGER" -- \
         switch --flake "$repo_root#baguette" --sudo
       # Ensure ChromeOS sees GUI launchers even if HM activation could not sudo
       # into /usr/local/share/applications during the switch.
@@ -431,7 +453,7 @@ apply_target() {
       local nix_bin
       nix_bin=$(command -v nix)
       # Login shell is set by nix-darwin system.activationScripts.postActivation.
-      sudo -H "$nix_bin" run "${NIX_CACHE_OPTS[@]}" "$NIX_DARWIN#darwin-rebuild" -- \
+      sudo -H "$nix_bin" run ${NIX_CACHE_OPTS[@]+"${NIX_CACHE_OPTS[@]}"} "$NIX_DARWIN#darwin-rebuild" -- \
         switch --flake "$repo_root#mini"
       run_install_node_tools
       run_install_umans
@@ -442,8 +464,19 @@ apply_target() {
   esac
 }
 
+ensure_managed_path
 require_command git
-require_command nix
+if ! command -v nix >/dev/null 2>&1; then
+  cat >&2 <<'EOF'
+Required command is not available: nix
+
+update.sh prepended the usual Nix profile bins, but still could not find a nix
+binary. Install or repair Determinate Nix so this exists and is executable:
+
+  /nix/var/nix/profiles/default/bin/nix
+EOF
+  exit 1
+fi
 require_command python3
 resolve_activation_pins
 configure_nix_cache_opts

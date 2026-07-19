@@ -109,10 +109,11 @@ never runs during Home Manager activation.
 The Synology development image packages the shared command-line environment
 plus `pi`, `herdr`, `reasonix`, `opencode`, `hunk`, `yazi`, Neurocyte Flow, `agy`,
 `grok`, Codex,
-and the Mosh/ET/Tailscale/tsshd remote-session helpers. Build, test,
-archive, and copy it to the NAS with `./scripts/build-synology-dev.sh`; see
+and the Mosh/ET/Tailscale/tsshd remote-session helpers. Stream the filtered
+source context to the NAS, then build and test it there with
+`./scripts/build-synology-dev.sh`; see
 [`docs/synology-dev-container.md`](docs/synology-dev-container.md) for the
-unprivileged runtime contract and the final manual Container Manager steps.
+runtime boundaries and the final manual Container Manager steps.
 
 Install Lefthook alone on an existing machine:
 

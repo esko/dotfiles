@@ -1,4 +1,10 @@
-{ lib, pkgs, username, inkscapeBeta ? null, ... }:
+{
+  lib,
+  pkgs,
+  username,
+  inkscapeBeta ? null,
+  ...
+}:
 
 # Publish Baguette GUI launchers into /usr/local/share/applications via
 # systemd-tmpfiles. That directory is always on cros-garcon's default
@@ -10,19 +16,25 @@ let
   inkscapeDev = inkscapeBeta;
 
   mkLauncher =
-    { name
-    , desktopName
-    , package
-    , categories
-    , comment ? null
-    , genericName ? null
-    , mimeTypes ? [ ]
-    , icon ? name
+    {
+      name,
+      desktopName,
+      package,
+      categories,
+      comment ? null,
+      genericName ? null,
+      mimeTypes ? [ ],
+      icon ? name,
     }:
     {
       inherit name;
       item = pkgs.makeDesktopItem {
-        inherit name desktopName categories icon;
+        inherit
+          name
+          desktopName
+          categories
+          icon
+          ;
         inherit comment genericName mimeTypes;
         exec = "${lib.getExe package} %F";
         tryExec = lib.getExe package;
@@ -33,59 +45,97 @@ let
     };
 
   launcherSpecs = lib.filter (x: x != null) [
-    (if cursorPackage != null then mkLauncher {
-      name = "cursor";
-      desktopName = "Cursor";
-      package = cursorPackage;
-      genericName = "Text Editor";
-      comment = "AI-powered code editor";
-      categories = [ "Development" "TextEditor" ];
-      mimeTypes = [ "application/x-cursor-workspace" "inode/directory" "text/plain" ];
-      icon = "cursor";
-    } else null)
-    (if antigravityPackage != null then mkLauncher {
-      name = "antigravity";
-      desktopName = "Antigravity";
-      package = antigravityPackage;
-      genericName = "IDE";
-      comment = "Agentic development platform";
-      categories = [ "Development" "IDE" ];
-      icon = "antigravity";
-    } else null)
-    (if inkscapeStable != null then mkLauncher {
-      name = "inkscape";
-      desktopName = "Inkscape";
-      package = inkscapeStable;
-      genericName = "Vector Graphics Editor";
-      comment = "Inkscape ${inkscapeStable.version or "1.4"} (stable)";
-      categories = [ "Graphics" "VectorGraphics" "2DGraphics" ];
-      mimeTypes = [
-        "image/svg+xml"
-        "image/svg+xml-compressed"
-        "application/vnd.corel-draw"
-        "application/pdf"
-        "image/png"
-        "image/jpeg"
-      ];
-      icon = "inkscape";
-    } else null)
-    (if inkscapeDev != null then mkLauncher {
-      name = "inkscape-beta";
-      desktopName = "Inkscape 1.5 Beta";
-      package = inkscapeDev;
-      genericName = "Vector Graphics Editor";
-      comment = "Inkscape 1.5 development AppImage";
-      categories = [ "Graphics" "VectorGraphics" "2DGraphics" ];
-      mimeTypes = [
-        "image/svg+xml"
-        "image/svg+xml-compressed"
-        "application/vnd.corel-draw"
-        "application/pdf"
-        "image/png"
-        "image/jpeg"
-      ];
-      icon = "inkscape";
-    } else null)
+    (
+      if cursorPackage != null then
+        mkLauncher {
+          name = "cursor";
+          desktopName = "Cursor";
+          package = cursorPackage;
+          genericName = "Text Editor";
+          comment = "AI-powered code editor";
+          categories = [
+            "Development"
+            "TextEditor"
+          ];
+          mimeTypes = [
+            "application/x-cursor-workspace"
+            "inode/directory"
+            "text/plain"
+          ];
+          icon = "cursor";
+        }
+      else
+        null
+    )
+    (
+      if antigravityPackage != null then
+        mkLauncher {
+          name = "antigravity";
+          desktopName = "Antigravity";
+          package = antigravityPackage;
+          genericName = "IDE";
+          comment = "Agentic development platform";
+          categories = [
+            "Development"
+            "IDE"
+          ];
+          icon = "antigravity";
+        }
+      else
+        null
+    )
+    (
+      if inkscapeStable != null then
+        mkLauncher {
+          name = "inkscape";
+          desktopName = "Inkscape";
+          package = inkscapeStable;
+          genericName = "Vector Graphics Editor";
+          comment = "Inkscape ${inkscapeStable.version or "1.4"} (stable)";
+          categories = [
+            "Graphics"
+            "VectorGraphics"
+            "2DGraphics"
+          ];
+          mimeTypes = [
+            "image/svg+xml"
+            "image/svg+xml-compressed"
+            "application/vnd.corel-draw"
+            "application/pdf"
+            "image/png"
+            "image/jpeg"
+          ];
+          icon = "inkscape";
+        }
+      else
+        null
+    )
+    (
+      if inkscapeDev != null then
+        mkLauncher {
+          name = "inkscape-beta";
+          desktopName = "Inkscape 1.5 Beta";
+          package = inkscapeDev;
+          genericName = "Vector Graphics Editor";
+          comment = "Inkscape 1.5 development AppImage";
+          categories = [
+            "Graphics"
+            "VectorGraphics"
+            "2DGraphics"
+          ];
+          mimeTypes = [
+            "image/svg+xml"
+            "image/svg+xml-compressed"
+            "application/vnd.corel-draw"
+            "application/pdf"
+            "image/png"
+            "image/jpeg"
+          ];
+          icon = "inkscape";
+        }
+      else
+        null
+    )
   ];
 
   launchers = pkgs.symlinkJoin {
@@ -101,8 +151,10 @@ in
 
   systemd.tmpfiles.rules = [
     "d /usr/local/share/applications 0755 root root -"
-  ] ++ map (
-    name: "L+ /usr/local/share/applications/${name}.desktop - - - - ${launchers}/share/applications/${name}.desktop"
+  ]
+  ++ map (
+    name:
+    "L+ /usr/local/share/applications/${name}.desktop - - - - ${launchers}/share/applications/${name}.desktop"
   ) desktopNames;
 
   # After system-manager applies tmpfiles, nudge the user garcon service so the

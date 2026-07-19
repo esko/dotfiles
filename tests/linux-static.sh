@@ -4,17 +4,18 @@ set -euo pipefail
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 linux_module="$repo_root/modules/linux/home.nix"
 secrets_module="$repo_root/modules/shared/secrets.nix"
+secrets_modules="$repo_root/modules/shared/secrets"
 container_module="$repo_root/modules/container/home.nix"
 bootstrap="$repo_root/docs/linux-bootstrap.md"
 flake="$repo_root/flake.nix"
 update="$repo_root/update.sh"
 
-for token in 'systemConfigs.baguette' 'homeConfigurations.synologyDev'; do
-  rg -q --fixed-strings "$token" "$flake"
+for token in 'systemConfigs.baguette' 'homeConfigurations.synologyDevbox'; do
+  rg -q --fixed-strings "$token" "$flake" "$repo_root/nix"
 done
 
-for token in "checks.\${linuxSystem}" 'baguette = self.systemConfigs.baguette' 'synologyDevRoot = synologyDevRoot'; do
-  rg -q --fixed-strings "$token" "$flake"
+for token in "checks.\${linuxSystem}" 'baguette = self.systemConfigs.baguette' 'synologyDevRoot = synologyDevbox.synologyDevRoot'; do
+  rg -q --fixed-strings "$token" "$flake" "$repo_root/nix"
 done
 
 # Cache trust belongs in nix.custom.conf, not flake nixConfig (untrusted-user warnings).
@@ -26,11 +27,20 @@ rg -q --fixed-strings 'https://cache.numtide.com' "$repo_root/scripts/enable-num
 rg -q --fixed-strings 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' \
   "$repo_root/scripts/enable-numtide-cache.sh"
 # apps.<system> must be one attrset (separate dynamic assignments collide).
-rg -q -U 'apps = \{[\s\S]*bootstrap-secrets[\s\S]*bootstrap-ssh' "$flake"
-rg -q --fixed-strings 'system-manager = {' "$flake"
-rg -q --fixed-strings 'system-manager.packages.${linuxSystem}.default' "$flake"
+rg -q --fixed-strings 'apps = {' "$flake"
+rg -q --fixed-strings 'bootstrap-secrets' "$repo_root/nix/flake/apps.nix"
+rg -q --fixed-strings 'bootstrap-ssh' "$repo_root/nix/flake/apps.nix"
+rg -q --fixed-strings 'system-manager = {' "$flake" "$repo_root/nix/flake"
+rg -q --fixed-strings 'system-manager.packages.${linuxSystem}.default' "$flake" "$repo_root/nix/flake"
 
-rg -q 'hostName = "baguette"' "$flake"
+# Debian is supported by the locked System Manager revision; do not bypass its
+# upstream distro assertion.
+if rg -q --fixed-strings 'system-manager.allowAnyDistro' "$repo_root/modules" "$repo_root/nix" "$flake"; then
+  echo 'Baguette must keep the upstream System Manager distro assertion enabled' >&2
+  exit 1
+fi
+
+rg -q 'hostName = "baguette"' "$flake" "$repo_root/nix"
 rg -q 'xdg\.desktopEntries' "$linux_module"
 rg -q --fixed-strings 'cros-garcon.service.d/override.conf' "$linux_module"
 rg -q --fixed-strings 'XDG_DATA_DIRS' "$linux_module"
@@ -42,7 +52,7 @@ if rg -q --fixed-strings 'XDG_DATA_DIRS =' "$linux_module"; then
   echo 'linux home.nix must not set home.sessionVariables.XDG_DATA_DIRS' >&2
   exit 1
 fi
-rg -q --fixed-strings 'crostini-launchers.nix' "$flake"
+rg -q --fixed-strings 'crostini-launchers.nix' "$flake" "$repo_root/nix"
 rg -q --fixed-strings '/usr/local/share/applications' \
   "$repo_root/modules/linux/crostini-launchers.nix"
 rg -q --fixed-strings 'publish-crostini-apps.sh' "$update"
@@ -54,8 +64,8 @@ rg -q --fixed-strings 'inkscape-beta = {' "$linux_module"
 rg -q --fixed-strings 'Inkscape 1.5 Beta' "$linux_module"
 rg -q --fixed-strings 'inkscapeStable' "$linux_module"
 rg -q --fixed-strings 'inkscapeDev' "$linux_module"
-rg -q 'inkscape-beta\.nix' "$flake"
-rg -q --fixed-strings 'inkscapeBeta' "$flake"
+rg -q 'inkscape-beta\.nix' "$flake" "$repo_root/nix"
+rg -q --fixed-strings 'inkscapeBeta' "$flake" "$repo_root/nix"
 test -f "$repo_root/packages/inkscape-beta.nix"
 rg -q --fixed-strings '1.5.0-dev' "$repo_root/packages/inkscape-beta.nix"
 rg -q --fixed-strings 'pname = "inkscape-beta"' "$repo_root/packages/inkscape-beta.nix"
@@ -63,10 +73,10 @@ rg -q --fixed-strings 'wrapGAppsHook3' "$repo_root/packages/inkscape-beta.nix"
 rg -q --fixed-strings 'extraPkgs' "$repo_root/packages/inkscape-beta.nix"
 rg -q --fixed-strings 'gdk-pixbuf' "$repo_root/packages/inkscape-beta.nix"
 rg -q --fixed-strings 'GDK_PIXBUF_MODULE_FILE' "$repo_root/packages/inkscape-beta.nix"
-rg -q 'modules/linux/home\.nix' "$flake"
+rg -q 'modules/linux/home\.nix' "$flake" "$repo_root/nix"
 # allowUnfreePredicate must allow lib.getName "cursor" (pkgs.code-cursor).
 rg -q --fixed-strings '"cursor"' "$repo_root/modules/linux/system.nix"
-rg -q --fixed-strings '"cursor"' "$flake"
+rg -q --fixed-strings '"cursor"' "$flake" "$repo_root/nix"
 
 for token in enableHostTools enableDesktopConfigs nativeBootstrap enableGuiApps \
   code-cursor antigravity inkscape xdg.desktopEntries android-tools jdk17 vulkan-tools \
@@ -85,7 +95,7 @@ done
 rg -q 'optional-packages\.nix' "$linux_module"
 
 for token in dotfiles.secrets sops.secrets ssh/id_ed25519; do
-  rg -q --fixed-strings "$token" "$secrets_module"
+  rg -q --fixed-strings "$token" "$secrets_module" "$secrets_modules"
 done
 rg -q --fixed-strings 'consumers' "$repo_root/secrets/manifest.nix"
 

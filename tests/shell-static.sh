@@ -64,7 +64,11 @@ rg -q 'starship/.config/starship.toml' "$module"
 rg -q 'utilities/.config/bat/themes' "$module"
 rg -q 'utilities/.config/micro/colorschemes' "$module"
 rg -q 'manual.manpages.enable = false' "$module"
-rg -q 'force = true' "$module"
+rg -q 'forceLegacyCollisions' "$module" "$stow_migration"
+rg -q 'default = true' "$stow_migration"
+rg -q 'forceLegacyCollisions = false' \
+  "$repo_root/nix/flake/hosts/mini.nix" \
+  "$repo_root/nix/flake/hosts/synology-devbox.nix"
 
 for package in agent-browser @google/gemini-cli @google/jules command-code hunkdiff portless; do
   rg -q --fixed-strings "${package}@latest" "$node_tools_installer"

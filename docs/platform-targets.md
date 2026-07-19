@@ -15,8 +15,9 @@ boundary explicit when adding a package or service.
 2. Build the Baguette System Manager derivation and inspect it before privileged
    activation. Its preflight checks require the existing `esko` account to be
    UID/GID `1000:1000`, home `/home/esko`, and Debian Zsh at `/usr/bin/zsh`.
-3. Build and smoke-test the Synology image locally, then copy its archive and
-   checksum to DSM without loading or starting it automatically.
+3. Stream the filtered working tree to Synology, then build and smoke-test the
+   image with the NAS Docker daemon. Do not start or recreate the project
+   automatically.
 4. Run the native Darwin build on the Mini; do not activate it from Linux.
 
 ## Profile checks
@@ -24,7 +25,7 @@ boundary explicit when adding a package or service.
 ```sh
 nix flake check --all-systems
 nix build .#systemConfigs.baguette
-nix build .#packages.x86_64-linux.synologyDevRoot
+./scripts/build-synology-dev.sh
 # On the Mini:
 nix build .#darwinConfigurations.mini.system
 ```

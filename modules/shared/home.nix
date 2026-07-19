@@ -1,15 +1,31 @@
-{ config, lib, pkgs, username, homeDirectory, stateVersion, hostName, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  username,
+  homeDirectory,
+  stateVersion,
+  hostName,
+  ...
+}:
 
 let
   inherit (import ../lib/optional-packages.nix { inherit lib; }) optionalFreePackages;
 
   # nixpkgs' pipx test suite currently fails on Darwin because its expected
   # package-specifier spacing is out of sync with the bundled parser. Keep the
-  # tool in the shared profile while bypassing that upstream-only check.
-  pipx = pkgs.pipx.overrideAttrs (_old: {
-    doCheck = false;
-    pytestCheckPhase = ":";
-  });
+  # tool in the shared profile while bypassing that upstream-only check on
+  # Darwin; Linux channels evaluate the suite cleanly.
+  pipx =
+    if pkgs.stdenv.hostPlatform.isDarwin then
+      pkgs.pipx.overrideAttrs (_old: {
+        doCheck = false;
+        pytestCheckPhase = ":";
+      })
+    else
+      pkgs.pipx;
+
+  forceLegacyCollisions = config.dotfiles.stowMigration.forceLegacyCollisions;
 in
 {
   imports = [
@@ -24,77 +40,111 @@ in
   home.homeDirectory = homeDirectory;
   home.stateVersion = stateVersion;
 
-  home.packages = with pkgs; [
-    # Shell, navigation, search, and file tools.
-    # gh comes from programs.gh below.
-    zsh starship zellij fzf zoxide git age bat eza fd ripgrep jq delta
-    btop micro yazi rsync shellcheck lefthook lazygit cmake
+  home.packages =
+    with pkgs;
+    [
+      # Shell, navigation, search, and file tools.
+      # gh, zsh, starship, zellij, fzf, zoxide, git, and bat come from their
+      # programs.* modules below; do not duplicate them here.
+      age
+      eza
+      fd
+      ripgrep
+      jq
+      delta
+      btop
+      micro
+      yazi
+      rsync
+      shellcheck
+      lefthook
+      lazygit
+      cmake
 
-    # Language/toolchain foundations. Nix nodejs supplies the active Node/npm
-    # runtime; install-node-tools publishes fast-moving CLIs into ~/.local.
-    # rustup supplies the rustc/cargo shims and manages the selected toolchain.
-    rustup go zig nodejs pnpm uv python3 pipx
+      # Language/toolchain foundations. Nix nodejs supplies the active Node/npm
+      # runtime; install-node-tools publishes fast-moving CLIs into ~/.local.
+      # rustup supplies the rustc/cargo shims and manages the selected toolchain.
+      rustup
+      go
+      zig
+      nodejs
+      pnpm
+      uv
+      python3
+      pipx
 
-    # Portable diagnostics and utilities audited from the existing hosts.
-    # Native hosts use their OS-provided OpenSSH client so its feature set
-    # matches /etc/ssh/ssh_config. The container module adds Nix OpenSSH.
-    curl wget fastfetch p7zip unzip dos2unix dnsutils
-    inetutils nmap bun cargo-binstall golangci-lint
-    python3Packages.pytest croc
-    # mosh-server must live on the Nix profile PATH: remote mosh uses a
-    # non-login shell that sees hm-session-vars but not Homebrew's .zprofile.
-    mosh
-    # Linux/Synology: Nix tailscale CLI. Mini uses the Homebrew formula/app.
-  ] ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
-    tailscale
-  ] ++ optionalFreePackages pkgs [
-    # Core agent CLIs come from llm-agents.nix. Remaining native tools stay
-    # optional nixpkgs attributes when available (see docs/shell-migration.md).
-    # Unfree GUI apps (e.g. antigravity) belong in host modules, not here.
-    "athas" "herdr" "pass-cli"
-  ];
+      # Portable diagnostics and utilities audited from the existing hosts.
+      # Native hosts use their OS-provided OpenSSH client so its feature set
+      # matches /etc/ssh/ssh_config. The container module adds Nix OpenSSH.
+      curl
+      wget
+      fastfetch
+      p7zip
+      unzip
+      dos2unix
+      dnsutils
+      inetutils
+      nmap
+      bun
+      cargo-binstall
+      golangci-lint
+      python3Packages.pytest
+      croc
+      # mosh-server must live on the Nix profile PATH: remote mosh uses a
+      # non-login shell that sees hm-session-vars but not Homebrew's .zprofile.
+      mosh
+      # Linux/Synology: Nix tailscale CLI. Mini uses the Homebrew formula/app.
+    ]
+    ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
+      tailscale
+    ]
+    ++ optionalFreePackages pkgs [
+      # Core agent CLIs come from llm-agents.nix. herdr is a nixpkgs attribute on
+      # Linux only; the soft lookup skips it on Darwin (see docs/shell-migration.md).
+      "herdr"
+    ];
 
   # Utility configs are repository-owned. stow-migration.nix removes legacy
   # whole-directory stow symlinks before linkGeneration; force replaces any
-  # remaining file-level collisions so activation stays idempotent on hosts
-  # that still have pre-HM copies. Narrow force only after every host has
-  # activated cleanly with no new *.home-manager-backup files.
+  # remaining file-level collisions on hosts that still have pre-HM copies.
+  # The per-host migration option lets completed hosts use normal HM collision
+  # checks while Baguette remains conservative until its first clean switch.
   home.file = {
     ".config/bat/config" = {
       source = ../../utilities/.config/bat/config;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/bat/themes" = {
       source = ../../utilities/.config/bat/themes;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/btop/btop.conf" = {
       source = ../../utilities/.config/btop/btop.conf;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/btop/themes" = {
       source = ../../utilities/.config/btop/themes;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/micro/bindings.json" = {
       source = ../../utilities/.config/micro/bindings.json;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/micro/settings.json" = {
       source = ../../utilities/.config/micro/settings.json;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/micro/colorschemes" = {
       source = ../../utilities/.config/micro/colorschemes;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/zellij/config.kdl" = {
       source = ../../zellij/.config/zellij/config.kdl;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".config/starship.toml" = {
       source = ../../starship/.config/starship.toml;
-      force = true;
+      force = forceLegacyCollisions;
     };
     ".local/bin/install-node-tools" = {
       source = ../../scripts/install-node-tools.sh;
@@ -129,7 +179,14 @@ in
 
   programs.git = {
     enable = true;
-    ignores = [ ".DS_Store" ".direnv/" "result" "result-*" "*.swp" "*~" ];
+    ignores = [
+      ".DS_Store"
+      ".direnv/"
+      "result"
+      "result-*"
+      "*.swp"
+      "*~"
+    ];
     settings = {
       user.name = "Esko Pyyluoma";
       user.email = "esko.pyyluoma@gmail.com";
@@ -140,10 +197,16 @@ in
       # credential helper; individual remotes can opt into SSH after a host key
       # has been enrolled with GitHub. Do not add url.insteadOf SSH rewrites.
       credential."https://github.com" = {
-        helper = [ "" "!gh auth git-credential" ];
+        helper = [
+          ""
+          "!gh auth git-credential"
+        ];
       };
       credential."https://gist.github.com" = {
-        helper = [ "" "!gh auth git-credential" ];
+        helper = [
+          ""
+          "!gh auth git-credential"
+        ];
       };
     };
   };

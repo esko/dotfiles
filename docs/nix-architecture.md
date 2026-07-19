@@ -89,7 +89,7 @@ Then evaluate the intended profiles:
 
 ```sh
 ./update.sh --check-only
-nix build .#packages.x86_64-linux.synologyDevRoot
+./scripts/build-synology-dev.sh # streams the context and builds on Synology
 nix build .#darwinConfigurations.mini.system
 ```
 

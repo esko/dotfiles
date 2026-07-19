@@ -3,6 +3,7 @@
   stdenv,
   fetchurl,
   autoPatchelfHook,
+  versionCheckHook,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -16,6 +17,13 @@ stdenv.mkDerivation (finalAttrs: {
 
   dontUnpack = true;
   nativeBuildInputs = [ autoPatchelfHook ];
+  nativeInstallCheckInputs = [ versionCheckHook ];
+
+  # `bun --version` is a no-network, no-GUI print that exits 0, so it is safe
+  # to gate the build. The baseline runtime itself is reliable under QEMU TCG;
+  # only Bun-compiled payloads (e.g. opencodeBaseline) are not, and those are
+  # exercised on the real DS918+ instead.
+  doInstallCheck = true;
 
   installPhase = ''
     runHook preInstall

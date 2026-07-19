@@ -1,4 +1,9 @@
-{ lib, username, homeDirectory, ... }:
+{
+  lib,
+  username,
+  homeDirectory,
+  ...
+}:
 
 {
   # Baguette is Debian Trixie running on x86_64 hardware. System Manager owns
@@ -6,7 +11,8 @@
   # bootloader, hardware drivers, display manager, apt repositories, and the
   # existing Determinate Nix installation and configuration.
   nixpkgs.hostPlatform = "x86_64-linux";
-  nixpkgs.config.allowUnfreePredicate = pkg:
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
     builtins.elem (lib.getName pkg) [
       "antigravity"
       # pkgs.code-cursor reports lib.getName "cursor"
@@ -19,9 +25,9 @@
   # use directly. Enabling the module would replace /etc/nix/nix.conf and remove
   # Determinate-specific settings such as FlakeHub and its netrc integration.
 
-  # The pinned System Manager revision does not include Debian in its runtime
-  # allow-list. Keep the distro check explicit until Debian is recognized there.
-  system-manager.allowAnyDistro = true;
+  # Upstream System Manager recognizes Debian. Keep its distro assertion
+  # enabled, in addition to the stricter Debian Trixie pre-activation check
+  # below, so this configuration does not opt out of upstream safety checks.
 
   # Userborn merges the declaration with the existing Debian account database.
   # Passwords remain mutable and are not declared in the Nix store. Exclude the

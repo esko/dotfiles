@@ -10,6 +10,7 @@
   librsvg,
   shared-mime-info,
   adwaita-icon-theme,
+  file,
 }:
 
 let
@@ -25,25 +26,29 @@ let
   # GTK/pixbuf/mime/icon data that Inkscape needs at runtime. Putting these
   # only on the user profile is not enough for an extracted AppImage; they must
   # be visible inside the FHS env and on the final wrapper's environment.
-  gtkRuntimePkgs = pkgs: with pkgs; [
-    gdk-pixbuf
-    librsvg
-    shared-mime-info
-    adwaita-icon-theme
-  ];
+  gtkRuntimePkgs =
+    pkgs: with pkgs; [
+      gdk-pixbuf
+      librsvg
+      shared-mime-info
+      adwaita-icon-theme
+    ];
 
   srcZip = fetchurl {
     url = "https://gitlab.com/api/v4/projects/inkscape%2Finkscape/jobs/${jobId}/artifacts";
     hash = "sha256-ZL/q0l+zCnJDDiP8RAPO7RMFxUyu6mVYwtOK8SZXH7M=";
   };
 
-  src = runCommand "${pname}-${version}.AppImage" {
-    nativeBuildInputs = [ unzip ];
-    inherit srcZip;
-  } ''
-    unzip -j "$srcZip" '*.AppImage'
-    mv Inkscape-*.AppImage "$out"
-  '';
+  src =
+    runCommand "${pname}-${version}.AppImage"
+      {
+        nativeBuildInputs = [ unzip ];
+        inherit srcZip;
+      }
+      ''
+        unzip -j "$srcZip" '*.AppImage'
+        mv Inkscape-*.AppImage "$out"
+      '';
 
   appimage = appimageTools.wrapType2 {
     inherit pname version src;
@@ -87,4 +92,24 @@ stdenvNoCC.mkDerivation {
   '';
 
   meta = appimage.meta;
+
+  # Opt-in structural smoke (no execution): running the wrapped AppImage's
+  # `--version` inside the Nix build sandbox is not reliable because the
+  # appimageTools wrapper sets up an FHS env via bwrap, which a sandboxed
+  # builder may not permit. Instead assert the shipped launcher is executable
+  # and the underlying AppImage payload is an x86-64 ELF. This guards against
+  # artifact/architecture drift but does not prove an exact CPU feature floor.
+  passthru.tests.smoke =
+    runCommand "${pname}-smoke"
+      {
+        nativeBuildInputs = [ file ];
+        meta.platforms = [ "x86_64-linux" ];
+      }
+      ''
+        bin="${lib.getExe appimage}"
+        test -x "$bin" || { echo "inkscape-beta launcher not executable: $bin" >&2; exit 1; }
+        file "${src}" > "$out"
+        grep -q "ELF 64-bit LSB.*x86-64" "$out" \
+          || { echo "AppImage payload is not an x86-64 ELF:" >&2; cat "$out" >&2; exit 1; }
+      '';
 }

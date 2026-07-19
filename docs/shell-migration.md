@@ -98,10 +98,10 @@ Alternatively, install the package set and browser runtime in one pass:
 install-node-tools --with-browser
 ```
 
-Native fast-moving tools (`athas`, `herdr`, and pass-cli) are not part of the
-npm installer. They remain optional nixpkgs attributes when available or
-should use their reviewed upstream binary installer. Do not build them from a
-source checkout merely to bootstrap a host.
+Native fast-moving tools are not part of the npm installer. `herdr` remains an
+optional nixpkgs attribute on Linux. `athas` and `pass-cli` are absent from the
+pinned channels; add them only through a reviewed upstream package or binary
+installer. Do not build them from a source checkout merely to bootstrap a host.
 
 Core agent CLIs (`agent`, `agy`, `claude`, `codex`, `grok`, and `pi`) are also
 outside the npm installer. They come from `llm-agents.nix` on every deployment.

@@ -4,6 +4,7 @@
   fetchurl,
   makeWrapper,
   bunBaseline,
+  runCommand,
 }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
@@ -37,4 +38,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mainProgram = "hunk";
     platforms = [ "x86_64-linux" ];
   };
+
+  # Structural smoke test: validate the wrapper and JavaScript entry point
+  # without assuming the CLI implements a particular --version contract.
+  passthru.tests.smoke = runCommand "${finalAttrs.pname}-smoke" { } ''
+    test -x "${finalAttrs.finalPackage}/bin/hunk"
+    test -x "${finalAttrs.finalPackage}/bin/hunkdiff"
+    test -f "${finalAttrs.finalPackage}/lib/hunkdiff/dist/npm/main.js"
+    grep -Fq "${bunBaseline}/bin/bun" "${finalAttrs.finalPackage}/bin/hunk"
+    touch "$out"
+  '';
 })

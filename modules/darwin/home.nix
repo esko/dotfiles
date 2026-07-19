@@ -1,4 +1,13 @@
-{ config, lib, pkgs, username, homeDirectory, stateVersion, hostName, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  username,
+  homeDirectory,
+  stateVersion,
+  hostName,
+  ...
+}:
 
 let
   cfg = config.dotfiles.darwin;
@@ -26,11 +35,11 @@ in
 
     home.file.".config/proxybridge/ProxyBridge.defaults.json" = {
       source = ../../templates/proxybridge/ProxyBridge.defaults.json;
-      force = true;
+      force = config.dotfiles.stowMigration.forceLegacyCollisions;
     };
     home.file.".config/proxybridge/README.md" = {
       source = ../../templates/proxybridge/README.md;
-      force = true;
+      force = config.dotfiles.stowMigration.forceLegacyCollisions;
     };
 
     # nix-darwin exposes Home Manager packages under /etc/profiles/per-user.
@@ -46,4 +55,3 @@ in
     ];
   };
 }
-

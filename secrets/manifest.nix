@@ -38,7 +38,10 @@
     mini = {
       ssh = true;
       sshHostName = "mini";
-      sshAliases = [ "macmini" "mini.local" ];
+      sshAliases = [
+        "macmini"
+        "mini.local"
+      ];
       env = [ "tailscale_auth_key" ];
       tailscaleHostname = "mini";
     };

@@ -10,11 +10,12 @@ installed in the final image.
 The image contains the shared dotfiles utilities plus `pi`, `herdr`, `reasonix`,
 `opencode`, `hunk`, `yazi`, `flow`, Google Antigravity CLI (`agy`), Grok Build
 (`grok`), OpenAI Codex, `mosh-server`, Eternal Terminal (`et`/`etserver`),
-`tailscale`, and `tsshd`. It runs
-as the NAS user `1026:100`,
-uses `/home/esko` as `HOME`, and opens in `/workspace`. It does not contain an
-SSH server or systemd, does not request privileged mode, and should not be
-given the Docker socket.
+`tailscale`, `tsshd`, OpenSSH, and fail2ban. The image's default shell runs as
+the NAS user `1026:100`, uses `/home/esko` as `HOME`, and opens in `/workspace`.
+The supplied Compose project starts as root so it can initialize Tailscale,
+host SSH keys, fail2ban, and `sshd`; remote logins are restricted to `esko` and
+use public-key authentication. It does not use systemd or privileged mode and
+must not be given the Docker socket.
 
 The agent CLIs are pinned through
 [`llm-agents.nix`](https://github.com/numtide/llm-agents.nix). OpenCode is an
@@ -27,15 +28,10 @@ compatibility check.
 The root-only Docker builder trusts Numtide's published binary cache so its
 pinned daily builds are substituted instead of compiling every agent locally.
 
-The remote-session server binaries are installed for explicit, per-session
-use; the image does not daemonize them or add an SSH server. Mosh and tsshd are
-normally launched through an existing SSH transport, while `etserver` listens
-on TCP 2022 by default. Any Container Manager port mappings, DSM firewall
-rules, or startup commands remain deliberate operator configuration.
-With the supplied Compose file these three helpers are dormant binaries: there
-is no in-container SSH transport or port mapping through which a remote client
-can launch them. Making them remotely usable requires a separately reviewed
-SSH/exec bridge or SSH service and explicit Container Manager/firewall ports.
+The supplied Compose command joins Tailscale and then runs `sshd` on port 2222.
+The macvlan address exposes that port directly rather than through a Docker
+port mapping. Mosh, tsshd, and `etserver` remain available for explicit use;
+their additional DSM firewall ports and startup remain operator choices.
 
 ## Tailscale inside the container
 
@@ -90,73 +86,80 @@ The macvlan LAN address (`192.168.1.252`) and the Tailscale address coexist.
 Use the tailnet IP or MagicDNS name for mesh access; keep the macvlan mapping
 for local LAN services such as noVNC.
 
-## Build, test, and transfer
+## Build and test on Synology
 
-Docker must be running locally, and the `synology` SSH alias must resolve. Run:
+The Mac only prepares a filtered source archive and streams it over SSH. Docker
+and Colima are not required locally. The `synology` SSH alias must resolve, the
+remote account must have passwordless `sudo -n` access to
+`/usr/local/bin/docker`, and the NAS must have enough free space for the Nix
+builder layers. DSM's Docker package omits Buildx, so the script installs the
+official Buildx v0.11.2 Linux AMD64 plugin under the handoff directory after
+verifying its pinned SHA-256 checksum. Run:
 
 ```sh
+ssh synology 'sudo -n /usr/local/bin/docker info >/dev/null'
+./scripts/build-synology-dev.sh --check-only
 ./scripts/build-synology-dev.sh
 ```
 
-The script performs the complete non-root handoff:
+`--check-only` validates the filtered context and remote passwordless Docker
+access without starting the heavy image build.
+The equivalent top-level check is `./update.sh --synology --check-only`.
 
-1. Runs `docker build --platform linux/amd64` with
-   `Dockerfile.synology-dev`, tagging the result
-   `dotfiles-synology-dev:latest`.
-2. Runs `tests/synology-dev-runtime.sh` against the built image.
-3. Uses `docker save` to create the uncompressed archive
-   `dist/synology-dev/dotfiles-synology-dev-linux-amd64.tar` and generates its
-   SHA-256 checksum. The archive is deliberately not gzipped because DSM's
-   Container Manager import path reliably accepts a Docker `tar` archive.
-4. Copies the archive, checksum, and Compose file to
-   `synology:/volume3/homes/esko/dotfiles-synology-dev/`.
-5. Runs `sha256sum -c` over SSH on the NAS. It does not load the image, create
-   a project, or start a container.
+The script:
 
-The equivalent transfer and remote verification commands are:
+1. Enumerates tracked and non-ignored working-tree files, applies
+   `.dockerignore`, and independently rejects secret and identity paths.
+2. Streams the temporary compressed context to `synology`; it does not leave a
+   source checkout or context archive on the NAS.
+3. Runs `docker build` with BuildKit and `Dockerfile.synology-dev` on the NAS as
+   root, producing the local image `dotfiles-synology-dev:latest` without an
+   image archive or Container Manager import.
+4. Copies the Compose definition, startup scripts, runtime test, and optional
+   `synology-dev.env` to `/volume3/homes/esko/dotfiles-synology-dev/`.
+5. Runs `tests/synology-dev-runtime.sh` through the remote Docker daemon.
 
-```sh
-ssh synology mkdir -p /volume3/homes/esko/dotfiles-synology-dev
-scp -O \
-  dist/synology-dev/dotfiles-synology-dev-linux-amd64.tar \
-  dist/synology-dev/dotfiles-synology-dev-linux-amd64.tar.sha256 \
-  compose/synology-dev.compose.yaml \
-  synology:/volume3/homes/esko/dotfiles-synology-dev/
-ssh synology \
-  "cd /volume3/homes/esko/dotfiles-synology-dev && sha256sum -c dotfiles-synology-dev-linux-amd64.tar.sha256"
-```
+The script does not create, start, or recreate the Container Manager project.
+An older `dotfiles-synology-dev-linux-amd64.tar` from the previous workflow can
+be removed manually after the remote build has been verified.
 
-## Manual Container Manager installation
+## Manual Container Manager project update
 
-Importing an image and creating the project require root-backed Container
-Manager operations and GUI choices, so these steps are intentionally left for
-the NAS operator:
+The remote build makes the image immediately visible to Container Manager.
+Project creation and replacement remain deliberate NAS operator actions:
 
-1. In Container Manager, import
-   `/volume3/homes/esko/dotfiles-synology-dev/dotfiles-synology-dev-linux-amd64.tar`.
-2. Create a project from `synology-dev.compose.yaml` (or the equivalent
+1. Create or update a project from `synology-dev.compose.yaml` (or the equivalent
    root-level `docker-compose.yml`).
-3. Replace `/volume3/homes/esko/CHANGE_ME_WORKSPACE` with the absolute NAS path
+2. Replace `/volume3/homes/esko/CHANGE_ME_WORKSPACE` with the absolute NAS path
    that should be mounted at `/workspace`.
-4. Ensure `synology-dev.env` is present on the NAS (produced by `./update.sh --synology`
+3. Ensure `synology-dev.env` is present on the NAS (produced by `./update.sh --synology`
    after `nix run .#bootstrap-secrets -- env synology-dev tailscale_auth_key`),
    or add `TAILSCALE_AUTHKEY` manually in Container Manager.
-5. Review the mounts, retain user `1026:100`, then build and start the project.
+4. Verify that the external `mymacvlan` and `macvlan_bridge` networks exist and
+   that `192.168.1.252` is available.
+5. Review the root startup boundary and read-only SSH mount, then recreate or
+   start the project so it uses the newly built image.
 
 The named cache, data, and state volumes preserve mutable XDG data and shell
 history across container replacement. Narrowly scoped volumes also preserve
-Codex (`~/.codex`), Pi (`~/.pi`), Antigravity (`~/.gemini`), Reasonix
+Codex (`~/.codex`), Grok Build (`~/.grok`), Pi (`~/.pi`), Antigravity (`~/.gemini`), Reasonix
 (`~/.reasonix`), and Tailscale (`/var/lib/tailscale`) state.
 Declarative Home Manager files remain in the image, so upgrades cannot retain
 symlinks to Nix-store paths from an older image. Deleting these volumes deletes
 the corresponding accumulated state.
 
+The entrypoint refreshes Grok Build's non-secret `~/.grok/config.toml` from the
+image on every start so an older named volume cannot mask configuration updates.
+Supply LiteLLM virtual keys through `synology-dev.env` or the persistent
+`~/.local/state/grok-litellm-harness/virtual-keys.env`; never add them to the
+tracked TOML file.
+
 ## Credentials and host configuration
 
 No user or deployment private SSH keys, API tokens, or host credentials are
 embedded in the image. Dependency source trees may contain public test
-fixtures. Add only the credentials a tool needs through Container Manager
-after the import. Prefer read-only bind mounts of individual files over
+fixtures. Add only the credentials a tool needs through Container Manager.
+Prefer read-only bind mounts of individual files over
 mounting an entire host home, for example:
 
 ```yaml
@@ -170,7 +173,7 @@ services:
 Mounting `.ssh` read-only allows outbound Git/SSH use without letting the
 container alter the host's keys or `known_hosts`. If a CLI needs to update its
 configuration or token cache, copy just that configuration into its matching
-persistent named volume (XDG data/state, `~/.codex`, `~/.pi`, `~/.gemini`, or
+persistent named volume (XDG data/state, `~/.codex`, `~/.grok`, `~/.pi`, `~/.gemini`, or
 `~/.reasonix`) instead of changing the image. Do not bind mount `/var/run/docker.sock`, and do
 not enable privileged mode.
 
@@ -239,6 +242,7 @@ the NAS is:
   --mount type=volume,src=dotfiles-synology-dev-data,dst=/home/esko/.local/share \
   --mount type=volume,src=dotfiles-synology-dev-state,dst=/home/esko/.local/state \
   --mount type=volume,src=dotfiles-synology-dev-codex,dst=/home/esko/.codex \
+  --mount type=volume,src=dotfiles-synology-dev-grok,dst=/home/esko/.grok \
   --mount type=volume,src=dotfiles-synology-dev-pi,dst=/home/esko/.pi \
   --mount type=volume,src=dotfiles-synology-dev-gemini,dst=/home/esko/.gemini \
   --mount type=volume,src=dotfiles-synology-dev-reasonix,dst=/home/esko/.reasonix \

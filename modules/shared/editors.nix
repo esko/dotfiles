@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   inherit (lib) mkIf mkMerge;
@@ -7,7 +12,7 @@ let
   # (and XDG-aware builds) read ~/.config.
   managed = source: {
     inherit source;
-    force = true;
+    force = config.dotfiles.stowMigration.forceLegacyCollisions;
   };
 
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
@@ -20,20 +25,16 @@ in
         managed ../../config/editors/cursor/settings.json;
       "Library/Application Support/Code/User/settings.json" =
         managed ../../config/editors/vscode/settings.json;
-      "Library/Application Support/Zed/settings.json" =
-        managed ../../config/editors/zed/settings.json;
+      "Library/Application Support/Zed/settings.json" = managed ../../config/editors/zed/settings.json;
       "Library/Application Support/Sublime Text/Packages/User/Preferences.sublime-settings" =
         managed ../../config/editors/sublime-text/Preferences.sublime-settings;
     })
     (mkIf (!isDarwin) {
-      ".config/Cursor/User/settings.json" =
-        managed ../../config/editors/cursor/settings.json;
+      ".config/Cursor/User/settings.json" = managed ../../config/editors/cursor/settings.json;
       # VS Code / Zed / Sublime are Mini casks today; keep Linux XDG seeds so a
       # future apt/Nix install picks up the same theme without a second module.
-      ".config/Code/User/settings.json" =
-        managed ../../config/editors/vscode/settings.json;
-      ".config/zed/settings.json" =
-        managed ../../config/editors/zed/settings.json;
+      ".config/Code/User/settings.json" = managed ../../config/editors/vscode/settings.json;
+      ".config/zed/settings.json" = managed ../../config/editors/zed/settings.json;
       ".config/sublime-text/Packages/User/Preferences.sublime-settings" =
         managed ../../config/editors/sublime-text/Preferences.sublime-settings;
     })

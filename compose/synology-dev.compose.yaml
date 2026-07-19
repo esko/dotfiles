@@ -47,6 +47,7 @@ services:
       - synology-dev-data:/home/esko/.local/share
       - synology-dev-state:/home/esko/.local/state
       - synology-dev-codex:/home/esko/.codex
+      - synology-dev-grok:/home/esko/.grok
       - synology-dev-pi:/home/esko/.pi
       - synology-dev-gemini:/home/esko/.gemini
       - synology-dev-reasonix:/home/esko/.reasonix
@@ -69,6 +70,8 @@ volumes:
     name: dotfiles-synology-dev-state
   synology-dev-codex:
     name: dotfiles-synology-dev-codex
+  synology-dev-grok:
+    name: dotfiles-synology-dev-grok
   synology-dev-pi:
     name: dotfiles-synology-dev-pi
   synology-dev-gemini:

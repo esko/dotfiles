@@ -1,5 +1,14 @@
-{ config, lib, pkgs, username, homeDirectory, stateVersion, hostName
-, inkscapeBeta ? null, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  username,
+  homeDirectory,
+  stateVersion,
+  hostName,
+  inkscapeBeta ? null,
+  ...
+}:
 
 let
   inherit (lib) mkIf mkOption types;
@@ -8,8 +17,7 @@ let
   cursorPackage = if builtins.hasAttr "code-cursor" pkgs then pkgs.code-cursor else null;
   antigravityPackage = if builtins.hasAttr "antigravity" pkgs then pkgs.antigravity else null;
   # Stable 1.4.x from nixpkgs; optional pinned 1.5-dev AppImage beside it.
-  inkscapeStable =
-    if builtins.hasAttr "inkscape" pkgs then pkgs.inkscape else null;
+  inkscapeStable = if builtins.hasAttr "inkscape" pkgs then pkgs.inkscape else null;
   inkscapeDev = inkscapeBeta;
 in
 {
@@ -46,22 +54,42 @@ in
 
   config = {
     home.packages =
-      lib.optionals config.dotfiles.linux.enableHostTools (optionalPackages pkgs [
-      # Nix-owned Linux workstation tools. Prefer Debian packages listed in
-      # docs/linux-bootstrap.md for keyring, clipboard, and device daemons.
-      "android-tools" "jdk17" "vulkan-tools"
-      "libva-utils" "intel-gpu-tools" "intel-media-driver" "mesa"
-      "libdrm" "clinfo" "ocl-icd" "vpl-gpu-rt" "nettools" "traceroute"
-      "xkbcomp" "xkeyboard-config"
-      "unrar" "streamlink" "qmk" "litert-lm"
-    ]) ++ lib.optionals config.dotfiles.linux.enableGuiApps (
-      (optionalPackages pkgs [
-        "code-cursor"
-        "antigravity"
-      ])
-      ++ lib.optional (inkscapeStable != null) inkscapeStable
-      ++ lib.optional (inkscapeDev != null) inkscapeDev
-    );
+      lib.optionals config.dotfiles.linux.enableHostTools (
+        (with pkgs; [
+          # Nix-owned Linux workstation tools. Prefer Debian packages listed in
+          # docs/linux-bootstrap.md for keyring, clipboard, and device daemons.
+          android-tools
+          jdk17
+          vulkan-tools
+          libva-utils
+          intel-gpu-tools
+          intel-media-driver
+          mesa
+          libdrm
+          clinfo
+          ocl-icd
+          vpl-gpu-rt
+          nettools
+          traceroute
+          xkbcomp
+          xkeyboard-config
+          unrar
+          streamlink
+          qmk
+        ])
+        # litert-lm is a newer nixpkgs attribute not yet in the pinned unstable
+        # revision; keep soft lookup so Baguette still evaluates and auto-picks
+        # it up when the flake lock advances.
+        ++ optionalPackages pkgs [ "litert-lm" ]
+      )
+      ++ lib.optionals config.dotfiles.linux.enableGuiApps (
+        # cursorPackage/antigravityPackage already gate on attr presence for
+        # the desktop entries; reuse them instead of a second soft lookup.
+        lib.optional (cursorPackage != null) cursorPackage
+        ++ lib.optional (antigravityPackage != null) antigravityPackage
+        ++ lib.optional (inkscapeStable != null) inkscapeStable
+        ++ lib.optional (inkscapeDev != null) inkscapeDev
+      );
 
     xdg.enable = mkIf config.dotfiles.linux.enableGuiApps true;
 
@@ -84,28 +112,30 @@ in
 
     home.activation.publishBaguetteDesktopEntries =
       mkIf (hostName == "baguette" && config.dotfiles.linux.enableGuiApps)
-        (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          # Prefer the repo helper when present (writes /usr/local + ~/.local and
-          # restarts garcon). Fall back to a minimal local materialize otherwise.
-          if [ -x "${homeDirectory}/dotfiles/scripts/publish-crostini-apps.sh" ]; then
-            $DRY_RUN_CMD "${homeDirectory}/dotfiles/scripts/publish-crostini-apps.sh" || true
-          elif [ -x "$HOME/dotfiles/scripts/publish-crostini-apps.sh" ]; then
-            $DRY_RUN_CMD "$HOME/dotfiles/scripts/publish-crostini-apps.sh" || true
-          else
-            apps_dir="${homeDirectory}/.local/share/applications"
-            $DRY_RUN_CMD mkdir -p "$apps_dir"
-            for desktop in cursor.desktop antigravity.desktop inkscape.desktop inkscape-beta.desktop; do
-              if [ -e "$apps_dir/$desktop" ] && [ -L "$apps_dir/$desktop" ]; then
-                $DRY_RUN_CMD cp -fL "$apps_dir/$desktop" "$apps_dir/$desktop.real"
-                $DRY_RUN_CMD mv -f "$apps_dir/$desktop.real" "$apps_dir/$desktop"
+        (
+          lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            # Prefer the repo helper when present (writes /usr/local + ~/.local and
+            # restarts garcon). Fall back to a minimal local materialize otherwise.
+            if [ -x "${homeDirectory}/dotfiles/scripts/publish-crostini-apps.sh" ]; then
+              $DRY_RUN_CMD "${homeDirectory}/dotfiles/scripts/publish-crostini-apps.sh" || true
+            elif [ -x "$HOME/dotfiles/scripts/publish-crostini-apps.sh" ]; then
+              $DRY_RUN_CMD "$HOME/dotfiles/scripts/publish-crostini-apps.sh" || true
+            else
+              apps_dir="${homeDirectory}/.local/share/applications"
+              $DRY_RUN_CMD mkdir -p "$apps_dir"
+              for desktop in cursor.desktop antigravity.desktop inkscape.desktop inkscape-beta.desktop; do
+                if [ -e "$apps_dir/$desktop" ] && [ -L "$apps_dir/$desktop" ]; then
+                  $DRY_RUN_CMD cp -fL "$apps_dir/$desktop" "$apps_dir/$desktop.real"
+                  $DRY_RUN_CMD mv -f "$apps_dir/$desktop.real" "$apps_dir/$desktop"
+                fi
+              done
+              if command -v systemctl >/dev/null 2>&1; then
+                $DRY_RUN_CMD systemctl --user daemon-reload || true
+                $DRY_RUN_CMD systemctl --user restart cros-garcon.service || true
               fi
-            done
-            if command -v systemctl >/dev/null 2>&1; then
-              $DRY_RUN_CMD systemctl --user daemon-reload || true
-              $DRY_RUN_CMD systemctl --user restart cros-garcon.service || true
             fi
-          fi
-        '');
+          ''
+        );
 
     xdg.desktopEntries = mkIf config.dotfiles.linux.enableGuiApps (
       lib.optionalAttrs (cursorPackage != null) {
@@ -116,7 +146,10 @@ in
           exec = "${lib.getExe cursorPackage} %F";
           icon = "cursor";
           terminal = false;
-          categories = [ "Development" "TextEditor" ];
+          categories = [
+            "Development"
+            "TextEditor"
+          ];
           mimeType = [
             "application/x-cursor-workspace"
             "inode/directory"
@@ -133,7 +166,10 @@ in
           exec = "${lib.getExe antigravityPackage} %F";
           icon = "antigravity";
           terminal = false;
-          categories = [ "Development" "IDE" ];
+          categories = [
+            "Development"
+            "IDE"
+          ];
           startupNotify = true;
         };
       }
@@ -145,7 +181,11 @@ in
           exec = "${lib.getExe inkscapeStable} %F";
           icon = "inkscape";
           terminal = false;
-          categories = [ "Graphics" "VectorGraphics" "2DGraphics" ];
+          categories = [
+            "Graphics"
+            "VectorGraphics"
+            "2DGraphics"
+          ];
           mimeType = [
             "image/svg+xml"
             "image/svg+xml-compressed"
@@ -165,7 +205,11 @@ in
           exec = "${lib.getExe inkscapeDev} %F";
           icon = "inkscape";
           terminal = false;
-          categories = [ "Graphics" "VectorGraphics" "2DGraphics" ];
+          categories = [
+            "Graphics"
+            "VectorGraphics"
+            "2DGraphics"
+          ];
           mimeType = [
             "image/svg+xml"
             "image/svg+xml-compressed"

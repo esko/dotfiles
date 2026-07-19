@@ -3,12 +3,14 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 secrets_module="$repo_root/modules/shared/secrets.nix"
+secrets_modules="$repo_root/modules/shared/secrets"
+stow_migration="$repo_root/modules/shared/stow-migration.nix"
 manifest="$repo_root/secrets/manifest.nix"
 bootstrap="$repo_root/scripts/bootstrap-secrets.sh"
 render="$repo_root/scripts/render-deployment-env.sh"
 
 for token in dotfiles.secrets secrets/manifest.nix tailscale_auth_key consumers shared-env bootstrap-secrets; do
-  rg -q --fixed-strings "$token" "$secrets_module" "$manifest" "$bootstrap" "$render"
+  rg -q --fixed-strings "$token" "$secrets_module" "$secrets_modules" "$manifest" "$bootstrap" "$render"
 done
 
 for token in run-deployment-consumers manifest-common sops_load_env_secret; do
@@ -21,10 +23,10 @@ done
 
 rg -q --fixed-strings 'bootstrap_env_if_needed' "$repo_root/scripts/sync-deployment-secrets.sh"
 rg -q --fixed-strings 'run_bootstrap_secrets' "$repo_root/scripts/sync-deployment-secrets.sh"
-rg -q --fixed-strings 'mkDotfilesScriptApp' "$repo_root/flake.nix"
-rg -q --fixed-strings 'scriptRelPath' "$repo_root/flake.nix"
+rg -q --fixed-strings 'mkDotfilesScriptApp' "$repo_root/flake.nix" "$repo_root/nix"
+rg -q --fixed-strings 'scriptRelPath' "$repo_root/flake.nix" "$repo_root/nix"
 # Flake apps must exec the working-tree script, not inline it into the store.
-if rg -q 'builtins.readFile ./scripts/bootstrap-secrets.sh' "$repo_root/flake.nix"; then
+if rg -q 'builtins.readFile .*scripts/bootstrap-secrets.sh' "$repo_root/flake.nix" "$repo_root/nix"; then
   printf '%s\n' 'bootstrap-secrets app must not builtins.readFile the mutable script' >&2
   exit 1
 fi
@@ -64,32 +66,43 @@ fi
 rg -q --fixed-strings 'sops_encrypt_yaml_file' "$repo_root/scripts/bootstrap-secrets.sh"
 rg -q --fixed-strings 'shared.env' "$manifest"
 rg -q --fixed-strings 'sops_load_env_secret' "$repo_root/scripts/lib/tailscale-common.sh"
-rg -q --fixed-strings 'run_deployment_consumers_for_target' "$repo_root/update.sh" "$repo_root/modules/shared/secrets.nix"
-rg -q --fixed-strings '90-dotfiles-peers.conf' "$secrets_module"
-rg -q --fixed-strings 'peerAuthorizedKeys' "$secrets_module"
+rg -q --fixed-strings 'run_deployment_consumers_for_target' "$repo_root/update.sh" "$secrets_module" "$secrets_modules"
+rg -q --fixed-strings '90-dotfiles-peers.conf' "$secrets_module" "$secrets_modules"
+rg -q --fixed-strings 'peerAuthorizedKeys' "$secrets_module" "$secrets_modules"
 # Must not chmod the HM nix-store symlink (breaks Darwin activation as root).
-if rg -q 'chmod 600.*authorized_keys' "$secrets_module"; then
+if rg -q 'chmod 600.*authorized_keys' "$secrets_module" "$secrets_modules"; then
   echo 'secrets.nix must not chmod HM-managed authorized_keys' >&2
   exit 1
 fi
 # force avoids stale *.home-manager-backup blocking switch on Mini/Baguette.
-rg -q 'authorized_keys".*force = true|force = true' "$secrets_module"
-rg -q --fixed-strings 'home.file.".ssh/authorized_keys"' "$secrets_module"
+rg -q 'authorized_keys".*force = true|force = true' "$secrets_module" "$secrets_modules"
+rg -q --fixed-strings 'home.file.".ssh/authorized_keys"' "$secrets_module" "$secrets_modules"
 # Private key chmod must skip symlinks; never chmod HM-managed *.pub.
-rg -q --fixed-strings 'if [[ -f "$HOME/.ssh/id_ed25519" && ! -L "$HOME/.ssh/id_ed25519" ]]' "$secrets_module"
-rg -q --fixed-strings 'entryAfter [ "writeBoundary" "sops-nix" ]' "$secrets_module"
-if rg -q 'chmod 644.*id_ed25519\.pub' "$secrets_module"; then
+rg -q --fixed-strings 'if [[ -f "$HOME/.ssh/id_ed25519" && ! -L "$HOME/.ssh/id_ed25519" ]]' "$secrets_module" "$secrets_modules"
+rg -q --fixed-strings 'entryAfter [ "writeBoundary" "sops-nix" ]' "$secrets_module" "$secrets_modules"
+if rg -q 'chmod 644.*id_ed25519\.pub' "$secrets_module" "$secrets_modules"; then
   echo 'secrets.nix must not chmod HM-managed id_ed25519.pub' >&2
   exit 1
 fi
 # Darwin sops-nix must not race setupLaunchAgents (Mic92/sops-nix#910).
-rg -q --fixed-strings 'setupLaunchAgents' "$secrets_module"
-rg -q --fixed-strings 'org.nix-community.home.sops-nix.plist' "$secrets_module"
-rg -q --fixed-strings 'Mic92/sops-nix#910' "$secrets_module"
+rg -q --fixed-strings 'setupLaunchAgents' "$secrets_module" "$secrets_modules"
+rg -q --fixed-strings 'org.nix-community.home.sops-nix.plist' "$secrets_module" "$secrets_modules"
+rg -q --fixed-strings 'Mic92/sops-nix#910' "$secrets_module" "$secrets_modules"
 rg -q --fixed-strings 'sshHostName' "$manifest"
-rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module"
-rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module"
+rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module" "$secrets_modules"
+rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module" "$secrets_modules"
 rg -q --fixed-strings 'Include ~/.ssh/config.d' "$repo_root/ssh/.ssh/config"
+rg -q --fixed-strings 'Proc-Type|DEK-Info' "$repo_root/scripts/check-llm-context-safe.sh"
+
+# A legacy ~/.ssh Stow symlink must be copied into a real directory before HM
+# writes managed files. The resolver must remain portable to BSD/macOS readlink.
+for token in resolveLinkTarget isKnownDotfilesTarget 'cp -a' '$HOME/.ssh'; do
+  rg -q --fixed-strings "$token" "$stow_migration"
+done
+if rg -q --fixed-strings 'readlink -f' "$stow_migration"; then
+  printf '%s\n' 'stow migration must not use GNU-only readlink -f' >&2
+  exit 1
+fi
 
 if [[ -f "$repo_root/modules/shared/ssh.nix" || -f "$repo_root/modules/linux/ssh.nix" ]]; then
   printf '%s\n' 'legacy ssh modules must be removed in favor of modules/shared/secrets.nix' >&2

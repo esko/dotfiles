@@ -53,7 +53,7 @@ LABEL org.opencontainers.image.title="dotfiles-synology-dev" \
 # Docker/BuildKit normalizes copied directory modes in some local backends.
 # Reassert the mutable runtime boundary before dropping privileges.
 RUN chmod 1777 /tmp \
-    && chmod u+rwx /home/esko/.cache /home/esko/.codex /home/esko/.config \
+    && chmod u+rwx /home/esko/.cache /home/esko/.codex /home/esko/.config /home/esko/.grok \
       /home/esko/.gemini /home/esko/.local /home/esko/.local/share \
       /home/esko/.local/state /home/esko/.pi /home/esko/.reasonix
 

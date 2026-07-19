@@ -5,6 +5,8 @@
   autoPatchelfHook,
   libxcb,
   libxkbcommon,
+  runCommand,
+  file,
 }:
 
 let
@@ -14,7 +16,7 @@ let
     hash = "sha256-8KADvl4V5Gb2wcWdsO17MVJLbuI83upR7EYHTSFvkVw=";
   };
 in
-stdenv.mkDerivation {
+stdenv.mkDerivation (finalAttrs: {
   pname = "agent-workspace-linux";
   inherit version src;
 
@@ -39,4 +41,23 @@ stdenv.mkDerivation {
     platforms = [ "x86_64-linux" ];
     sourceProvenance = with sourceProvenance; [ binaryNativeCode ];
   };
-}
+
+  # Opt-in smoke check (no execution): the binary is a GUI workspace launcher
+  # whose `--version`/`--help` surface is unverified, so running it in the
+  # sandbox could hang or start a GUI. Instead assert the shipped artifact is an
+  # executable x86-64 ELF. This catches artifact/architecture drift without
+  # claiming to prove the binary's exact CPU feature floor.
+  passthru.tests.smoke =
+    runCommand "${finalAttrs.pname}-smoke"
+      {
+        nativeBuildInputs = [ file ];
+        meta.platforms = [ "x86_64-linux" ];
+      }
+      ''
+        bin="${finalAttrs.finalPackage}/bin/agent-workspace-linux"
+        test -x "$bin" || { echo "not executable: $bin" >&2; exit 1; }
+        file "$bin" > "$out"
+        grep -q "ELF 64-bit LSB.*x86-64" "$out" \
+          || { echo "unexpected arch (expected x86-64 ELF):" >&2; cat "$out" >&2; exit 1; }
+      '';
+})

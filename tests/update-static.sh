@@ -16,6 +16,7 @@ for path in "$update" "$repo_root/scripts/build-synology-dev.sh" \
 done
 
 rg -q --fixed-strings 'run_deployment_consumers_for_target' "$update"
+rg -q --fixed-strings 'scripts/build-synology-dev.sh" --check-only' "$update"
 rg -q --fixed-strings 'NIX_DARWIN#darwin-rebuild' "$update"
 rg -q --fixed-strings 'resolve_activation_pins' "$update"
 rg -q --fixed-strings 'github_uri_from_lock' "$update"
@@ -40,6 +41,9 @@ if rg -q 'ensure_login_shell' "$update"; then
   echo 'update.sh must not duplicate nix-darwin login-shell activation' >&2
   exit 1
 fi
+rg -q --fixed-strings 'ensure_managed_path' "$update"
+rg -q -U 'ensure_managed_path\nrequire_command git\nif ! command -v nix' "$update"
+rg -q --fixed-strings '/nix/var/nix/profiles/default/bin' "$update"
 rg -q '/etc/profiles/per-user/\$\{USER\}/bin' "$update"
 
 rg -q --fixed-strings 'https://cache.numtide.com' "$update"
@@ -48,6 +52,7 @@ rg -q --fixed-strings 'NIX_CACHE_OPTS' "$update"
 rg -q --fixed-strings 'configure_nix_cache_opts' "$update"
 rg -q --fixed-strings 'numtide_cache_in_nix_config' "$update"
 rg -q --fixed-strings 'enable-numtide-cache.sh' "$update"
+rg -q --fixed-strings '${NIX_CACHE_OPTS[@]+"${NIX_CACHE_OPTS[@]}"}' "$update"
 # Restricted trust options only warn for unprivileged Determinate users.
 if rg -q '[[:space:]]--accept-flake-config\b' "$update"; then
   echo 'update.sh must not pass --accept-flake-config on untrusted Determinate hosts' >&2

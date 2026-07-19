@@ -1,0 +1,79 @@
+# Grok Build routes for synology-dev → LiteLLM on the NAS host.
+# From this macvlan container the host LiteLLM port is reachable at 10.10.0.1:4000
+# (macvlan_bridge gateway). Export virtual keys via the container environment
+# (synology-dev.env) or ~/.config/grok-litellm-harness/virtual-keys.env.
+
+[models]
+default = "grok-4.5"
+web_search = "grok-4.5"
+
+[model."api-auto"]
+model = "route-auto"
+name = "API Auto Route"
+base_url = "http://10.10.0.1:4000/v1"
+env_key = "LITELLM_AUTO_KEY"
+api_backend = "chat_completions"
+context_window = 131072
+max_completion_tokens = 12288
+max_retries = 0
+
+[model."api-kimi"]
+model = "route-kimi"
+name = "Kimi Route"
+base_url = "http://10.10.0.1:4000/v1"
+env_key = "LITELLM_KIMI_KEY"
+api_backend = "chat_completions"
+context_window = 131072
+max_completion_tokens = 12288
+max_retries = 0
+
+[model."api-glm"]
+model = "route-glm"
+name = "GLM Route"
+base_url = "http://10.10.0.1:4000/v1"
+env_key = "LITELLM_GLM_KEY"
+api_backend = "chat_completions"
+context_window = 262144
+max_completion_tokens = 16384
+max_retries = 0
+
+[model."api-review"]
+model = "route-review"
+name = "Review Route"
+base_url = "http://10.10.0.1:4000/v1"
+env_key = "LITELLM_REVIEW_KEY"
+api_backend = "chat_completions"
+context_window = 131072
+max_completion_tokens = 12288
+max_retries = 0
+
+[model."exp-kimi-k3"]
+model = "exp-kimi-k3"
+name = "Kimi K3 Experiment"
+base_url = "http://10.10.0.1:4000/v1"
+env_key = "LITELLM_EXPERIMENT_KEY"
+api_backend = "chat_completions"
+context_window = 262144
+max_completion_tokens = 16384
+max_retries = 0
+
+[model."exp-fable"]
+model = "exp-fable"
+name = "Fable Experiment"
+base_url = "http://10.10.0.1:4000/v1"
+env_key = "LITELLM_EXPERIMENT_KEY"
+api_backend = "chat_completions"
+context_window = 262144
+max_completion_tokens = 16384
+max_retries = 0
+
+[subagents]
+enabled = true
+
+[subagents.models]
+general-purpose = "composer-2.5"
+explore = "api-kimi"
+plan = "grok-4.5"
+
+[ui]
+permission_mode = "ask"

@@ -8,9 +8,12 @@
   novnc,
   openbox,
   x11vnc,
+  xauth,
   xclip,
+  xdpyinfo,
   xdotool,
-  xorg,
+  xvfb,
+  xwininfo,
 }:
 buildEnv {
   name = "synology-dev-gui";
@@ -23,12 +26,12 @@ buildEnv {
     novnc
     openbox
     x11vnc
+    xauth
     xclip
+    xdpyinfo
     xdotool
-    xorg.xauth
-    xorg.xdpyinfo
-    xorg.xvfb
-    xorg.xwininfo
+    xvfb
+    xwininfo
   ];
   pathsToLink = [
     "/bin"

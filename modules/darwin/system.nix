@@ -1,4 +1,13 @@
-{ config, lib, pkgs, username, homeDirectory, stateVersion, hostName, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  username,
+  homeDirectory,
+  stateVersion,
+  hostName,
+  ...
+}:
 
 {
   system.stateVersion = 7;

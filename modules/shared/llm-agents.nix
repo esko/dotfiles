@@ -1,4 +1,10 @@
-{ config, lib, pkgs, llmAgentPkgs ? null, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  llmAgentPkgs ? null,
+  ...
+}:
 
 let
   agentAttrs = [
@@ -14,9 +20,12 @@ let
 
   # Grok Build also ships bin/agent; keep that name for Cursor via the wrapper
   # below and expose only `grok` from the grok package.
-  resolveAgentPackage = name:
-    let package = llmAgentPkgs.${name} or null;
-    in if package == null then
+  resolveAgentPackage =
+    name:
+    let
+      package = llmAgentPkgs.${name} or null;
+    in
+    if package == null then
       null
     else if name == "grok" then
       package.overrideAttrs (old: {
