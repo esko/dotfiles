@@ -5,6 +5,11 @@
   ...
 }:
 
+let
+  zshSessionPath = lib.concatMapStringsSep "\n" (
+    entry: ''      "${lib.escape [ "\\" "\"" "`" ] entry}"''
+  ) config.home.sessionPath;
+in
 {
   options.dotfiles.darwin = {
     proxyBridgePackage = lib.mkOption {
@@ -46,5 +51,19 @@
       "/etc/profiles/per-user/${username}/bin"
       "/nix/var/nix/profiles/default/bin"
     ];
+
+    # The pinned Home Manager revision sources home.sessionPath from .zshenv.
+    # On macOS login shells, /etc/zprofile runs path_helper afterwards and can
+    # rebuild PATH, dropping entries such as $HOME/.local/bin. Reapply the final
+    # merged Home Manager path list from the user .zprofile, matching the newer
+    # upstream Home Manager behavior while keeping this deployment pin stable.
+    programs.zsh.profileExtra = lib.mkAfter ''
+      typeset -U path
+      path=(
+${zshSessionPath}
+        $path
+      )
+      export PATH
+    '';
   };
 }
