@@ -21,15 +21,33 @@ in
         plist=${lib.escapeShellArg "${homeDirectory}/Library/LaunchAgents/org.nix-community.home.sops-nix.plist"}
         /bin/launchctl bootout "$domain_target/org.nix-community.home.sops-nix" 2>/dev/null || true
         if [[ -f "$plist" ]]; then
-          if ! program=$(/usr/bin/plutil -extract Program raw "$plist" 2>/dev/null); then
-            printf '%s\n' "sops-nix: launch-agent plist has no Program entry: $plist" >&2
+          if program=$(/usr/bin/plutil -extract Program raw "$plist" 2>/dev/null); then
+            if [[ ! -x "$program" ]]; then
+              printf '%s\n' "sops-nix: secret installer is not executable: $program" >&2
+              exit 1
+            fi
+            "$program"
+          elif arguments_json=$(/usr/bin/plutil -extract ProgramArguments json -o - "$plist" 2>/dev/null); then
+            # Home Manager rewrites launch agents through /bin/wait4path and
+            # therefore emits ProgramArguments even when sops-nix set Program.
+            program_args=()
+            while IFS= read -r -d "" argument; do
+              program_args+=("$argument")
+            done < <(printf '%s' "$arguments_json" | ${pkgs.jq}/bin/jq -j '.[] | ., "\u0000"')
+
+            if (( ''${#program_args[@]} == 0 )); then
+              printf '%s\n' "sops-nix: launch-agent plist has empty ProgramArguments: $plist" >&2
+              exit 1
+            fi
+            if [[ ! -x "''${program_args[0]}" ]]; then
+              printf '%s\n' "sops-nix: launch-agent executable is not executable: ''${program_args[0]}" >&2
+              exit 1
+            fi
+            "''${program_args[@]}"
+          else
+            printf '%s\n' "sops-nix: launch-agent plist has neither Program nor ProgramArguments: $plist" >&2
             exit 1
           fi
-          if [[ ! -x "$program" ]]; then
-            printf '%s\n' "sops-nix: secret installer is not executable: $program" >&2
-            exit 1
-          fi
-          "$program"
           /bin/launchctl bootstrap "$domain_target" "$plist" 2>/dev/null || true
           /bin/launchctl kickstart -k "$domain_target/org.nix-community.home.sops-nix" 2>/dev/null || true
         fi
