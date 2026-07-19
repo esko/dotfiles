@@ -84,10 +84,24 @@ if rg -q 'chmod 644.*id_ed25519\.pub' "$secrets_module" "$secrets_modules"; then
   echo 'secrets.nix must not chmod HM-managed id_ed25519.pub' >&2
   exit 1
 fi
-# Darwin sops-nix must not race setupLaunchAgents (Mic92/sops-nix#910).
-rg -q --fixed-strings 'setupLaunchAgents' "$secrets_module" "$secrets_modules"
-rg -q --fixed-strings 'org.nix-community.home.sops-nix.plist' "$secrets_module" "$secrets_modules"
-rg -q --fixed-strings 'Mic92/sops-nix#910' "$secrets_module" "$secrets_modules"
+# Darwin sops-nix must not race setupLaunchAgents and must execute the original
+# declarative Program with its launchd EnvironmentVariables. The installer uses
+# getconf DARWIN_USER_TEMP_DIR, so native macOS paths must remain available.
+darwin_activation="$secrets_modules/darwin-activation.nix"
+for token in \
+  'setupLaunchAgents' \
+  'org.nix-community.home.sops-nix.plist' \
+  'Mic92/sops-nix#910' \
+  'config.launchd.agents."sops-nix".config' \
+  'EnvironmentVariables' \
+  'DARWIN_USER_TEMP_DIR' \
+  '/usr/bin:/bin:/usr/sbin:/sbin'; do
+  rg -q --fixed-strings "$token" "$darwin_activation"
+done
+if rg -q --fixed-strings '/usr/bin/plutil' "$darwin_activation"; then
+  echo 'Darwin sops activation must use declarative launchd config, not parse generated plists' >&2
+  exit 1
+fi
 rg -q --fixed-strings 'sshHostName' "$manifest"
 rg -q --fixed-strings 'defaultEnvKeys' "$secrets_module" "$secrets_modules"
 rg -q --fixed-strings 'hasSharedSecretFile' "$secrets_module" "$secrets_modules"
@@ -95,9 +109,18 @@ rg -q --fixed-strings 'Include ~/.ssh/config.d' "$repo_root/ssh/.ssh/config"
 rg -q --fixed-strings 'Proc-Type|DEK-Info' "$repo_root/scripts/check-llm-context-safe.sh"
 
 # A legacy ~/.ssh Stow symlink must be copied into a real directory before HM
-# writes managed files. The resolver must remain portable to BSD/macOS readlink.
-for token in resolveLinkTarget isKnownDotfilesTarget 'cp -a' '$HOME/.ssh'; do
-  rg -q --fixed-strings "$token" "$stow_migration"
+# writes managed files. Preserve regular files while excluding ephemeral agent
+# sockets and all device/special files. The resolver must remain portable to
+# BSD/macOS readlink.
+for token in \
+  resolveLinkTarget \
+  isKnownDotfilesTarget \
+  '${pkgs.rsync}/bin/rsync' \
+  '--no-specials' \
+  '--no-devices' \
+  "--exclude '/agent/'" \
+  '$HOME/.ssh'; do
+  rg -q --fixed-strings -- "$token" "$stow_migration"
 done
 if rg -q --fixed-strings 'readlink -f' "$stow_migration"; then
   printf '%s\n' 'stow migration must not use GNU-only readlink -f' >&2
