@@ -33,6 +33,7 @@ jq -r '.proxyRules[0].processNames' "$root_dir/templates/proxybridge/ProxyBridge
 ! grep -q 'masApps' "$root_dir/modules/darwin/system.nix"
 ! grep -q '"proxybridge"' "$root_dir/modules/darwin/system.nix"
 grep -q 'backupFileExtension = "home-manager-backup"' "$root_dir/nix/flake/hosts/mini.nix"
+grep -q 'overwriteBackup = true' "$root_dir/nix/flake/hosts/mini.nix"
 grep -q 'nix.enable = false' "$root_dir/modules/darwin/system.nix"
 grep -q 'documentation.enable = false' "$root_dir/modules/darwin/system.nix"
 rg -q '4c11a945f40cdd2c74307048204b71305dffd562' "$root_dir/flake.nix"
@@ -49,9 +50,20 @@ grep -q '"antigravity"' "$root_dir/modules/darwin/system.nix"
 # Peer SSH Host blocks live in shared secrets.nix, not darwin/home.nix.
 ! grep -q '90-dotfiles-mini.conf' "$root_dir/modules/darwin/home.nix"
 ! grep -q 'launchagents-templates' "$root_dir/modules/darwin/home.nix"
-# Darwin sops-nix activation workaround lives in shared secrets.nix.
-rg -q --fixed-strings 'setupLaunchAgents' "$root_dir/modules/shared/secrets.nix" "$root_dir/modules/shared/secrets"
-rg -q --fixed-strings 'Mic92/sops-nix#910' "$root_dir/modules/shared/secrets.nix" "$root_dir/modules/shared/secrets"
+# Darwin sops-nix activation workaround must run after setupLaunchAgents using
+# the original declarative Program and EnvironmentVariables, including native
+# macOS PATH entries required by getconf DARWIN_USER_TEMP_DIR.
+darwin_sops="$root_dir/modules/shared/secrets/darwin-activation.nix"
+for token in \
+  'setupLaunchAgents' \
+  'Mic92/sops-nix#910' \
+  'config.launchd.agents."sops-nix".config' \
+  'EnvironmentVariables' \
+  'DARWIN_USER_TEMP_DIR' \
+  '/usr/bin:/bin:/usr/sbin:/sbin'; do
+  rg -q --fixed-strings "$token" "$darwin_sops"
+done
+! rg -q --fixed-strings '/usr/bin/plutil' "$darwin_sops"
 # Homebrew remains on HM sessionPath for brew-only tools (et, tsshd, …).
 rg -q --fixed-strings '/opt/homebrew/bin' "$root_dir/modules/darwin/home.nix"
 # mosh-server is Nix-managed on Mini so non-login remote mosh always finds it.
