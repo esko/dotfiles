@@ -21,6 +21,7 @@ nixDarwin.lib.darwinSystem {
         useGlobalPkgs = true;
         useUserPackages = true;
         backupFileExtension = "home-manager-backup";
+        overwriteBackup = true;
         extraSpecialArgs = darwinArgs;
         users.${username} = {
           imports = [
