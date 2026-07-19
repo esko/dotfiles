@@ -40,23 +40,33 @@ in
         plist=${lib.escapeShellArg "${homeDirectory}/Library/LaunchAgents/org.nix-community.home.sops-nix.plist"}
         installer=${lib.escapeShellArg installerPath}
 
-        /bin/launchctl bootout "$domain_target/org.nix-community.home.sops-nix" 2>/dev/null || true
+        # setupLaunchAgents may already have started the agent. Stop it fully
+        # before the synchronous install so two writers cannot update the same
+        # secrets generation concurrently.
+        /bin/launchctl bootout --wait "$domain_target/org.nix-community.home.sops-nix" 2>/dev/null || true
 
         if [[ -z "$installer" || ! -x "$installer" ]]; then
           printf '%s\n' "sops-nix: secret installer is not executable: ''${installer:-<unset>}" >&2
           exit 1
         fi
 
-        ${installerEnvironmentExports}
-        # sops-install-secrets resolves %r with `getconf DARWIN_USER_TEMP_DIR`.
-        # Keep the launchd PATH and guarantee the native macOS tools are visible
-        # when this command is run synchronously from nix-darwin activation.
-        export PATH="''${PATH:+$PATH:}/usr/bin:/bin:/usr/sbin:/sbin"
-        "$installer"
+        # launchd's deliberately minimal environment must apply only to the
+        # secret installer. Exporting it in the parent activation shell removes
+        # Home Manager's Nix paths and makes later helpers such as gettext vanish.
+        activation_path="$PATH"
+        (
+          ${installerEnvironmentExports}
+          # sops-install-secrets resolves %r with `getconf DARWIN_USER_TEMP_DIR`.
+          # Preserve the Home Manager activation PATH while also applying the
+          # launch-agent PATH and guaranteeing native macOS tools are available.
+          export PATH="$activation_path''${PATH:+:$PATH}:/usr/bin:/bin:/usr/sbin:/sbin"
+          "$installer"
+        )
 
+        # RunAtLoad starts the agent during bootstrap; no separate kickstart is
+        # needed and avoiding it prevents a second immediate secret installation.
         if [[ -f "$plist" ]]; then
           /bin/launchctl bootstrap "$domain_target" "$plist" 2>/dev/null || true
-          /bin/launchctl kickstart -k "$domain_target/org.nix-community.home.sops-nix" 2>/dev/null || true
         fi
       ''
     );
