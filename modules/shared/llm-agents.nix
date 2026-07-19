@@ -7,7 +7,7 @@
 }:
 
 let
-  agentAttrs = [
+  requiredAgentAttrs = [
     "cursor-agent" # Cursor Agent CLI
     "antigravity-cli" # agy
     "claude-code" # claude
@@ -16,18 +16,28 @@ let
     "pi"
   ];
 
-  cursorAgent = if llmAgentPkgs == null then null else llmAgentPkgs.cursor-agent or null;
+  hasAgentPackage =
+    name:
+    llmAgentPkgs != null
+    && builtins.hasAttr name llmAgentPkgs
+    && builtins.getAttr name llmAgentPkgs != null;
+
+  missingAgentAttrs =
+    if llmAgentPkgs == null then
+      [ ]
+    else
+      lib.filter (name: !hasAgentPackage name) requiredAgentAttrs;
+
+  cursorAgent = if hasAgentPackage "cursor-agent" then llmAgentPkgs.cursor-agent else null;
 
   # Grok Build also ships bin/agent; keep that name for Cursor via the wrapper
   # below and expose only `grok` from the grok package.
   resolveAgentPackage =
     name:
     let
-      package = llmAgentPkgs.${name} or null;
+      package = builtins.getAttr name llmAgentPkgs;
     in
-    if package == null then
-      null
-    else if name == "grok" then
+    if name == "grok" then
       package.overrideAttrs (old: {
         postInstall = (old.postInstall or "") + ''
           rm -f "$out/bin/agent"
@@ -37,10 +47,10 @@ let
       package;
 
   agentPackages =
-    if llmAgentPkgs == null then
+    if llmAgentPkgs == null || missingAgentAttrs != [ ] then
       [ ]
     else
-      lib.filter (pkg: pkg != null) (map resolveAgentPackage agentAttrs);
+      map resolveAgentPackage requiredAgentAttrs;
 
   agentCommand =
     if cursorAgent == null then
@@ -51,6 +61,15 @@ let
       '';
 in
 {
+  assertions = [
+    {
+      assertion = llmAgentPkgs == null || missingAgentAttrs == [ ];
+      message = "llm-agents package set is missing required attributes: ${
+        lib.concatStringsSep ", " missingAgentAttrs
+      }";
+    }
+  ];
+
   config = lib.mkIf (agentPackages != [ ]) {
     home.packages = agentPackages ++ lib.optional (agentCommand != null) agentCommand;
   };
