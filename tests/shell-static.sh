@@ -28,6 +28,11 @@ done
 rg -q 'writeShellScriptBin "agent"' "$llm_agents_module"
 rg -q 'rm -f "\$out/bin/agent"' "$llm_agents_module"
 rg -q 'name == "grok"' "$llm_agents_module"
+# Core agent commands must fail evaluation if the upstream package set drops or
+# renames one; silently filtering missing attributes produces incomplete hosts.
+for token in requiredAgentAttrs missingAgentAttrs hasAgentPackage 'assertion = llmAgentPkgs == null || missingAgentAttrs == [ ];'; do
+  rg -q --fixed-strings "$token" "$llm_agents_module"
+done
 
 rg -q 'llmAgentPkgs = linuxLlmAgentPkgs' "$repo_root/flake.nix"
 rg -q 'llmAgentPkgs = darwinLlmAgentPkgs' "$repo_root/flake.nix"
