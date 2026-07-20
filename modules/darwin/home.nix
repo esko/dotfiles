@@ -45,9 +45,13 @@ in
     # Homebrew belongs here too: remote mosh/ssh run a non-login shell that
     # sources hm-session-vars (.zshenv) but not .zprofile (brew shellenv), so
     # brew-only tools like mosh-server / et / tsshd were invisible to mosh.
+    # Keep macOS admin paths explicit as well: tools such as sysctl and
+    # system_profiler live under /usr/sbin and are used by hardware probes.
     home.sessionPath = [
       "/opt/homebrew/bin"
       "/opt/homebrew/sbin"
+      "/usr/sbin"
+      "/sbin"
       "/etc/profiles/per-user/${username}/bin"
       "/nix/var/nix/profiles/default/bin"
     ];
