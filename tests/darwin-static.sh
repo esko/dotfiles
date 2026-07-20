@@ -64,8 +64,14 @@ for token in \
   rg -q --fixed-strings "$token" "$darwin_sops"
 done
 ! rg -q --fixed-strings '/usr/bin/plutil' "$darwin_sops"
-# Homebrew remains on HM sessionPath for brew-only tools (et, tsshd, …).
-rg -q --fixed-strings '/opt/homebrew/bin' "$root_dir/modules/darwin/home.nix"
+# Darwin sessionPath must retain Homebrew and native admin tools for non-login
+# shells and hardware probes.
+for path in \
+  '/opt/homebrew/bin' \
+  '/usr/sbin' \
+  '/sbin'; do
+  rg -q --fixed-strings "$path" "$root_dir/modules/darwin/home.nix"
+done
 # The pinned HM revision predates its macOS path_helper fix. The Darwin module
 # must reapply the final merged sessionPath in .zprofile, including ~/.local/bin.
 for token in \
